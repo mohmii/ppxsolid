@@ -1,0 +1,137 @@
+// ppxsolid.idl : IDL source for ppxsolid
+//
+
+// This file will be processed by the MIDL tool to
+// produce the type library (ppxsolid.tlb) and marshalling code.
+
+import "oaidl.idl";
+import "ocidl.idl";
+
+[
+	object,
+	uuid(5F261938-A5A8-41E8-AB0D-58C12EED34C9),
+	dual,
+	nonextensible,
+	helpstring("Ippxsolid Interface"),
+	pointer_default(unique)
+]
+interface Ippxsolid : IDispatch{
+	[id(3), helpstring("method ToolbarCallback0")] HRESULT ToolbarCallback0();
+	[id(4), helpstring("method ToolbarEnable0")] HRESULT ToolbarEnable0([out, retval] long* status);
+		[id(5), helpstring("method ShowPMP")] HRESULT ShowPMP();
+	[id(6), helpstring("method EnablePMP")] HRESULT EnablePMP([out, retval] long* status);
+		[id(7), helpstring("method FlyoutCallback")] HRESULT FlyoutCallback();
+	[id(8), helpstring("method FlyoutCallback0")] HRESULT FlyoutCallback0();
+	[id(9), helpstring("method FlyoutCallback1")] HRESULT FlyoutCallback1();
+	[id(10), helpstring("method FlyoutEnable0")] HRESULT FlyoutEnable0([out, retval] long* status);
+	[id(11), helpstring("method FlyoutEnableCallback0")] HRESULT FlyoutEnableCallback0([out, retval] long* status);
+};
+[
+	object,
+	uuid(57E14605-DE69-4CDB-8BFC-C42E0F0F7FE7),
+	dual,
+	nonextensible,
+	helpstring("ISwDocument Interface"),
+	pointer_default(unique)
+]
+interface ISwDocument : IDispatch{
+};
+[
+	object,
+	uuid(C0DD4BAC-014A-4973-A92C-08F734996ED7),
+	dual,
+	nonextensible,
+	helpstring("IDocView Interface"),
+	pointer_default(unique)
+]
+interface IDocView : IDispatch{
+};
+[
+	object,
+	uuid(28F05B18-4BFF-4BD4-BB16-CA458965C93D),
+	dual,
+	nonextensible,
+	helpstring("IBitmapHandler Interface"),
+	pointer_default(unique)
+]
+interface IBitmapHandler : IDispatch{
+	[id(1), helpstring("method CreateBitmapFileFromResource")] HRESULT CreateBitmapFileFromResource([in] DWORD resID, [out, retval] BSTR* retval);
+	[id(2), helpstring("method Dispose")] HRESULT Dispose();
+};
+[
+	object,
+	uuid(E6CA143C-75D5-4BC8-860D-D4C8685B2F3A),
+	dual,
+	nonextensible,
+	helpstring("IPMPageHandler Interface"),
+	pointer_default(unique)
+]
+interface IPMPageHandler : IDispatch{
+};
+[
+	object,
+	uuid(3C8A2C14-8D2B-453C-9A4A-A2CCA398C201),
+	dual,
+	nonextensible,
+	helpstring("IUserPropertyManagerPage Interface"),
+	pointer_default(unique)
+]
+interface IUserPropertyManagerPage : IDispatch{
+};
+[
+	uuid(F55838FE-F5A2-44FE-B023-8E2AD782B297),
+	version(1.0),
+	helpstring("ppxsolid 1.0 Type Library")
+]
+library ppxsolidLib
+{
+	importlib("stdole2.tlb");
+	[
+		uuid(CDBC7D74-324B-4BB8-A43C-91F2507E44F1),
+		helpstring("ppxsolid Class")
+	]
+	coclass ppxsolid
+	{
+		[default] interface Ippxsolid;
+	};
+	[
+		uuid(1EB26297-B846-403F-99DF-ED04E19F2865),
+		helpstring("SwDocument Class")
+	]
+	coclass SwDocument
+	{
+		[default] interface ISwDocument;
+	};
+	[
+		uuid(EE2555DC-8D06-4AFE-9F92-C45EB0737971),
+		helpstring("DocView Class")
+	]
+	coclass DocView
+	{
+		[default] interface IDocView;
+	};
+	[
+		uuid(992A87C0-31CD-44FD-A5E1-F726995F03D3),
+		helpstring("BitmapHandler Class")
+	]
+	coclass BitmapHandler
+	{
+		[default] interface IBitmapHandler;
+	};
+	[
+		uuid(21099C1D-799F-4E7C-BB5F-BF7FC4C38868),
+		helpstring("PMPageHandler Class")
+	]
+	coclass PMPageHandler
+	{
+		[default] interface IPMPageHandler;
+	};
+	[
+		uuid(86E1BFBA-6C82-4EE4-A0D5-73AB78AF81F0),
+		helpstring("UserPropertyManagerPage Class")
+	]
+	coclass UserPropertyManagerPage
+	{
+		[default] interface IUserPropertyManagerPage;
+	};
+};

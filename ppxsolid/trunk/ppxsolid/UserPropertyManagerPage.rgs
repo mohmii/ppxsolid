@@ -1,0 +1,27 @@
+HKCR
+{
+	ppxsolid.UserPropertyManagerPage.1 = s 'UserPropertyManagerPage Class'
+	{
+		CLSID = s '{86E1BFBA-6C82-4EE4-A0D5-73AB78AF81F0}'
+	}
+	ppxsolid.UserPropertyManagerPage = s 'UserPropertyManagerPage Class'
+	{
+		CLSID = s '{86E1BFBA-6C82-4EE4-A0D5-73AB78AF81F0}'
+		CurVer = s 'ppxsolid.UserPropertyManagerPage.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {86E1BFBA-6C82-4EE4-A0D5-73AB78AF81F0} = s 'UserPropertyManagerPage Class'
+		{
+			ProgID = s 'ppxsolid.UserPropertyManagerPage.1'
+			VersionIndependentProgID = s 'ppxsolid.UserPropertyManagerPage'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Both'
+			}
+			val AppID = s '%APPID%'
+			'TypeLib' = s '{F55838FE-F5A2-44FE-B023-8E2AD782B297}'
+		}
+	}
+}

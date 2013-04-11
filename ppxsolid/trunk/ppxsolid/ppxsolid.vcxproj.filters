@@ -1,0 +1,127 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{059d86e0-58d8-4535-880f-2f5e2892d7f3}</UniqueIdentifier>
+      <Extensions>*.*</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{855bef08-3bb0-4f81-9cf6-56f45c62d78a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{5acf13e4-c259-4fd9-acc1-a11fdc887bb3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{004a16e1-19d3-40b4-b51e-8e39e68de799}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ppxsolid_i.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BitmapHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DocView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CppxsolidDialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ppxsolid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SwDocument.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PMPageHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UserPropertyManagerPage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ppxsolid_i.c">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ppxsolid_module.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BitmapHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DocView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CppxsolidDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ppxsolid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SwDocument.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PMPageHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UserPropertyManagerPage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ppxsolid.def">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="BitmapHandler.rgs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DocView.rgs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="MainIconLarge.bmp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="MainIconSmall.bmp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="ppxsolid.rgs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="SwDocument.rgs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="toolbar_large.bmp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="toolbar_small.bmp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="PMPageHandler.rgs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="UserPropertyManagerPage.rgs">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="ppxsolid.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ppxsolid.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

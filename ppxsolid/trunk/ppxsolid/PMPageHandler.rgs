@@ -1,0 +1,27 @@
+HKCR
+{
+	ppxsolid.PMPageHandler.1 = s 'PMPageHandler Class'
+	{
+		CLSID = s '{21099C1D-799F-4E7C-BB5F-BF7FC4C38868}'
+	}
+	ppxsolid.PMPageHandler = s 'PMPageHandler Class'
+	{
+		CLSID = s '{21099C1D-799F-4E7C-BB5F-BF7FC4C38868}'
+		CurVer = s 'ppxsolid.PMPageHandler.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {21099C1D-799F-4E7C-BB5F-BF7FC4C38868} = s 'PMPageHandler Class'
+		{
+			ProgID = s 'ppxsolid.PMPageHandler.1'
+			VersionIndependentProgID = s 'ppxsolid.PMPageHandler'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Both'
+			}
+			val AppID = s '%APPID%'
+			'TypeLib' = s '{F55838FE-F5A2-44FE-B023-8E2AD782B297}'
+		}
+	}
+}

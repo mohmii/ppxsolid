@@ -1,0 +1,27 @@
+HKCR
+{
+	ppxsolid.DocView.1 = s 'DocView Class'
+	{
+		CLSID = s '{EE2555DC-8D06-4AFE-9F92-C45EB0737971}'
+	}
+	ppxsolid.DocView = s 'DocView Class'
+	{
+		CLSID = s '{EE2555DC-8D06-4AFE-9F92-C45EB0737971}'
+		CurVer = s 'ppxsolid.DocView.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {EE2555DC-8D06-4AFE-9F92-C45EB0737971} = s 'DocView Class'
+		{
+			ProgID = s 'ppxsolid.DocView.1'
+			VersionIndependentProgID = s 'ppxsolid.DocView'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Both'
+			}
+			val AppID = s '%APPID%'
+			'TypeLib' = s '{F55838FE-F5A2-44FE-B023-8E2AD782B297}'
+		}
+	}
+}

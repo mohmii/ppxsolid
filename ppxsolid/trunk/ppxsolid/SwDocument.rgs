@@ -1,0 +1,27 @@
+HKCR
+{
+	ppxsolid.SwDocument.1 = s 'SwDocument Class'
+	{
+		CLSID = s '{1EB26297-B846-403F-99DF-ED04E19F2865}'
+	}
+	ppxsolid.SwDocument = s 'SwDocument Class'
+	{
+		CLSID = s '{1EB26297-B846-403F-99DF-ED04E19F2865}'
+		CurVer = s 'ppxsolid.SwDocument.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {1EB26297-B846-403F-99DF-ED04E19F2865} = s 'SwDocument Class'
+		{
+			ProgID = s 'ppxsolid.SwDocument.1'
+			VersionIndependentProgID = s 'ppxsolid.SwDocument'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Both'
+			}
+			val AppID = s '%APPID%'
+			'TypeLib' = s '{F55838FE-F5A2-44FE-B023-8E2AD782B297}'
+		}
+	}
+}

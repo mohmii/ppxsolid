@@ -1,0 +1,57 @@
+HKCR
+{
+	NoRemove AppID
+	{
+		'%APPID%' = s 'ppxsolid'
+		'ppxsolid.DLL'
+		{
+			val AppID = s '%APPID%'
+		}
+	}
+}
+
+HKCR
+{
+	ppxsolid.SwAddin.1 = s 'SwAddin Class'
+	{
+		CLSID = s '{CDBC7D74-324B-4BB8-A43C-91F2507E44F1}'
+	}
+	ppxsolid.SwAddin = s 'SwAddin Class'
+	{
+		CLSID = s '{CDBC7D74-324B-4BB8-A43C-91F2507E44F1}'
+		CurVer = s 'ppxsolid.SwAddin.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {CDBC7D74-324B-4BB8-A43C-91F2507E44F1} = s 'SwAddin Class'
+		{
+			ProgID = s 'ppxsolid.SwAddin.1'
+			VersionIndependentProgID = s 'ppxsolid.SwAddin'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Both'
+			}
+			val AppID = s '%APPID%'
+			'TypeLib' = s '{F55838FE-F5A2-44FE-B023-8E2AD782B297}'
+		}
+	}
+}
+
+HKLM
+{
+	NoRemove SOFTWARE
+	{
+		NoRemove SolidWorks
+		{
+			NoRemove AddIns
+			{
+				ForceRemove {CDBC7D74-324B-4BB8-A43C-91F2507E44F1} = d '0'
+				{
+					val Description = s 'ppxsolid AddIn'
+					val Title = s 'ppxsolid'
+				}
+			}
+		}
+	}
+}

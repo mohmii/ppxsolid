@@ -1,0 +1,27 @@
+HKCR
+{
+	ppxsolid.BitmapHandler.1 = s 'BitmapHandler Class'
+	{
+		CLSID = s '{992A87C0-31CD-44FD-A5E1-F726995F03D3}'
+	}
+	ppxsolid.BitmapHandler = s 'BitmapHandler Class'
+	{
+		CLSID = s '{992A87C0-31CD-44FD-A5E1-F726995F03D3}'
+		CurVer = s 'ppxsolid.BitmapHandler.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {992A87C0-31CD-44FD-A5E1-F726995F03D3} = s 'BitmapHandler Class'
+		{
+			ProgID = s 'ppxsolid.BitmapHandler.1'
+			VersionIndependentProgID = s 'ppxsolid.BitmapHandler'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Both'
+			}
+			val AppID = s '%APPID%'
+			'TypeLib' = s '{F55838FE-F5A2-44FE-B023-8E2AD782B297}'
+		}
+	}
+}
