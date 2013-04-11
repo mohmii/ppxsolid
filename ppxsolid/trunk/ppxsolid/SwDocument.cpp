@@ -231,7 +231,7 @@ HRESULT CSwDocument::ComponentStateChange(LPDISPATCH componentModel, long newCom
 
 	switch(newState)
 	{
-		case swComponentSuppressionState_e::swComponentFullyResolved:
+		case /*swComponentSuppressionState_e::*/swComponentFullyResolved:
 			{
 				VARIANT_BOOL attached = VARIANT_TRUE;
 				USES_CONVERSION;
@@ -251,7 +251,7 @@ HRESULT CSwDocument::ComponentStateChange(LPDISPATCH componentModel, long newCom
 			}
 		break;
 
-		case swComponentSuppressionState_e::swComponentResolved:
+		case /*swComponentSuppressionState_e::*/swComponentResolved:
 			{
 				VARIANT_BOOL attached = VARIANT_TRUE;
 				USES_CONVERSION;
@@ -299,7 +299,7 @@ STDMETHODIMP CSwDocument::OnAssemblyComponentVisualPropertiesChangeNotify(LPDISP
 	swObject->QueryInterface(__uuidof(IComponent2), reinterpret_cast<void**>(&component));
 
 	component->IGetModelDoc(&modDoc);
-	swComponentSuppressionState_e newState =  swComponentSuppressionState_e::swComponentFullyResolved;
+	swComponentSuppressionState_e newState =  /*swComponentSuppressionState_e::*/swComponentFullyResolved;
 
     return ComponentStateChange(modDoc, newState);
 }
@@ -315,7 +315,7 @@ STDMETHODIMP CSwDocument::OnAssemblyComponentDisplayStateChangeNotify(LPDISPATCH
 	swObject->QueryInterface(__uuidof(IComponent2), reinterpret_cast<void**>(&component));
 
 	component->IGetModelDoc(&modDoc);
-	swComponentSuppressionState_e newState =  swComponentSuppressionState_e::swComponentFullyResolved;
+	swComponentSuppressionState_e newState =  /*swComponentSuppressionState_e::*/swComponentFullyResolved;
 
     return ComponentStateChange(modDoc, newState);
 }
