@@ -68,6 +68,8 @@ public:
 	void Init(Cppxsolid* addinPtr, IModelDoc2* modDoc);
 	long GetType();
 
+	
+
 	VARIANT_BOOL AttachEventHandlers(void);
 	VARIANT_BOOL AttachModelViewEventHandlers(void);
 	VARIANT_BOOL DetachEventHandlers(void);

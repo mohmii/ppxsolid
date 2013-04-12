@@ -10,7 +10,7 @@ class CppxsolidDialog : public CDialog
 public:
 	CppxsolidDialog(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CppxsolidDialog();
-
+		
 // Dialog Data
 	enum { IDD = IDD_CppxsolidDialog };
 

@@ -92,7 +92,6 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -104,7 +103,9 @@
       </PrecompiledHeader>
       <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>stdafx.pch</PrecompiledHeaderOutputFile>
-      <AdditionalIncludeDirectories>C:\PROGRA~1\SOLIDW~1\SOLIDW~1\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files\SolidWorks Corp\SolidWorks;C:\Program Files\SolidWorks Corp\SolidWorks\samples\appcomm\win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalUsingDirectories>C:\Program Files\SolidWorks Corp\SolidWorks;%(AdditionalUsingDirectories)</AdditionalUsingDirectories>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
       <AdditionalDependencies>comsvcs.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -147,7 +148,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -195,7 +196,7 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -239,7 +240,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -278,6 +279,7 @@
     <ClInclude Include="BitmapHandler.h" />
     <ClInclude Include="CppxsolidDialog.h" />
     <ClInclude Include="DocView.h" />
+    <ClInclude Include="FPPS.h" />
     <ClInclude Include="PMPageHandler.h" />
     <ClInclude Include="ppxsolid.h" />
     <ClInclude Include="ppxsolid_i.h" />
@@ -290,6 +292,7 @@
     <ClCompile Include="BitmapHandler.cpp" />
     <ClCompile Include="CppxsolidDialog.cpp" />
     <ClCompile Include="DocView.cpp" />
+    <ClCompile Include="File_Open.cpp" />
     <ClCompile Include="PMPageHandler.cpp" />
     <ClCompile Include="ppxsolid.cpp" />
     <ClCompile Include="ppxsolid_i.c">
@@ -303,6 +306,7 @@
     <ClCompile Include="ppxsolid_module.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="SwDocument.cpp" />
+    <ClCompile Include="TRV_Extraction2.cpp" />
     <ClCompile Include="UserPropertyManagerPage.cpp" />
   </ItemGroup>
   <ItemGroup>

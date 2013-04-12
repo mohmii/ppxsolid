@@ -20,9 +20,6 @@ class CBitmapHandler;
 #define FLYOUT_GROUP_ID 99
 // Cppxsolid
 
-
-
-
 class ATL_NO_VTABLE Cppxsolid :
 	public CComObjectRootEx<CComSingleThreadModel>,
 	public CComCoClass<Cppxsolid, &CLSID_ppxsolid>,
@@ -31,6 +28,7 @@ class ATL_NO_VTABLE Cppxsolid :
 	public IDispEventImpl<ID_SLDWORKS_EVENTS, Cppxsolid, &__uuidof(DSldWorksEvents), &LIBID_SldWorks, ID_SLDWORKS_TLB_MAJOR, ID_SLDWORKS_TLB_MINOR> 
 	{
 	typedef IDispEventImpl<ID_SLDWORKS_EVENTS, Cppxsolid, &__uuidof(DSldWorksEvents), &LIBID_SldWorks, ID_SLDWORKS_TLB_MAJOR, ID_SLDWORKS_TLB_MINOR> CSldWorksEvents;
+	
 
 private:
 	CComPtr<ISldWorks> iSwApp;
@@ -74,6 +72,7 @@ public:
 
 	// Ippxsolid
 public:
+
 
 	// ISwAddin Methods
 public:
@@ -132,5 +131,32 @@ public:
 	STDMETHOD(ShowPMP)(void);
 	STDMETHOD(EnablePMP)(long* status);
 };
+
+#ifdef _MBCS
+
+class auT
+{
+public:
+	auT( LPCTSTR val ) : iValue( val ), iBStr( NULL ) { }
+
+	~auT( )
+	{ if( iBStr != NULL )	::SysFreeString( iBStr ); }
+
+	operator BSTR()         
+	{
+		if( iBStr != NULL )
+			{ ::SysFreeString( iBStr );	iBStr = NULL; }
+		iBStr = iValue.AllocSysString();
+		return iBStr;
+	}
+	
+private:
+	BSTR iBStr;
+	CString iValue;
+};
+
+#define au2B( STUFF ) auT(STUFF)
+
+#endif
 
 OBJECT_ENTRY_AUTO(__uuidof(ppxsolid), Cppxsolid)

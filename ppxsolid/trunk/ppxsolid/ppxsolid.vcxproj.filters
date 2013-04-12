@@ -46,6 +46,9 @@
     <ClInclude Include="UserPropertyManagerPage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FPPS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ppxsolid_i.c">
@@ -76,6 +79,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="UserPropertyManagerPage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Open.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TRV_Extraction2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

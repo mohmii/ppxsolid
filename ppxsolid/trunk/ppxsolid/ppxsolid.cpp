@@ -285,7 +285,7 @@ STDMETHODIMP Cppxsolid::OnFileOpenPostNotify(BSTR fileName)
 //Called when a new document is created or a document is loaded
 STDMETHODIMP Cppxsolid::OnDocLoad(BSTR docTitle, BSTR docPath)
 {
-
+	
 	return S_OK;
 }
 VARIANT_BOOL Cppxsolid::AttachEventHandlers()
