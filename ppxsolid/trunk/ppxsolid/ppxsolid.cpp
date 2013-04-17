@@ -495,10 +495,12 @@ STDMETHODIMP Cppxsolid::ToolbarCallback0(void)
 	// TODO: Add your implementation code here
 
 	{
-		AFX_MANAGE_STATE(AfxGetStaticModuleState());
+		FileOpen();
+
+		/*AFX_MANAGE_STATE(AfxGetStaticModuleState());
 		
 		CppxsolidDialog dlg(AfxGetMainWnd());
-		dlg.DoModal();
+		dlg.DoModal();*/
 
 	}
 	return S_OK;
@@ -538,6 +540,8 @@ STDMETHODIMP Cppxsolid::FlyoutCallback(void)
 
 STDMETHODIMP Cppxsolid::FlyoutCallback0(void)
 {
+	
+	
 	// TODO: Add your implementation code here
 	::WinExec("Notepad.exe", SW_SHOW);
 	return S_OK;
@@ -583,6 +587,7 @@ BSTR Cppxsolid::GetCurrentFile()
 STDMETHODIMP Cppxsolid::ShowPMP(void)
 {
 	// TODO: Add your implementation code here
+
 	if (userPropertyPage != NULL)
 		userPropertyPage->Show();
 	return S_OK;

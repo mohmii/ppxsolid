@@ -10,19 +10,26 @@
 //#include "amapp.h"
 
 #include "ppxsolid.h"
+#include "SwDocument.h"
 
 /*	//チェック用
 #include <fstream>
 using namespace std;    ////std::　の省略が可能に
 */
 
-void File_Open()//製品モデルと被削材モデルの位置を合わせる
+void Cppxsolid::FileOpen()//製品モデルと被削材モデルの位置を合わせる
 {
+
+	CoInitialize(NULL);
+
+	{
 //	ofstream      fout("File_Open.txt");		//チェック用
 
 //	ofstream      fout("C:\\Documents and Settings\\SolidWorks\\My Documents\\Uko\\Yooshan\\Yooshan_sld\\File_Open.txt");
 
 	CComPtr<ISldWorks> pSldWorks = NULL;
+
+	Cppxsolid *userAddin = NULL;
 	IModelDoc2 *pModel = NULL;
 	IAssemblyDoc *pAssem = NULL;	//新規作成アセンブリへのポインタ（操作が失敗ならばNULL）
 	IComponent2 *pComp1= NULL, * pComp2 = NULL, * pComp3 =NULL, *pComp4 = NULL;		//付加された構成部品（Component）へのポインタ
@@ -38,7 +45,7 @@ void File_Open()//製品モデルと被削材モデルの位置を合わせる
 
 	try{
 
-	pSldWorks = GetSldWorksPtr()/* UserApp->getSWApp()*/;
+	pSldWorks = userAddin->GetSldWorksPtr();  /* UserApp->getSWApp()*/;
 	
 //	res = pSldWorks->INewAssembly( &pAssem );  //INewAssemblyは廃止された
 //	res = pAssem->QueryInterface( IID_IModelDoc2, (LPVOID *)&pModel );	
@@ -50,7 +57,9 @@ void File_Open()//製品モデルと被削材モデルの位置を合わせる
 	if( res != S_OK ) throw(0);
 	SysFreeString( templateName );
 
-	res = pModel->SetTitle2 ( auT("tempAssembly.SLDASM"), &retval );
+	
+
+	res = pModel->SetTitle2 (auT("tempAssembly.SLDASM"), &retval );
 	res = pModel->QueryInterface( IID_IAssemblyDoc, (LPVOID *)&pAssem );
 
 	x = y = 0.0; 
@@ -137,7 +146,7 @@ void File_Open()//製品モデルと被削材モデルの位置を合わせる
 //////////////////////////////////////////////////////////////////
 	if(pModel) pModel->Release();
 	pModel = NULL;
-	res = UserApp->getSWApp()->get_IActiveDoc2 ( &pModel );
+	res = /*UserApp->getSWApp()->*/pSldWorks->get_IActiveDoc2( &pModel );
 
 	res = pModel->ShowNamedView2  ( auT("*等角投影"), 7 );
 
@@ -157,4 +166,8 @@ void File_Open()//製品モデルと被削材モデルの位置を合わせる
 	if(pComp1) pComp1->Release();
 	if(pComp2) pComp2->Release();
 	if(pComp3) pComp3->Release();
+
+	} //end of CoUninitialize()
+
+	CoUninitialize();
 }																// End function

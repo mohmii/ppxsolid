@@ -7,11 +7,13 @@
 #include "resource.h"       // main symbols
 #include <comsvcs.h>
 #include <map>
+
 class CSwDocument;
 typedef std::map<IUnknown*, CSwDocument*> TMapIUnknownToDocument;
 
 class CUserPropertyManagerPage;
 class CBitmapHandler;
+//class auT;
 
 #define ID_SLDWORKS_EVENTS 0
 #define MAIN_CMD_GROUP_ID 0 
@@ -38,6 +40,8 @@ private:
 	long toolbarID;
 	long m_swMajNum;
 	long m_swMinNum;
+	
+
 //This mapping will contain references to all open Documents, and ensure 
 //that we do not attempt to attach event handlers to an already opened doc. 
 	TMapIUnknownToDocument openDocs;
@@ -72,7 +76,7 @@ public:
 
 	// Ippxsolid
 public:
-
+	//int Object_Check( iSwApp-> pBdyEnum );
 
 	// ISwAddin Methods
 public:
@@ -95,6 +99,8 @@ TMapIUnknownToDocument OpenDocumentsTable() { return openDocs; }
 	void AddPMP();
 	void RemovePMP();
 	BSTR GetCurrentFile();
+
+	void FileOpen();
 
 		//Event Handlers
 	//These are the methods that are called when certain SolidWorks events are fired
@@ -155,8 +161,17 @@ private:
 	CString iValue;
 };
 
+//LPCTSTR型のポインタをBSTR型に変換するクラス型オブジェクトとしてau2B(STUFF)を定義
 #define au2B( STUFF ) auT(STUFF)
+
+#else
+
+//汎用テキストのマッピング（_T→LPCTSTR型）を使用する記号定数としてauTを定義
+#define auT _T
+
+#define au2B( STUFF ) (LPTSTR)((LPCTSTR)STUFF)
 
 #endif
 
 OBJECT_ENTRY_AUTO(__uuidof(ppxsolid), Cppxsolid)
+
