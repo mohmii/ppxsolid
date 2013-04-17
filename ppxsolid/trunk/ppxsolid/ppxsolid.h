@@ -33,6 +33,8 @@ class ATL_NO_VTABLE Cppxsolid :
 	
 
 private:
+	Cppxsolid * userAddin;
+
 	CComPtr<ISldWorks> iSwApp;
 	CComPtr<ICommandManager> iCmdMgr;
 	CComObject<CBitmapHandler> *iBmp;
