@@ -13,22 +13,18 @@ void Cppxsolid::FileOpen()//製品モデルと被削材モデルの位置を合わせる
 	CoInitialize(NULL);
 
 	{
-
-	CComPtr<ISldWorks> pSldWorks = NULL;
-
-	//Cppxsolid *userAddin = NULL;
+			
 	IModelDoc2 *pModel = NULL;
 	IAssemblyDoc *pAssem = NULL;	//新規作成アセンブリへのポインタ（操作が失敗ならばNULL）
-	IComponent2 *pComp1= NULL, * pComp2 = NULL, * pComp3 =NULL, *pComp4 = NULL;		//付加された構成部品（Component）へのポインタ
-	double x, y, z;					//アセンブリの構成部品の位置
+	IComponent2 *pComp1, * pComp2 = NULL;		//付加された構成部品（Component）へのポインタ
 
-	double xform1[16],xform2[16],xform3[16],xform4[16];   //Componentの位置確認用マトリクス
+	double x, y, z, xform1[16],xform2[16];   //Componentの位置確認用マトリクス
 
-	// new api type
-	IMathTransform * mTransform1, *mTransform2, *mTransform3, *mTransform4 = NULL;
-
-     VARIANT_BOOL retval;            //変換の設定に成功ならばTRUE
-     VARIANT_BOOL condition = FALSE;
+	// new api type IMathTransform to keep the Transform2 return value
+	IMathTransform * mTransform1, *mTransform2 = NULL;
+	
+	VARIANT_BOOL retval;            //変換の設定に成功ならばTRUE
+	VARIANT_BOOL condition = FALSE;
 
 	HRESULT res = NULL;				//返り値（成功ならばS_OK）
 
@@ -36,9 +32,10 @@ void Cppxsolid::FileOpen()//製品モデルと被削材モデルの位置を合わせる
 
 	//INewAssemblyの変更後
 	BSTR templateName;				//新規ドキュメントのテンプレート名のようなもの															
-	res = /*pSldWorks*/iSwApp-> GetDocumentTemplate( swDocASSEMBLY,NULL,NULL, NULL, NULL, &templateName);		//
+	
+	res = iSwApp->GetDocumentTemplate( swDocASSEMBLY,NULL,NULL, NULL, NULL, &templateName);		//
 	if( res != S_OK ) throw(0);																		//
-	res = /*pSldWorks*/iSwApp->INewDocument2 ( templateName, swDwgPaperAsizeVertical, NULL, NULL, &pModel );	//
+	res = iSwApp->INewDocument2 ( templateName, swDwgPaperAsizeVertical, NULL, NULL, &pModel );	//
 	if( res != S_OK ) throw(0);
 	SysFreeString( templateName );
 	
@@ -49,10 +46,8 @@ void Cppxsolid::FileOpen()//製品モデルと被削材モデルの位置を合わせる
 	x = y = 0.0; 
 	z = 0.0;
 
-	//new api
+	//new api AddComponent5 for adding the two components
 	res = pAssem->AddComponent5 ( auT("Workpiece.SLDPRT"),0, auT("WP"),true, auT("WP"), x, y, z, &pComp1 );
-
-	//new api
 	res = pAssem->AddComponent5 ( auT("Product.SLDPRT"), 0, auT("FS"),true, auT("FS"), x, y, z, &pComp2 );
 
 	if(pComp1 == NULL || pComp2 == NULL){
@@ -60,15 +55,15 @@ void Cppxsolid::FileOpen()//製品モデルと被削材モデルの位置を合わせる
 		throw(0);
 	}
 
-	//new api
+	//new api Transform2 to get the component matrix
 	res = pComp1->get_Transform2(&mTransform1);
 	res = mTransform1->get_IArrayData(xform1);
 	
 	res = pComp2->get_Transform2(&mTransform2);
 	res = mTransform2->get_IArrayData(xform2);
 
-	xform2[9] = xform1[9];
-	xform2[10] = xform1[10];
+	//xform2[9] = xform1[9];
+	//xform2[10] = xform1[10];
 	xform2[11] = xform1[11];
 	
 	//set back to mathtransform
@@ -81,7 +76,7 @@ void Cppxsolid::FileOpen()//製品モデルと被削材モデルの位置を合わせる
 
 	if(pModel) pModel->Release();
 	pModel = NULL;
-	res = /*UserApp->getSWApp()->*/iSwApp->get_IActiveDoc2( &pModel );
+	res = iSwApp->get_IActiveDoc2( &pModel );
 
 	res = pModel->ShowNamedView2  ( auT("*等角投影"), 7 );
 
