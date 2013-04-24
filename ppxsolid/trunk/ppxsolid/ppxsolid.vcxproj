@@ -291,6 +291,7 @@
     <ClCompile Include="BitmapHandler.cpp" />
     <ClCompile Include="CppxsolidDialog.cpp" />
     <ClCompile Include="DocView.cpp" />
+    <ClCompile Include="ExtractTRV.cpp" />
     <ClCompile Include="File_Open.cpp" />
     <ClCompile Include="PMPageHandler.cpp" />
     <ClCompile Include="ppxsolid.cpp" />
@@ -329,4 +330,9 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties RESOURCE_FILE="ppxsolid.rc" />
+    </VisualStudio>
+  </ProjectExtensions>
 </Project>

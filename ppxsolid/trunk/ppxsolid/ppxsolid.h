@@ -33,8 +33,7 @@ class ATL_NO_VTABLE Cppxsolid :
 	
 
 private:
-	Cppxsolid * userAddin;
-
+	
 	CComPtr<ISldWorks> iSwApp;
 	CComPtr<ICommandManager> iCmdMgr;
 	CComObject<CBitmapHandler> *iBmp;
@@ -42,6 +41,15 @@ private:
 	long toolbarID;
 	long m_swMajNum;
 	long m_swMinNum;
+
+	/*int ObjectCheck(CComPtr<IBody2> pBody2);
+	void DefInitialize_FaceAccuracy();
+	void DefInitialize_EdgeAccuracy();
+	void Copy_toTRV_fromProduct2(CComPtr<IBody2> Compbody, CComPtr<IBody2> pBody );
+	void ExtractTRV();
+	void New_FaceAttrib( CComPtr<IPartDoc> pPart );
+	int AutoQueryFaceAccur(CComPtr<IUnknown> pUnk);
+	void createFaceAccurAttrib( CComPtr<IUnknown> pUnk, int accur );*/
 	
 
 //This mapping will contain references to all open Documents, and ensure 
@@ -103,6 +111,8 @@ TMapIUnknownToDocument OpenDocumentsTable() { return openDocs; }
 	BSTR GetCurrentFile();
 
 	void FileOpen();
+	void ExtractTRV();
+	//void TRVExtraction();
 
 		//Event Handlers
 	//These are the methods that are called when certain SolidWorks events are fired

@@ -14,14 +14,18 @@ void Cppxsolid::FileOpen()//製品モデルと被削材モデルの位置を合わせる
 
 	{
 			
-	IModelDoc2 *pModel = NULL;
-	IAssemblyDoc *pAssem = NULL;	//新規作成アセンブリへのポインタ（操作が失敗ならばNULL）
-	IComponent2 *pComp1, * pComp2 = NULL;		//付加された構成部品（Component）へのポインタ
+	//IModelDoc2 *pModel = NULL;
+	//IAssemblyDoc *pAssem = NULL;	//新規作成アセンブリへのポインタ（操作が失敗ならばNULL）
+	//IComponent2 *pComp1, * pComp2 = NULL;		//付加された構成部品（Component）へのポインタ
 
-	double x, y, z, xform1[16],xform2[16];   //Componentの位置確認用マトリクス
+	CComPtr<IModelDoc2> pModel = NULL;
+	CComPtr<IAssemblyDoc> pAssem = NULL;	//新規作成アセンブリへのポインタ（操作が失敗ならばNULL）
+	CComPtr<IComponent2> pComp1, pComp2 = NULL;		//付加された構成部品（Component）へのポインタ
+
+	double x, y, z, xform1[16], xform2[16];   //Componentの位置確認用マトリクス
 
 	// new api type IMathTransform to keep the Transform2 return value
-	IMathTransform * mTransform1, *mTransform2 = NULL;
+	CComPtr<IMathTransform> mTransform1, mTransform2 = NULL;
 	
 	VARIANT_BOOL retval;            //変換の設定に成功ならばTRUE
 	VARIANT_BOOL condition = FALSE;
@@ -74,32 +78,32 @@ void Cppxsolid::FileOpen()//製品モデルと被削材モデルの位置を合わせる
 	res = pComp1->put_Transform2(mTransform1);
 	res = pComp2->put_Transform2(mTransform2);
 
-	if(pModel) pModel->Release();
+	if(pModel) pModel.Release();
 	pModel = NULL;
 	res = iSwApp->get_IActiveDoc2( &pModel );
 
 	res = pModel->ShowNamedView2  ( auT("*等角投影"), 7 );
 
 	}catch(...){
-	if(pAssem) pAssem->Release();
-	if(pModel) pModel->Release();
-	if(pComp1) pComp1->Release();
-	if(pComp2) pComp2->Release();
+	if(pAssem) pAssem.Release();
+	if(pModel) pModel.Release();
+	if(pComp1) pComp1.Release();
+	if(pComp2) pComp2.Release();
 	
-	if(mTransform1) mTransform1->Release();
-	if(mTransform2) mTransform2->Release();
+	if(mTransform1) mTransform1.Release();
+	if(mTransform2) mTransform2.Release();
 	
 //	fout.close();             //チェック用
 	AfxMessageBox(_T("Exception Happened."));
 	}
 
-	if(pAssem) pAssem->Release();
-	if(pModel) pModel->Release();
-	if(pComp1) pComp1->Release();
-	if(pComp2) pComp2->Release();
+	if(pAssem) pAssem.Release();
+	if(pModel) pModel.Release();
+	if(pComp1) pComp1.Release();
+	if(pComp2) pComp2.Release();
 	
-	if(mTransform1 != NULL ) mTransform1->Release();
-	if(mTransform2 != NULL ) mTransform2->Release();
+	if(mTransform1 != NULL ) mTransform1.Release();
+	if(mTransform2 != NULL ) mTransform2.Release();
 	
 	} //end of CoUninitialize()
 

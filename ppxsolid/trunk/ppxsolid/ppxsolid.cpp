@@ -495,7 +495,8 @@ STDMETHODIMP Cppxsolid::ToolbarCallback0(void)
 	// TODO: Add your implementation code here
 
 	{
-		FileOpen();
+		//FileOpen();
+		ExtractTRV();
 
 		/*AFX_MANAGE_STATE(AfxGetStaticModuleState());
 		
