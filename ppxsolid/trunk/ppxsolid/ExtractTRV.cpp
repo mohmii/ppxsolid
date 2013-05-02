@@ -20,7 +20,7 @@ void Cppxsolid::ExtractTRV()
 	CComPtr<IPartDoc> pPart;
 	CComPtr<IDrawingDoc> pDraw;
 	CComPtr<IAssemblyDoc> pAssy;
-	CComPtr<IFeature> pProd;
+	IFeature * pProd;
 	CComPtr<IModelDocExtension> pSwDocExt;
 	CComPtr<IFeatureManager> pFeatMgr;
 	CComPtr<IBody2> mainBody, otherBody;
@@ -98,7 +98,7 @@ void Cppxsolid::ExtractTRV()
 	hres = pSwModel->get_FeatureManager(&pFeatMgr);
 
 	IBody2 ** otherBodies = new IBody2*[1];
-	otherBody.CopyTo(&otherBodies[0]);
+	otherBodies[0] = otherBody;
 
 	hres = pFeatMgr->IInsertCombineFeature(SWBODYCUT, mainBody, 1, otherBodies, &pProd);
 	
