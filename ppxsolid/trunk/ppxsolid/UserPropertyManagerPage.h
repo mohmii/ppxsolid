@@ -19,7 +19,11 @@ class CPMPageHandler;
 #define SELECTION1	8
 #define NUM1		9
 #define COMBO1		10
+#define SELECTPRODUCT	11
+#define SELECTRM	12
 
+//PPX control IDS
+#define PPXMODULE 77
 
 // CUserPropertyManagerPage
 
@@ -43,6 +47,9 @@ protected:
 	//Groups
 	IPropertyManagerPageGroup *group1;
 	IPropertyManagerPageGroup *group2;
+
+	//ppx module
+	IPropertyManagerPageGroup *ppxmodule;
 
 	//In Group1
 	IPropertyManagerPageTextbox		*text1;

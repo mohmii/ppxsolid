@@ -48,9 +48,15 @@ void CUserPropertyManagerPage::AddControls()
 	long options = -1;
 	CComBSTR tip;
 
+	//add the PPX groups
+	caption.LoadString(IDS_PMP_PPX_TITLE);
+	options = swGroupBoxOptions_Visible | swGroupBoxOptions_Expanded;
+	swPropertyPage->IAddGroupBox(PPXMODULE, caption, options, &ppxmodule);
+
+
 	//Add the groups
 	caption.LoadString(IDS_PMP_GROUP1_TITLE);
-	options = swGroupBoxOptions_Visible | swGroupBoxOptions_Expanded;
+	options = swGroupBoxOptions_Visible; // | swGroupBoxOptions_Expanded;
 
 	swPropertyPage->IAddGroupBox(GROUP1, caption, options, &group1);
 

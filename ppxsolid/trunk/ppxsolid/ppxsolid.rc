@@ -194,6 +194,12 @@ END
 
 STRINGTABLE 
 BEGIN
+
+//add the new group
+IDS_PMP_PPX_TITLE "PPX Module"
+IDS_PMP_PPXLABEL_CAPTION  "This is a PPX module"
+
+
     IDS_PMP_GROUP1_TITLE    "Group1"
     IDS_PMP_LABEL1_CAPTION  "This is a sample Label"
     IDS_PMP_GROUP2_TITLE    "Group2"

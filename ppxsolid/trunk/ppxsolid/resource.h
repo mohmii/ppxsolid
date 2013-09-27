@@ -56,6 +56,11 @@
 #define IDS_FLYOUT_TIP1					216
 #define IDS_FLYOUT_ENABLE_CALLBACK0		217
 
+//add new definition for PPX group
+#define IDS_PMP_PPX_TITLE				700
+#define IDS_PMP_PPXLABEL_CAPTION		701
+
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
