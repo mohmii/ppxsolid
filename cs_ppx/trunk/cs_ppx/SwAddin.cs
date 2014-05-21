@@ -4,6 +4,8 @@ using System.Collections;
 using System.Reflection;
 using System.Windows.Media.Media3D;
 using System.Windows;
+using System.IO;
+using System.Diagnostics;
 
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swpublished;
@@ -37,14 +39,19 @@ namespace cs_ppx
         public const int mainItemID1 = 0;
         public const int mainItemID2 = 1;
 
-        //just added
+        //just added (for tab registration)
         public const int mainItemID3 = 2; 
         public const int mainItemID4 = 3;
         public const int mainItemID5 = 4;
         public const int mainItemID6 = 5;
         public const int mainItemID7 = 6;
+        public const int mainItemID8 = 7;
+        public const int mainItemID9 = 8;
+        public const int mainItemID10 = 9;
         
         public const int flyoutGroupID = 91;
+
+        Double[] centroid;
 
         #region Event Handler Variables
         Hashtable openDocs = new Hashtable();
@@ -212,7 +219,7 @@ namespace cs_ppx
             if (iBmp == null)
                 iBmp = new BitmapHandler();
             Assembly thisAssembly;
-            int cmdIndex0, cmdIndex1, cmdIndex2, cmdIndex3, cmdIndex4, cmdIndex5, cmdIndex6;
+            int cmdIndex0, cmdIndex1, cmdIndex2, cmdIndex3, cmdIndex4, cmdIndex5, cmdIndex6, cmdIndex7, cmdIndex8, cmdIndex9;
             string Title = "ppx", ToolTip = "flexible process planning";
 
 
@@ -256,6 +263,10 @@ namespace cs_ppx
             cmdIndex4 = cmdGroup.AddCommandItem2("Plane Generator", -1, "Generate all planes", "Plane Generator", 2, "PlaneGenerator", "", mainItemID5, menuToolbarOption);
             cmdIndex5 = cmdGroup.AddCommandItem2("Plane Calculator", -1, "Calculating relationship matrix", "Plane Calculator", 2, "PlaneCalculator", "", mainItemID6, menuToolbarOption);
             cmdIndex6 = cmdGroup.AddCommandItem2("TRV Feature", -1, "Generate TRV features", "TRV Feature", 2, "TRVFeature", "", mainItemID7, menuToolbarOption);
+            cmdIndex7 = cmdGroup.AddCommandItem2("Machinable Space", -1, "Machinable space calculation", "Machinable Space", 2, "MachinableSpace", "", mainItemID8, menuToolbarOption);
+            cmdIndex8 = cmdGroup.AddCommandItem2("TRV network", -1, "TRV network calculation", "TRV Network", 2, "TRVNetwork", "", mainItemID9, menuToolbarOption);
+            cmdIndex9 = cmdGroup.AddCommandItem2("Calculate Setup", -1, "Setup calculation", "Calculate Setup", 2, "SetupCalculator", "", mainItemID10, menuToolbarOption);
+            
 
             cmdGroup.HasToolbar = true;
             cmdGroup.HasMenu = true;
@@ -291,8 +302,8 @@ namespace cs_ppx
 
                     CommandTabBox cmdBox = cmdTab.AddCommandTabBox();
 
-                    int[] cmdIDs = new int[7];
-                    int[] TextType = new int[7];
+                    int[] cmdIDs = new int[10];
+                    int[] TextType = new int[10];
 
                     //load samples button
                     cmdIDs[0] = cmdGroup.get_CommandID(cmdIndex0);
@@ -321,8 +332,23 @@ namespace cs_ppx
                     //TRV generator button
                     cmdIDs[6] = cmdGroup.get_CommandID(cmdIndex6);
                     TextType[6] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+
+                    //Machinable space calculation button
+                    cmdIDs[7] = cmdGroup.get_CommandID(cmdIndex7);
+                    TextType[7] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+                    
+                    //TRV network calculation buttion
+                    cmdIDs[8] = cmdGroup.get_CommandID(cmdIndex8);
+                    TextType[8] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+                                        
+                    //Setup calculation button
+                    cmdIDs[9] = cmdGroup.get_CommandID(cmdIndex9);
+                    TextType[9] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
                     
                     bResult = cmdBox.AddCommands(cmdIDs, TextType);
+
+                    cmdTab.AddSeparator(cmdBox, cmdIDs[7]);
+                    
                     
                     /*
                     CommandTabBox cmdBox1 = cmdTab.AddCommandTabBox();
@@ -950,10 +976,19 @@ namespace cs_ppx
                         compName = new Component2[2];
                         GetCompName(compInAssembly, ref compName);
 
-                        //get the centroid
+                        
+
+                        //get the virtual centroid
                         object boxVertices = compName[0].GetBox(false, false);
                         virtualCentroid = getMidPoint(boxVertices);
-
+                        
+                        //get the real centroid
+                        Body2 mainBody = compName[0].GetBody();
+                        MassProperty bodyProperties = Doc.Extension.CreateMassProperty();
+                        bodyProperties.AddBodies(mainBody);
+                        bodyProperties.UseSystemUnits = false;
+                        centroid = (double[]) bodyProperties.CenterOfMass;
+                        
                         //create the virtual centroid
                         Doc.SketchManager.Insert3DSketch(true);
                         double[] tmpPoint = (double[])virtualCentroid;
@@ -1428,7 +1463,8 @@ namespace cs_ppx
         //TRV feature
         public void TRVfeature()
         {
-            ModelDoc2 Doc = (ModelDoc2)SwApp.ActiveDoc;            
+            ModelDoc2 Doc = (ModelDoc2)SwApp.ActiveDoc;
+            
             int docType = (int)Doc.GetType();
             bool boolStatus = false;
 
@@ -1470,6 +1506,7 @@ namespace cs_ppx
             //iSwApp.SendMsgToUser("this is from TRV feature");
         }
 
+        //tools for calculating TRV feature
         #region TRV Feature
 
         //initiate the traverse with the first feature
@@ -1543,32 +1580,45 @@ namespace cs_ppx
                     Vertex[] bodyOrigins = new Vertex[bodyArray.Length];
                     List<int> selectedId = null;
 
+                    //get the component model path to set as the file name
+                    string modelPath = "";
+                    string modelDirectory = "";
+                    string modelFileName = "";
+
+                    modelPath = swComp.GetPathName();
+                    modelDirectory = Path.GetDirectoryName(modelPath);
+                    modelFileName = Path.GetFileNameWithoutExtension(modelPath);
+                                        
                     //collect all the body which is created from the selected plane
                     for (int i = 0; i < bodyArray.Length; i++)
                     {
                         bodyCandidate[i] = bodyArray.GetValue(i) as Body2;
-                        bodyNames[i] = planeList[index].name + "-" + i +".sldprt";
+                        bodyNames[i] = modelDirectory + "\\" + modelFileName + selFeature.Name.ToString() + "-" + i + ".sldprt";
                         bodyOrigins[i] = null;
+                        
                     }
-
+                    
                     Feature myFeature = null;
-
+                    
                     myFeature = (Feature)Doc.FeatureManager.PostSplitBody(bodyCandidate, false, bodyOrigins, bodyNames);
 
                     if (myFeature != null)
                     {
-                        bool boolstatus = Doc.Extension.SelectByID2(getSplitPath(selFeature.Name,selectedMP), "SOLIDBODY", 0, 0, 0, false, 0, null, 0);
-
-                        Object[] tmpMPObj = (Object[]) machiningPlanList[selectedMP];
-                        machiningPlan planProperties = (machiningPlan) tmpMPObj[position];
+                        
+                        Object[] tmpMPObj = (Object[])machiningPlanList[selectedMP];
+                        machiningPlan planProperties = (machiningPlan)tmpMPObj[position];
                         Double[] TAD = (Double[])planProperties.TAD;
 
+                        bool boolstatus = Doc.Extension.SelectByID2(getSplitPath(selFeature.Name,selectedMP), "SOLIDBODY", 0, 0, 0, false, 0, null, 0);
+                        
                         SwApp.SendMsgToUser("Removed shape by " + selFeature.Name.ToString() + "\r\" Cutting tool: " + planProperties.cuttingTool + 
                             "\r\" Tool path: " +  planProperties.toolPath + "\r\" TAD: " + "{ " + TAD[0] + ", " +TAD[1] + ", " + TAD[2] + " }");
                         
                         myFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
 
                     }
+
+                    
 
                     position++;
 
@@ -2387,6 +2437,62 @@ namespace cs_ppx
         
         #endregion
 
+        //Machinable Space
+        public void MachinableSpace()
+        {
+
+            iSwApp.SendMsgToUser("got from machinable space");
+
+            //set the table region
+            TableRegion();
+
+            //insert all table region into table assembly
+
+
+        }
+
+        //tools for machinable space calculation
+        #region MachinableSpace
+
+        //create the table region for several B-axis magnitude
+        public void TableRegion()
+        { 
+
+        }
+
+        //insert the table region to same assembly file
+        public void InsertTableRegion()
+        { 
+
+        }
+
+        #endregion
+
+        //generate the TRV network
+        public void TRVNetwork()
+        {
+            iSwApp.SendMsgToUser("got from TRV Network");
+        }
+
+        //tools for calculating TRV network
+        #region TRVNetwork
+
+
+
+        #endregion
+
+        //Setup Calculator
+        public void SetupCalculator()
+        {
+            iSwApp.SendMsgToUser("got from Setup calculator");
+        }
+
+        //tools for calculating setup position
+        #region SetupCalculator
+
+        #endregion
+
+
         public void ShowPMP()
         {
             if (ppage != null)
@@ -2618,6 +2724,8 @@ namespace cs_ppx
         public int mark { get; set; } //marking properties
 
         public List<Body2> bodyList { get; set; } //associated body which is generated by the reference plane
+
+        public double[] centroid { get; set; } //saving the centroid
     }
 
     //class for saving addedReferencePlane
