@@ -555,7 +555,7 @@ namespace cs_ppx
 
                    
 
-                    markBBfaces(ref availModel[0], ref attDef);
+                    //markBBfaces(ref availModel[0], ref attDef);
 
                     addComponents(assyModel, availModel);
 
@@ -745,6 +745,9 @@ namespace cs_ppx
                                         
                     boolStatus = compName[0].Select2(true, 0);
 
+                    ModelDoc2 ModDoc2 = (ModelDoc2)compName[0].GetModelDoc2();
+                    markBBfaces(ref ModDoc2, ref attDef);
+
                     assyModel = (AssemblyDoc) Doc;
 
                     assyModel.EditPart();
@@ -887,7 +890,9 @@ namespace cs_ppx
                     if (boolStatus == true)
                     {
                         assyModel.EditPart();
-                                                
+
+                        Array AllBodies = (Array)swPartDoc.GetBodies2((int)swBodyType_e.swSolidBody, true);
+                                                                        
                         foreach (Face2 tmpFace in swFaces)
                         {
                             entName = swPartDoc.GetEntityName(tmpFace);
@@ -963,8 +968,6 @@ namespace cs_ppx
                     List<int> planeValue = null;
                     List<double> distance = null;
 
-                    
-
                     try
                     {
                         //get the components
@@ -975,8 +978,6 @@ namespace cs_ppx
                         //define the raw material and product
                         compName = new Component2[2];
                         GetCompName(compInAssembly, ref compName);
-
-                        
 
                         //get the virtual centroid
                         object boxVertices = compName[0].GetBox(false, false);
@@ -1010,7 +1011,7 @@ namespace cs_ppx
                             {
                                 //analyze intersection
                                 boolStatus = planeIntersection(planeNormal, ref planeValue);
-                                setDistance(Doc, swMathUtils, planeNames, planeNormal, skPoint, ref distance);
+                                setDistance(Doc, swMathUtils, planeNames, planeNormal, tmpPoint, ref distance);
                             }
                         }
 
@@ -1176,7 +1177,7 @@ namespace cs_ppx
 
         //compute the distance between the plane and the centroid
         public void setDistance(ModelDoc2 Doc, MathUtility swMathUtils, List<Feature> planeFeatures, List<object> planeNormal,
-            SketchPoint centroid, ref List<double> distance)
+            Double[] centroid, ref List<double> distance)
         {
             distance = new List<double>();
             double tmpDistance;
@@ -1219,43 +1220,23 @@ namespace cs_ppx
         }
 
         //check distance between plane and point
-        public double checkDistance(ModelDoc2 Doc, Feature Plane, object planeNormal, SketchPoint point2Check, MathUtility swMathUtils)
+        public double checkDistance(ModelDoc2 Doc, Feature Plane, object planeNormal, double[] point2Check, MathUtility swMathUtils)
         {
-            /*
+            //reference: http://mathworld.wolfram.com/Point-PlaneDistance.html
+            
             MathPoint firstPoint = getPointOnPlane(Plane); //select a random point from reference plane corners
-            
+            Double[] TmpFirstPoint = (Double[])firstPoint.ArrayData;
             MathPoint secondPoint = swMathUtils.CreatePoint(point2Check);
-            
+            Double[] TmpSecondPoint = (Double[])secondPoint.ArrayData;
             MathVector pointsVector = (MathVector)firstPoint.Subtract(secondPoint); //first vector
-            
+            Double[] TmpPointsVector = (Double[])pointsVector.ArrayData;
+            MathVector pointsVector2 = (MathVector)pointsVector.Scale(-1);
+            Double[] TmpPointsVector2 = (Double[])pointsVector2.ArrayData;
             MathVector vectorFromPlane = swMathUtils.CreateVector(planeNormal); //plane vector, aka second vector
-
-            Double distance = Math.Abs(pointsVector.Dot(vectorFromPlane.Normalise()) / vectorFromPlane.GetLength()); //first dot second and divided by second magnitude
+            Double[] TmpVectorFromPlane = (Double[])vectorFromPlane.ArrayData;
+            Double distance = Math.Abs(vectorFromPlane.Dot(pointsVector2)) / vectorFromPlane.GetLength(); //first dot second and divided by second magnitude
             
-
-
-            Loop2 firstLoop = (Loop2)Plane.GetFirstLoop(); //select a random point from plane corners
-            object[] verticesObj = (object[])firstLoop.GetVertices();
-            Vertex tmpVertex = (Vertex)verticesObj[0];
-
-            MathPoint firstPoint = swMathUtils.CreatePoint(tmpVertex.GetPoint());
-
-            MathPoint secondPoint = swMathUtils.CreatePoint(point2Check);
-
-            MathVector pointsVector = (MathVector)firstPoint.Subtract(secondPoint); //first vector
-
-            MathVector vectorFromPlane = swMathUtils.CreateVector(Plane.Normal); //plane vector, aka second vector
-
-            Double distance = Math.Abs(pointsVector.Dot(vectorFromPlane.Normalise()) / vectorFromPlane.GetLength()); //first dot second and divided by second magnitude
-
-             
-
-            Object pointA, pointB;
-            Double distance = (Double) Doc.ClosestDistance(Plane, point2Check, out pointA, out pointB);
-
-             */
-
-            Double distance = getDistance(Plane);
+            //Double distance = getDistance(Plane);
             
             return distance;
         }
@@ -1546,15 +1527,18 @@ namespace cs_ppx
             bool boolStatus;
             int index = 0;
 
-            setMarkOnPlane(ref planeList, 5, 4);
-            setMarkOnPlane(ref planeList, 6, 4);
+            //setMarkOnPlane(ref planeList, 5, 4);
+            //setMarkOnPlane(ref planeList, 6, 4);
 
-            int selectedMP = 1;
+            //int selectedMP = 1;
             int position = 0;
 
-            selFeature = getByMP(getNextPlan(selectedMP, position), featureList);
+            //selFeature = getByMP(getNextPlan(selectedMP, position), featureList);
 
-            //selFeature = getThePlane(planeList, featureList, ref index);
+            selFeature = getThePlane(planeList, featureList, ref index);
+
+            //selFeature = featureList[4];
+            //index = 3;
 
             while (selFeature != null)
             {
@@ -1564,120 +1548,183 @@ namespace cs_ppx
                 //int longstatus = 0;
                 
                 //split and collect the body
+                List<int> DeleteThisBody = null;
                 Array bodyArray = null;
                 bodyArray = (Array)Doc.FeatureManager.PreSplitBody();
                 
                 //check if there are body 
                 if (bodyArray == null)
                 {
-                    setMarkOnPlane(ref planeList, index, 1);
+                    setMarkOnPlane(ref planeList, index, 1); //mark the plane because no bodies was collected
                 }
                 else
                 {
-                    Body2[] bodyCandidate = new Body2[bodyArray.Length];
-                    Body2[] bodiesToMark = null;
-                    string[] bodyNames = new string[bodyArray.Length];
-                    Vertex[] bodyOrigins = new Vertex[bodyArray.Length];
-                    List<int> selectedId = null;
-
-                    //get the component model path to set as the file name
-                    string modelPath = "";
-                    string modelDirectory = "";
-                    string modelFileName = "";
-
-                    modelPath = swComp.GetPathName();
-                    modelDirectory = Path.GetDirectoryName(modelPath);
-                    modelFileName = Path.GetFileNameWithoutExtension(modelPath);
-                                        
-                    //collect all the body which is created from the selected plane
-                    for (int i = 0; i < bodyArray.Length; i++)
-                    {
-                        bodyCandidate[i] = bodyArray.GetValue(i) as Body2;
-                        bodyNames[i] = modelDirectory + "\\" + modelFileName + selFeature.Name.ToString() + "-" + i + ".sldprt";
-                        bodyOrigins[i] = null;
-                        
-                    }
+                   
+                    string[] bodyNames = new string[bodyArray.Length]; //set the name
                     
                     Feature myFeature = null;
                     
-                    myFeature = (Feature)Doc.FeatureManager.PostSplitBody(bodyCandidate, false, bodyOrigins, bodyNames);
+                    myFeature = SplitAndSaveBody(Doc, swComp, selFeature, bodyArray, ref bodyNames);
 
                     if (myFeature != null)
                     {
-                        
-                        Object[] tmpMPObj = (Object[])machiningPlanList[selectedMP];
-                        machiningPlan planProperties = (machiningPlan)tmpMPObj[position];
-                        Double[] TAD = (Double[])planProperties.TAD;
 
-                        bool boolstatus = Doc.Extension.SelectByID2(getSplitPath(selFeature.Name,selectedMP), "SOLIDBODY", 0, 0, 0, false, 0, null, 0);
-                        
-                        SwApp.SendMsgToUser("Removed shape by " + selFeature.Name.ToString() + "\r\" Cutting tool: " + planProperties.cuttingTool + 
-                            "\r\" Tool path: " +  planProperties.toolPath + "\r\" TAD: " + "{ " + TAD[0] + ", " +TAD[1] + ", " + TAD[2] + " }");
-                        
-                        myFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
+                        try
+                        {
+                            /*
+                            Object[] tmpMPObj = (Object[])machiningPlanList[selectedMP];
+                            machiningPlan planProperties = (machiningPlan)tmpMPObj[position];
+                            Double[] TAD = (Double[])planProperties.TAD;
 
+                            bool boolstatus = Doc.Extension.SelectByID2(getSplitPath(selFeature.Name, selectedMP), "SOLIDBODY", 0, 0, 0, false, 0, null, 0);
+
+                            SwApp.SendMsgToUser("Removed shape by " + selFeature.Name.ToString() + "\r\" Cutting tool: " + planProperties.cuttingTool +
+                                "\r\" Tool path: " + planProperties.toolPath + "\r\" TAD: " + "{ " + TAD[0] + ", " + TAD[1] + ", " + TAD[2] + " }");
+
+                            myFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
+                             * */
+
+                            string SelectedBody = null;
+                            
+                            DeleteThisBody = new List<int>();
+
+                            for (int i = 0; i < bodyArray.Length; i++)
+                            {
+                                int Errors = 0;
+                                int Warnings = 0;
+
+                                SwApp.DocumentVisible(false, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be invisble
+
+                                ModelDoc2 ModDoc = (ModelDoc2)SwApp.OpenDoc6(bodyNames[i], (int)swDocumentTypes_e.swDocPART,
+                                    (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
+
+                                if (Errors == 0)
+                                {
+                                    iSwApp.SendMsgToUser("Loaded document: " + bodyNames[i]);
+
+                                    //get the current body in the document
+                                    PartDoc PartModDoc = (PartDoc)ModDoc;
+                                    Object[] ArrayOfBody = (Object[])PartModDoc.GetBodies2((int)swBodyType_e.swSolidBody, true);
+
+                                    if (ArrayOfBody.Length == 1)
+                                    {
+                                        //get centroid for the current body
+                                        Double[] Centroid = getCentroid(ModDoc);
+
+                                        Body2 BodyToCheck = (Body2)ArrayOfBody[0];
+
+                                        //check the feasibility of the splitted body (current)
+                                        bool bodyStatus = false;
+                                        bodyStatus = setBodyToPlane(ModDoc, BodyToCheck, Centroid, planeList[index]);
+
+                                        if (bodyStatus == true)
+                                        {
+                                            iSwApp.SendMsgToUser("This body is feasible (convex)");
+
+                                            //check this body in the document tree and add collect the body pointer to the FeasibleBodies
+                                            DeleteThisBody.Add(i);
+
+                                            //set this body to the current plane
+                                        }
+
+                                        else
+                                        {
+                                            iSwApp.SendMsgToUser("This body is not feasible (concave)");
+
+                                            //keep the index of the body
+
+                                        }
+                                    }
+                                    else
+                                    {
+                                        iSwApp.SendMsgToUser("Number of Bodies: " + ArrayOfBody.Length.ToString());
+                                    }
+
+                                    string ViewName = ModDoc.GetPathName();
+
+                                    iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(ViewName));
+
+                                }
+                            }
+
+
+
+                            /*
+                            SplitBodyFeatureData swSplitBody = myFeature.GetDefinition();
+                            Object bodies, paths, bodyState;
+
+                            bool accessStatus = swSplitBody.AccessSelections(Doc, swComp);
+                            if (accessStatus == true)
+                            {
+                                swSplitBody.GetSplitBodies(out bodies, out paths, out bodyState);
+
+                                Object[] tmpObj = (Object[])bodies;
+
+                                Body2[] bodyCand = new Body2[tmpObj.Length];
+
+                                for (int i = 0; i < tmpObj.Length; i++)
+                                {
+                                    bodyCand[i] = (Body2)tmpObj[i];
+                                }
+
+                                bool bodyStatus = false;
+                                bodyStatus = setBodyToPlane(Doc, bodyCand, planeList[index], ref selectedId);
+
+                                if (bodyStatus == true)
+                                {
+                                    bodiesToMark = new Body2[selectedId.Count];
+                                    bodyNames = new string[selectedId.Count];
+                                    bodyOrigins = new Vertex[selectedId.Count];
+
+                                    for (int i = 0; i < selectedId.Count; i++)
+                                    {
+                                        bodiesToMark[i] = bodyCandidate[selectedId[i]] as Body2;
+                                        bodyNames[i] = planeList[index].name + "-" + i + ".sldprt";
+                                        bodyOrigins[i] = null;
+                                    }
+
+                                    //myFeature = (Feature)Doc.FeatureManager.PostSplitBody(bodiesToMark, true, bodyOrigins, bodyNames);
+
+                                    if (myFeature != null)
+                                    {
+                                        SwApp.SendMsgToUser("removed shape by " + selFeature.Name.ToString());
+                                        setMarkOnPlane(ref planeList, index, 0);
+
+                                    }
+                                    else
+                                    {
+                                        setMarkOnPlane(ref planeList, index, 3);
+                                    }
+
+                                }
+                                else
+                                {
+                                    setMarkOnPlane(ref planeList, index, 2);
+                                }
+
+                                swSplitBody.ReleaseSelectionAccess();
+                            }
+                             * */
+
+                        }
+
+                        catch (Exception ex)
+                        {
+                            iSwApp.SendMsgToUser("exception message: " + ex.Message);
+                        }
+
+                        finally
+                        { 
+                            Object BodiesInfo = null;
+                            Array NewBodies = (Array)swComp.GetBodies3((int) swBodyType_e.swSolidBody, out BodiesInfo);
+                            
+                        }
+                        
                     }
-
-                    
 
                     position++;
 
-                    /*
-                    SplitBodyFeatureData swSplitBody = myFeature.GetDefinition();
-                    Object bodies, paths, bodyState;
-
-                    bool accessStatus = swSplitBody.AccessSelections(Doc, swComp);
-                    if (accessStatus == true)
-                    {
-                        swSplitBody.GetSplitBodies(out bodies, out paths, out bodyState);
-
-                        Object[] tmpObj = (Object[])bodies;
-
-                        Body2[] bodyCand = new Body2[tmpObj.Length];
-
-                        for (int i=0; i<tmpObj.Length; i++)
-                        {
-                            bodyCand[i] = (Body2)tmpObj[i];
-                        }
-
-                        bool bodyStatus = false;
-                        bodyStatus = setBodyToPlane(Doc, bodyCand, planeList[index], ref selectedId);
-
-                        if (bodyStatus == true)
-                        {
-                            bodiesToMark = new Body2[selectedId.Count];
-                            bodyNames = new string[selectedId.Count];
-                            bodyOrigins = new Vertex[selectedId.Count];
-
-                            for (int i = 0; i < selectedId.Count; i++)
-                            {
-                                bodiesToMark[i] = bodyCandidate[selectedId[i]] as Body2;
-                                bodyNames[i] = planeList[index].name + "-" + i + ".sldprt";
-                                bodyOrigins[i] = null;
-                            }
-
-                            //myFeature = (Feature)Doc.FeatureManager.PostSplitBody(bodiesToMark, true, bodyOrigins, bodyNames);
-
-                            if (myFeature != null)
-                            {
-                                SwApp.SendMsgToUser("removed shape by " + selFeature.Name.ToString());
-                                setMarkOnPlane(ref planeList, index, 0);
-
-                            }
-                            else
-                            {
-                                setMarkOnPlane(ref planeList, index, 3);
-                            }
-
-                        }
-                        else
-                        {
-                            setMarkOnPlane(ref planeList, index, 2);
-                        }
-
-                        swSplitBody.ReleaseSelectionAccess();
-                    }
-                     */ 
+                    
                     
                 }
 
@@ -1686,7 +1733,9 @@ namespace cs_ppx
 
                 //selFeature = getThePlane(planeList, featureList, ref index);
 
-                selFeature = getByMP(getNextPlan(selectedMP, position), featureList);
+                selFeature = null;
+
+                //selFeature = getByMP(getNextPlan(selectedMP, position), featureList);
 
             }
 
@@ -1708,6 +1757,66 @@ namespace cs_ppx
             return null;
 
         }
+
+        //split and save bodies
+        public Feature SplitAndSaveBody(ModelDoc2 DocumentModel, Component2 SwComp, Feature SelectedFeature, Array BodyArray, ref string[] BodyNames)
+        { 
+            Body2[] bodyCandidate = new Body2[BodyArray.Length];
+            Vertex[] bodyOrigins = new Vertex[BodyArray.Length];
+            
+            //get the component model path to set as the file name
+            string savePath = getSavePath(SwComp.GetPathName());
+                                        
+            //collect all the body which is created from the selected plane
+            for (int i = 0; i < BodyArray.Length; i++)
+            {
+                bodyCandidate[i] = BodyArray.GetValue(i) as Body2;
+                BodyNames[i] = savePath + SelectedFeature.Name.ToString() + "-" + i + ".sldprt";
+                bodyOrigins[i] = null;
+            }
+                    
+            return (Feature)DocumentModel.FeatureManager.PostSplitBody(bodyCandidate, false, bodyOrigins, BodyNames);
+        }
+
+        //set and return the path for saving the body collections
+        public string getSavePath(string modelPath)
+        { 
+            string modelDirectory = "";
+            string modelFileName = "";
+
+            modelDirectory = Path.GetDirectoryName(modelPath);
+            modelFileName = Path.GetFileNameWithoutExtension(modelPath);
+
+            return modelDirectory + "\\" + modelFileName;
+        }
+
+        //get the centroid of the current body
+        public double[] getCentroid(ModelDoc2 DocumentModel)
+        {
+            int status = 0;
+
+            Double[] MassProperty = null;
+            MassProperty = (Double[])DocumentModel.Extension.GetMassProperties(0, ref status);
+
+            if (status == 0)
+            {
+
+                Double dimension = 1; //change it to mmm by times it with 1000 (current is in m)
+
+                //get the centroid
+                Double[] Centroid = new Double[3];
+                Centroid[0] = MassProperty[0] * dimension; 
+                Centroid[1] = MassProperty[1] * dimension;
+                Centroid[2] = MassProperty[2] * dimension;
+
+                return Centroid;
+            }
+            else
+            {
+                return null;
+            }
+        }
+    
 
         //switch path
         public string getSplitPath(string name, int index)
@@ -2100,6 +2209,23 @@ namespace cs_ppx
             return returnValue;
         }
 
+        //OVERLOAD setBodyToPlane
+        public bool setBodyToPlane(ModelDoc2 DocumentModel, Body2 BodyToCheck, Double[] Centroid, _planeProperties SelectedPlane)
+        {
+            bool Status = false;
+            
+            if (isBodyConvex(DocumentModel, BodyToCheck) == true)
+            {
+                if (checkBodyLocation(BodyToCheck, Centroid, SelectedPlane.featureObj, SelectedPlane.planeNormal) == true)
+                {
+                    Status = true;
+                }
+
+            }
+
+            return Status;
+        }
+
         //check whether if the body convex or concave, return true if convex
         public bool isBodyConvex(ModelDoc2 Doc, Body2 body2Check)
         {
@@ -2408,6 +2534,46 @@ namespace cs_ppx
 
         }
 
+        //OVERLOAD CheckBodyLocation
+        public bool checkBodyLocation(Body2 body2Check, Double[] Centroid, Feature featurePlane, object objPlaneNormal)
+        {
+            MathVector planeNormal, tmpMathVector = null;
+            MathPoint pointOnPlane, pointOnBox = null;
+            Double returnLocation = 0;
+            MathUtility swMath = (MathUtility)SwApp.GetMathUtility();// = new MathUtility();
+
+            //get the point on plane
+            pointOnPlane = getPointOnPlane(featurePlane);
+            double[] TmpPointOnBox = (double[])pointOnPlane.ArrayData;
+
+            //get the centroid of the body box
+            pointOnBox = swMath.CreatePoint(Centroid);
+            double[] TmpPointBox = (double[])pointOnBox.ArrayData;
+
+            //get plane normal
+            //planeNormal = (MathVector) sw objPlaneNormal;
+            planeNormal = swMath.CreateVector(objPlaneNormal);
+            double[] TmpPlaneNormal = (double[])planeNormal.ArrayData;
+
+            //find the dot product of normal and the subtracted value from point on plane with point on box
+            //tmpMathVector = (MathVector)pointOnPlane.Subtract(pointOnBox);
+            tmpMathVector = (MathVector)pointOnBox.Subtract(pointOnPlane);
+            //tmpMathPoint = tmpPoint as MathPoint;
+            //pointSubstration = (MathVector)tmpMathPoint.ConvertToVector();
+            //returnLocation = planeNormal.Dot(pointSubstration);
+            returnLocation = planeNormal.Dot(tmpMathVector);
+
+            if (returnLocation > 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+
+        }
+
         //get random point on a reference plane
         public MathPoint getPointOnPlane(Feature tmpFeature)
         {
@@ -2422,6 +2588,8 @@ namespace cs_ppx
             featurePlane = (RefPlane)tmpFeature.GetSpecificFeature2();//featDefinition;
             arrayOfCorners = (Object[]) featurePlane.CornerPoints;
             tmpPoint = (MathPoint)arrayOfCorners[rnd.Next(0, 3)];
+
+            
 
             List<double[]> listDouble = new List<double[]>();
             double[] pointDouble = (double[])tmpPoint.ArrayData;
