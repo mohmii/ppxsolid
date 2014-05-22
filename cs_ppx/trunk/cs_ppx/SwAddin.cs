@@ -1477,7 +1477,11 @@ namespace cs_ppx
 
                     initMachiningPlan();
 
-                    traversePlanes(Doc, assyModel, compName[0], featureList);
+                    List<Body2> RVList = new List<Body2>();
+
+                    traversePlanes(Doc, assyModel, compName[0], featureList, ref RVList);
+
+                    iSwApp.SendMsgToUser("Number of process: " + RVList.Count.ToString());
 
                     boolStatus = compName[0].Select2(true, 0);
 
@@ -1521,11 +1525,12 @@ namespace cs_ppx
         }
 
         //traverse planes
-        public void traversePlanes(ModelDoc2 Doc, AssemblyDoc assyModel, Component2 swComp, List< Feature> featureList)
+        public void traversePlanes(ModelDoc2 Doc, AssemblyDoc assyModel, Component2 swComp, List< Feature> featureList, ref List<Body2> VolumeList)
         {
             Feature selFeature = null;
             bool boolStatus;
             int index = 0;
+            int SplitCounter = 0;
 
             //setMarkOnPlane(ref planeList, 5, 4);
             //setMarkOnPlane(ref planeList, 6, 4);
@@ -1558,8 +1563,7 @@ namespace cs_ppx
                     setMarkOnPlane(ref planeList, index, 1); //mark the plane because no bodies was collected
                 }
                 else
-                {
-                   
+                {  
                     string[] bodyNames = new string[bodyArray.Length]; //set the name
                     
                     Feature myFeature = null;
@@ -1568,143 +1572,117 @@ namespace cs_ppx
 
                     if (myFeature != null)
                     {
-
                         try
                         {
-                            /*
-                            Object[] tmpMPObj = (Object[])machiningPlanList[selectedMP];
-                            machiningPlan planProperties = (machiningPlan)tmpMPObj[position];
-                            Double[] TAD = (Double[])planProperties.TAD;
-
-                            bool boolstatus = Doc.Extension.SelectByID2(getSplitPath(selFeature.Name, selectedMP), "SOLIDBODY", 0, 0, 0, false, 0, null, 0);
-
-                            SwApp.SendMsgToUser("Removed shape by " + selFeature.Name.ToString() + "\r\" Cutting tool: " + planProperties.cuttingTool +
-                                "\r\" Tool path: " + planProperties.toolPath + "\r\" TAD: " + "{ " + TAD[0] + ", " + TAD[1] + ", " + TAD[2] + " }");
-
-                            myFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
-                             * */
-
                             string SelectedBody = null;
-                            
+                            List<double> Volume = new List<double>();
+
                             DeleteThisBody = new List<int>();
+                            SplitCounter++; //add the split counter after successful splitting process
 
-                            for (int i = 0; i < bodyArray.Length; i++)
+                            //select body that needs to be deleted from the model
+                            bool Status = SelectBodyToDelete(bodyArray, bodyNames, index, ref DeleteThisBody, ref Volume);
+
+                            if (Status == true)
                             {
-                                int Errors = 0;
-                                int Warnings = 0;
+                                iSwApp.SendMsgToUser("ready to be registered in the removal sequence");
+                                
 
-                                SwApp.DocumentVisible(false, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be invisble
-
-                                ModelDoc2 ModDoc = (ModelDoc2)SwApp.OpenDoc6(bodyNames[i], (int)swDocumentTypes_e.swDocPART,
-                                    (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
-
-                                if (Errors == 0)
+                                if (DeleteThisBody.Count > 1)
                                 {
-                                    iSwApp.SendMsgToUser("Loaded document: " + bodyNames[i]);
+                                    iSwApp.SendMsgToUser("Body > 1 still underdevelopment");
 
-                                    //get the current body in the document
-                                    PartDoc PartModDoc = (PartDoc)ModDoc;
-                                    Object[] ArrayOfBody = (Object[])PartModDoc.GetBodies2((int)swBodyType_e.swSolidBody, true);
-
-                                    if (ArrayOfBody.Length == 1)
+                                    foreach (int DelIndex in DeleteThisBody)
                                     {
-                                        //get centroid for the current body
-                                        Double[] Centroid = getCentroid(ModDoc);
+                                        Object BodiesInfo = null;
+                                        Body2 TmpBody = null;
+                                        int DeleteIndex = 0;
+                                        bodyArray = null;
 
-                                        Body2 BodyToCheck = (Body2)ArrayOfBody[0];
+                                        bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
 
-                                        //check the feasibility of the splitted body (current)
-                                        bool bodyStatus = false;
-                                        bodyStatus = setBodyToPlane(ModDoc, BodyToCheck, Centroid, planeList[index]);
-
-                                        if (bodyStatus == true)
+                                        for (int j = 0; j < bodyArray.Length; j++)
                                         {
-                                            iSwApp.SendMsgToUser("This body is feasible (convex)");
+                                            TmpBody = (Body2)bodyArray.GetValue(j);
 
-                                            //check this body in the document tree and add collect the body pointer to the FeasibleBodies
-                                            DeleteThisBody.Add(i);
-
-                                            //set this body to the current plane
+                                            if (TmpBody.Name.Contains("[" + DelIndex + "]"))
+                                            {
+                                                DeleteIndex = j;
+                                                break;
+                                            }
                                         }
 
-                                        else
-                                        {
-                                            iSwApp.SendMsgToUser("This body is not feasible (concave)");
+                                        SelectData TmpSelectData = null;
 
-                                            //keep the index of the body
+                                        bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
 
-                                        }
-                                    }
-                                    else
-                                    {
-                                        iSwApp.SendMsgToUser("Number of Bodies: " + ArrayOfBody.Length.ToString());
-                                    }
+                                        VolumeList.Add(TmpBody);
 
-                                    string ViewName = ModDoc.GetPathName();
+                                        SwApp.SendMsgToUser("Removed shape by " + selFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
 
-                                    iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(ViewName));
-
-                                }
-                            }
-
-
-
-                            /*
-                            SplitBodyFeatureData swSplitBody = myFeature.GetDefinition();
-                            Object bodies, paths, bodyState;
-
-                            bool accessStatus = swSplitBody.AccessSelections(Doc, swComp);
-                            if (accessStatus == true)
-                            {
-                                swSplitBody.GetSplitBodies(out bodies, out paths, out bodyState);
-
-                                Object[] tmpObj = (Object[])bodies;
-
-                                Body2[] bodyCand = new Body2[tmpObj.Length];
-
-                                for (int i = 0; i < tmpObj.Length; i++)
-                                {
-                                    bodyCand[i] = (Body2)tmpObj[i];
-                                }
-
-                                bool bodyStatus = false;
-                                bodyStatus = setBodyToPlane(Doc, bodyCand, planeList[index], ref selectedId);
-
-                                if (bodyStatus == true)
-                                {
-                                    bodiesToMark = new Body2[selectedId.Count];
-                                    bodyNames = new string[selectedId.Count];
-                                    bodyOrigins = new Vertex[selectedId.Count];
-
-                                    for (int i = 0; i < selectedId.Count; i++)
-                                    {
-                                        bodiesToMark[i] = bodyCandidate[selectedId[i]] as Body2;
-                                        bodyNames[i] = planeList[index].name + "-" + i + ".sldprt";
-                                        bodyOrigins[i] = null;
-                                    }
-
-                                    //myFeature = (Feature)Doc.FeatureManager.PostSplitBody(bodiesToMark, true, bodyOrigins, bodyNames);
-
-                                    if (myFeature != null)
-                                    {
-                                        SwApp.SendMsgToUser("removed shape by " + selFeature.Name.ToString());
-                                        setMarkOnPlane(ref planeList, index, 0);
-
-                                    }
-                                    else
-                                    {
-                                        setMarkOnPlane(ref planeList, index, 3);
+                                        myFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
                                     }
 
                                 }
                                 else
                                 {
-                                    setMarkOnPlane(ref planeList, index, 2);
+
+                                    Object BodiesInfo = null;
+                                    Body2 TmpBody = null;
+                                    int DeleteIndex = 0;
+                                    bodyArray = null;
+
+                                    bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
+
+                                    for (int j = 0; j < bodyArray.Length; j++)
+                                    {
+                                        TmpBody = (Body2)bodyArray.GetValue(j);
+
+                                        if (TmpBody.Name.Contains("[" + DeleteThisBody[0] + "]"))
+                                        {
+                                            DeleteIndex = j;
+                                            break;
+                                        }
+                                    }
+
+                                    SelectData TmpSelectData = null;
+
+                                    bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
+
+                                    VolumeList.Add(TmpBody);
+
+                                    SwApp.SendMsgToUser("Removed shape by " + selFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
+
+                                    myFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
+
                                 }
 
-                                swSplitBody.ReleaseSelectionAccess();
+                                //set 0 mark that indicates this plane can be set with removal volume
+                                setMarkOnPlane(ref planeList, index, 0);
+
                             }
-                             * */
+                            else
+                            {
+                                //set 3 on this plane that indicates nothing can be set to this plane
+                                setMarkOnPlane(ref planeList, index, 3);
+
+                                ModelDoc2 DocumentModel = (ModelDoc2) swComp.GetModelDoc2();
+
+                                string ComponentName = swComp.Name2;
+
+                                Feature LastFeature = (Feature) swComp.FeatureByName("Split" + SplitCounter.ToString());
+
+                                string FeatureName = LastFeature.Name;
+
+                                bool SStatus = LastFeature.Select2(true, 3);
+
+                                Doc.EditDelete();
+
+                                //myFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
+
+                                //SplitCounter--;
+
+                            }
 
                         }
 
@@ -1714,28 +1692,31 @@ namespace cs_ppx
                         }
 
                         finally
-                        { 
+                        {
                             Object BodiesInfo = null;
-                            Array NewBodies = (Array)swComp.GetBodies3((int) swBodyType_e.swSolidBody, out BodiesInfo);
-                            
+                            Array NewBodies = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
+
                         }
-                        
+
+                    }
+
+                    else
+                    { 
+                        //set 2 on this plane that indicates nothing can be found
+                        setMarkOnPlane(ref planeList, index, 2);
+
                     }
 
                     position++;
 
-                    
-                    
                 }
 
                 Doc = ((ModelDoc2)(SwApp.ActiveDoc));
                 Doc.ClearSelection2(true);
 
-                //selFeature = getThePlane(planeList, featureList, ref index);
+                selFeature = getThePlane(planeList, featureList, ref index);
 
-                selFeature = null;
-
-                //selFeature = getByMP(getNextPlan(selectedMP, position), featureList);
+                //selFeature = null;
 
             }
 
@@ -1758,6 +1739,84 @@ namespace cs_ppx
 
         }
 
+        //select body to delete after splitting
+        public bool SelectBodyToDelete(Array BodyArray, string[] BodyNames, int index, ref List<int> BodyToDelete, ref List<double> VolumeSize)
+        {
+            bool retVal = false;
+            
+            for (int i = 0; i < BodyArray.Length; i++)
+            {
+                int Errors = 0;
+                int Warnings = 0;
+
+                SwApp.DocumentVisible(false, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be invisble
+
+                ModelDoc2 ModDoc = (ModelDoc2)SwApp.OpenDoc6(BodyNames[i], (int)swDocumentTypes_e.swDocPART,
+                    (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
+
+                if (Errors == 0)
+                {
+                    iSwApp.SendMsgToUser("Loaded document: " + BodyNames[i]);
+
+                    //get the current body in the document
+                    PartDoc PartModDoc = (PartDoc)ModDoc;
+                    Object[] ArrayOfBody = (Object[])PartModDoc.GetBodies2((int)swBodyType_e.swSolidBody, true);
+
+                    if (ArrayOfBody.Length == 1)
+                    {
+                        //get Centroid and Volume for the current body
+                        Double[] Centroid = null;
+                        
+                        bool CVStatus = getCentroidAndVolume(ModDoc, ref Centroid, ref VolumeSize);
+
+                        if (CVStatus == true)
+                        {
+
+                            Body2 BodyToCheck = (Body2)ArrayOfBody[0];
+
+                            //check the feasibility of the splitted body (current)
+                            bool bodyStatus = false;
+                            bodyStatus = setBodyToPlane(ModDoc, BodyToCheck, Centroid, planeList[index]);
+
+                            if (bodyStatus == true)
+                            {
+                                iSwApp.SendMsgToUser("This body is feasible (convex)");
+
+                                //check this body in the document tree and add collect the body pointer to the FeasibleBodies
+                                BodyToDelete.Add(i+1);
+
+                                //set this body to the current plane
+                            }
+
+                            else
+                            {
+                                iSwApp.SendMsgToUser("This body is not feasible (concave)");
+
+                                //keep the index of the body
+
+                            }
+                        }
+                    }
+                    else
+                    {
+                        iSwApp.SendMsgToUser("Number of Bodies: " + ArrayOfBody.Length.ToString());
+                    }
+
+                    string ViewName = ModDoc.GetPathName();
+
+                    iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(ViewName));
+
+                }
+            }
+
+            if (BodyToDelete.Count != 0)
+            {
+                retVal = true;
+            }
+            
+            return retVal;
+        }
+        
         //split and save bodies
         public Feature SplitAndSaveBody(ModelDoc2 DocumentModel, Component2 SwComp, Feature SelectedFeature, Array BodyArray, ref string[] BodyNames)
         { 
@@ -1791,7 +1850,7 @@ namespace cs_ppx
         }
 
         //get the centroid of the current body
-        public double[] getCentroid(ModelDoc2 DocumentModel)
+        public bool getCentroidAndVolume(ModelDoc2 DocumentModel, ref double[] Centroid, ref List<double> Volume)
         {
             int status = 0;
 
@@ -1804,16 +1863,19 @@ namespace cs_ppx
                 Double dimension = 1; //change it to mmm by times it with 1000 (current is in m)
 
                 //get the centroid
-                Double[] Centroid = new Double[3];
+                Centroid = new Double[3];
                 Centroid[0] = MassProperty[0] * dimension; 
                 Centroid[1] = MassProperty[1] * dimension;
                 Centroid[2] = MassProperty[2] * dimension;
 
-                return Centroid;
+                //get the volume
+                Volume.Add(MassProperty[3]);
+
+                return true;
             }
             else
             {
-                return null;
+                return false;
             }
         }
     
