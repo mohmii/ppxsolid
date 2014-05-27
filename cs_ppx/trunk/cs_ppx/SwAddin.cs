@@ -460,8 +460,7 @@ namespace cs_ppx
                 (int)swDocumentTypes_e.swDocPART, (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", (int)swFileLoadError_e.swGenericError,
                 (int)swFileLoadWarning_e.swFileLoadWarning_AlreadyOpen);
 
-            /*
-
+            
             iSwApp.OpenDoc6("D:\\iis documents\\Research\\cad_solidworks\\illustrations\\sample 0\\rm_200x100x100.sldprt",
                 (int)swDocumentTypes_e.swDocPART, (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", (int)swFileLoadError_e.swGenericError,
                 (int)swFileLoadWarning_e.swFileLoadWarning_AlreadyOpen);
@@ -488,8 +487,6 @@ namespace cs_ppx
                 (int)swDocumentTypes_e.swDocPART, (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", (int)swFileLoadError_e.swGenericError,
                 (int)swFileLoadWarning_e.swFileLoadWarning_AlreadyOpen);
 
-             */
- 
             //open the product
             iSwApp.OpenDoc6("D:\\iis documents\\Research\\cad_solidworks\\illustrations\\sample 0\\prod_100x100x100_2.sldprt",
                 (int)swDocumentTypes_e.swDocPART, (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", (int)swFileLoadError_e.swGenericError,
@@ -502,9 +499,6 @@ namespace cs_ppx
                 (int)swFileLoadWarning_e.swFileLoadWarning_AlreadyOpen);
 
 
-            /*
-            
-            
             iSwApp.OpenDoc6("D:\\iis documents\\Research\\cad_solidworks\\illustrations\\sample 0\\prod_3dparallelogram.sldprt",
                 (int)swDocumentTypes_e.swDocPART, (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", (int)swFileLoadError_e.swGenericError,
                 (int)swFileLoadWarning_e.swFileLoadWarning_AlreadyOpen);
@@ -523,7 +517,7 @@ namespace cs_ppx
             iSwApp.OpenDoc6("D:\\iis documents\\Research\\cad_solidworks\\illustrations\\sample 0\\prod_roof.sldprt",
                 (int)swDocumentTypes_e.swDocPART, (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", (int)swFileLoadError_e.swGenericError,
                 (int)swFileLoadWarning_e.swFileLoadWarning_AlreadyOpen);
-             */ 
+            
 
                                
         }
@@ -1478,7 +1472,7 @@ namespace cs_ppx
                     initMachiningPlan();
 
                     List<Body2> RVList = new List<Body2>();
-
+                                       
                     traversePlanes(Doc, assyModel, compName[0], featureList, ref RVList);
 
                     iSwApp.SendMsgToUser("Number of process: " + RVList.Count.ToString());
@@ -1531,7 +1525,16 @@ namespace cs_ppx
             bool boolStatus;
             int index = 0;
             int SplitCounter = 0;
+            int Errors = 0;
+            int Warnings = 0;
 
+            
+            String CompPathName = swComp.GetPathName();
+            SwApp.DocumentVisible(false, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be invisble
+            ModelDoc2 CompDocumentModel = (ModelDoc2)SwApp.OpenDoc6(CompPathName, (int)swDocumentTypes_e.swDocPART,
+                (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
+            
+            
             //setMarkOnPlane(ref planeList, 5, 4);
             //setMarkOnPlane(ref planeList, 6, 4);
 
@@ -1574,27 +1577,32 @@ namespace cs_ppx
                     {
                         try
                         {
-                            string SelectedBody = null;
+                            String SelectedBody = null;
                             List<double> Volume = new List<double>();
+                            Object BodiesInfo = null;
+                            List<string> BodyToDelete = null;
 
                             DeleteThisBody = new List<int>();
                             SplitCounter++; //add the split counter after successful splitting process
 
+                            bodyArray = null;
+                            bodyArray = (Array) swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
+
                             //select body that needs to be deleted from the model
-                            bool Status = SelectBodyToDelete(bodyArray, bodyNames, index, ref DeleteThisBody, ref Volume);
+                            bool Status = SelectBodyToDelete(CompDocumentModel, bodyArray, ref BodyToDelete, index, ref Volume);
 
                             if (Status == true)
                             {
-                                iSwApp.SendMsgToUser("ready to be registered in the removal sequence");
+                                iSwApp.SendMsgToUser("Feasible body exist, ready to be registered in the removal sequence");
                                 
 
-                                if (DeleteThisBody.Count > 1)
+                                if (BodyToDelete.Count > 1)
                                 {
-                                    iSwApp.SendMsgToUser("Body > 1 still underdevelopment");
+                                    //iSwApp.SendMsgToUser("Body > 1 still underdevelopment");
 
-                                    foreach (int DelIndex in DeleteThisBody)
+                                    foreach (String BodyName in BodyToDelete)
                                     {
-                                        Object BodiesInfo = null;
+                                        BodiesInfo = null;
                                         Body2 TmpBody = null;
                                         int DeleteIndex = 0;
                                         bodyArray = null;
@@ -1605,7 +1613,7 @@ namespace cs_ppx
                                         {
                                             TmpBody = (Body2)bodyArray.GetValue(j);
 
-                                            if (TmpBody.Name.Contains("[" + DelIndex + "]"))
+                                            if (TmpBody.Name.Equals(BodyName))
                                             {
                                                 DeleteIndex = j;
                                                 break;
@@ -1626,8 +1634,9 @@ namespace cs_ppx
                                 }
                                 else
                                 {
-
-                                    Object BodiesInfo = null;
+                                    
+                                    //prepare the deletion of the splitted body
+                                    BodiesInfo = null;
                                     Body2 TmpBody = null;
                                     int DeleteIndex = 0;
                                     bodyArray = null;
@@ -1638,7 +1647,7 @@ namespace cs_ppx
                                     {
                                         TmpBody = (Body2)bodyArray.GetValue(j);
 
-                                        if (TmpBody.Name.Contains("[" + DeleteThisBody[0] + "]"))
+                                        if (TmpBody.Name.Equals(BodyToDelete[0]))
                                         {
                                             DeleteIndex = j;
                                             break;
@@ -1693,8 +1702,8 @@ namespace cs_ppx
 
                         finally
                         {
-                            Object BodiesInfo = null;
-                            Array NewBodies = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
+                            //Object BodiesInfo = null;
+                            //Array NewBodies = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
 
                         }
 
@@ -1721,6 +1730,8 @@ namespace cs_ppx
             }
 
             //Doc.ClearSelection2(true);
+
+            iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(CompPathName));
              
         }
 
@@ -1739,7 +1750,7 @@ namespace cs_ppx
 
         }
 
-        //select body to delete after splitting
+        //select body to delete after splitting *wby opening the document first
         public bool SelectBodyToDelete(Array BodyArray, string[] BodyNames, int index, ref List<int> BodyToDelete, ref List<double> VolumeSize)
         {
             bool retVal = false;
@@ -1816,6 +1827,78 @@ namespace cs_ppx
             
             return retVal;
         }
+
+        //OVERLOAD selectbodytodelete
+        public bool SelectBodyToDelete(ModelDoc2 CompDocumentModel, Array BodyArray, ref List<string> BodyToDelete, int index, ref List<double> VolumeSize)
+        {
+            
+            BodyToDelete = new List<string>();
+
+            if (BodyArray.Length == 0)
+            {
+                return false;
+            }
+
+            else
+            {   
+                for (int i = 0; i < BodyArray.Length; i++)
+                {
+                    bool bodyStatus = false;
+
+                    Body2 BodyToCheck = (Body2)BodyArray.GetValue(i);
+
+                    iSwApp.SendMsgToUser("Check bodies Loaded document: " + BodyToCheck.Name);
+                    Double[] Centroid = null;
+
+                    bool CVStatus = getCentroidAndVolume(BodyToCheck, ref Centroid, ref VolumeSize);
+
+                    if (CVStatus == true)
+                    {
+
+                        //get the pointerfor the body
+                        PartDoc TmpPartDoc = (PartDoc)CompDocumentModel;
+                        Array TmpBodyArray = (Array)TmpPartDoc.GetBodies2((int)swBodyType_e.swSolidBody, true);
+                        Body2 TmpBodyToCheck = null;
+
+                        for (int j = 0; j < TmpBodyArray.Length; j++)
+                        { 
+                            TmpBodyToCheck = (Body2)TmpBodyArray.GetValue(j);
+
+                            if (BodyToCheck.Name.Equals(TmpBodyToCheck.Name))
+                            {
+                                break;
+                            }
+                        }
+                        
+                        //check the feasibility of the splitted body (current)
+
+                        bodyStatus = setBodyToPlane(CompDocumentModel, TmpBodyToCheck, Centroid, planeList[index]);
+
+                        if (bodyStatus == true)
+                        {
+                            iSwApp.SendMsgToUser("This body is feasible (convex)");
+
+                            //check this body in the document tree and add collect the body pointer to the FeasibleBodies
+                            BodyToDelete.Add(BodyToCheck.Name);
+
+                            //set this body to the current plane
+                        }
+
+                        else
+                        {
+                            iSwApp.SendMsgToUser("This body is not feasible (concave)");
+
+                            //keep the index of the body
+
+                        }
+                    }
+                }
+            }
+
+            if (BodyToDelete.Count == 0) { return false; }
+            else { return true; }
+
+        }
         
         //split and save bodies
         public Feature SplitAndSaveBody(ModelDoc2 DocumentModel, Component2 SwComp, Feature SelectedFeature, Array BodyArray, ref string[] BodyNames)
@@ -1830,7 +1913,8 @@ namespace cs_ppx
             for (int i = 0; i < BodyArray.Length; i++)
             {
                 bodyCandidate[i] = BodyArray.GetValue(i) as Body2;
-                BodyNames[i] = savePath + SelectedFeature.Name.ToString() + "-" + i + ".sldprt";
+                //BodyNames[i] = savePath + SelectedFeature.Name.ToString() + "-" + i + ".sldprt";
+                BodyNames[i] = null;
                 bodyOrigins[i] = null;
             }
                     
@@ -1855,6 +1939,7 @@ namespace cs_ppx
             int status = 0;
 
             Double[] MassProperty = null;
+            
             MassProperty = (Double[])DocumentModel.Extension.GetMassProperties(0, ref status);
 
             if (status == 0)
@@ -1873,10 +1958,41 @@ namespace cs_ppx
 
                 return true;
             }
-            else
+            
+            return false;
+        }
+
+        //OVERLOAD
+        public bool getCentroidAndVolume(Body2 BodyToCheck, ref double[] Centroid, ref List<double> Volume)
+        {
+            int status = 0;
+
+            Double MaterialProperty = iSwApp.GetUserPreferenceDoubleValue((int) swUserPreferenceDoubleValue_e.swMaterialPropertyDensity);            
+
+            Double[] MassProperty = null;
+
+            MassProperty = (Double[])BodyToCheck.GetMassProperties(MaterialProperty);
+
+            if (status == 0)
             {
-                return false;
+
+                Double dimension = 1; //change it to mmm by times it with 1000 (current is in m)
+
+                //get the centroid
+                Centroid = new Double[3];
+                Centroid[0] = MassProperty[0] * dimension;
+                Centroid[1] = MassProperty[1] * dimension;
+                Centroid[2] = MassProperty[2] * dimension;
+
+                //get the volume
+                Volume.Add(MassProperty[3]);
+
+                return true;
             }
+
+            
+
+            return false;
         }
     
 
@@ -2275,7 +2391,7 @@ namespace cs_ppx
         public bool setBodyToPlane(ModelDoc2 DocumentModel, Body2 BodyToCheck, Double[] Centroid, _planeProperties SelectedPlane)
         {
             bool Status = false;
-            
+
             if (isBodyConvex(DocumentModel, BodyToCheck) == true)
             {
                 if (checkBodyLocation(BodyToCheck, Centroid, SelectedPlane.featureObj, SelectedPlane.planeNormal) == true)
