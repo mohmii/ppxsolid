@@ -6,6 +6,7 @@ using System.Windows.Media.Media3D;
 using System.Windows;
 using System.IO;
 using System.Diagnostics;
+using System.Linq;
 
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swpublished;
@@ -35,7 +36,7 @@ namespace cs_ppx
         int addinID = 0;
         BitmapHandler iBmp;
 
-        public const int mainCmdGroupID = 10;
+        public const int mainCmdGroupID = 20;
         public const int mainItemID1 = 0;
         public const int mainItemID2 = 1;
 
@@ -48,10 +49,12 @@ namespace cs_ppx
         public const int mainItemID8 = 7;
         public const int mainItemID9 = 8;
         public const int mainItemID10 = 9;
+        public const int mainItemID11 = 10;
+        public const int mainItemID12 = 11;
         
         public const int flyoutGroupID = 91;
 
-        Double[] centroid;
+        
 
         #region Event Handler Variables
         Hashtable openDocs = new Hashtable();
@@ -219,7 +222,7 @@ namespace cs_ppx
             if (iBmp == null)
                 iBmp = new BitmapHandler();
             Assembly thisAssembly;
-            int cmdIndex0, cmdIndex1, cmdIndex2, cmdIndex3, cmdIndex4, cmdIndex5, cmdIndex6, cmdIndex7, cmdIndex8, cmdIndex9;
+            int cmdIndex0, cmdIndex1, cmdIndex2, cmdIndex3, cmdIndex4, cmdIndex5, cmdIndex6, cmdIndex7, cmdIndex8, cmdIndex9, cmdIndex10, cmdIndex11;
             string Title = "ppx", ToolTip = "flexible process planning";
 
 
@@ -237,7 +240,7 @@ namespace cs_ppx
             //get the ID information stored in the registry
             bool getDataResult = iCmdMgr.GetGroupDataFromRegistry(mainCmdGroupID, out registryIDs);
 
-            int[] knownIDs = new int[5] { mainItemID1, mainItemID2, mainItemID3, mainItemID4, mainItemID5 };
+            int[] knownIDs = new int[12] { mainItemID1, mainItemID2, mainItemID3, mainItemID4, mainItemID5, mainItemID6, mainItemID7, mainItemID8, mainItemID9, mainItemID10, mainItemID11, mainItemID12 };
 
             if (getDataResult)
             {
@@ -266,6 +269,8 @@ namespace cs_ppx
             cmdIndex7 = cmdGroup.AddCommandItem2("Machinable Space", -1, "Machinable space calculation", "Machinable Space", 2, "MachinableSpace", "", mainItemID8, menuToolbarOption);
             cmdIndex8 = cmdGroup.AddCommandItem2("TRV network", -1, "TRV network calculation", "TRV Network", 2, "TRVNetwork", "", mainItemID9, menuToolbarOption);
             cmdIndex9 = cmdGroup.AddCommandItem2("Calculate Setup", -1, "Setup calculation", "Calculate Setup", 2, "SetupCalculator", "", mainItemID10, menuToolbarOption);
+            cmdIndex10 = cmdGroup.AddCommandItem2("Set Open Face", -1, "Defining a open face", "Set Open Face", 2, "SetOpenFace", "", mainItemID11, menuToolbarOption);
+            cmdIndex11 = cmdGroup.AddCommandItem2("Read Open Face", -1, "Reading a open face", "Read Open Face", 2, "ReadOpenFace", "", mainItemID12, menuToolbarOption);
             
 
             cmdGroup.HasToolbar = true;
@@ -300,10 +305,10 @@ namespace cs_ppx
                 {
                     cmdTab = iCmdMgr.AddCommandTab(type, Title);
 
-                    CommandTabBox cmdBox = cmdTab.AddCommandTabBox();
+                    CommandTabBox cmdBox1 = cmdTab.AddCommandTabBox();
 
-                    int[] cmdIDs = new int[10];
-                    int[] TextType = new int[10];
+                    int[] cmdIDs = new int[7];
+                    int[] TextType = new int[7];
 
                     //load samples button
                     cmdIDs[0] = cmdGroup.get_CommandID(cmdIndex0);
@@ -333,22 +338,43 @@ namespace cs_ppx
                     cmdIDs[6] = cmdGroup.get_CommandID(cmdIndex6);
                     TextType[6] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
 
+                    bResult = cmdBox1.AddCommands(cmdIDs, TextType);
+
+                    //add another group
+                    CommandTabBox cmdBox2 = cmdTab.AddCommandTabBox();
+                    cmdIDs = new int[3];
+                    TextType = new int[3];
+
                     //Machinable space calculation button
-                    cmdIDs[7] = cmdGroup.get_CommandID(cmdIndex7);
-                    TextType[7] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+                    cmdIDs[0] = cmdGroup.get_CommandID(cmdIndex7);
+                    TextType[0] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
                     
                     //TRV network calculation buttion
-                    cmdIDs[8] = cmdGroup.get_CommandID(cmdIndex8);
-                    TextType[8] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+                    cmdIDs[1] = cmdGroup.get_CommandID(cmdIndex8);
+                    TextType[1] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
                                         
                     //Setup calculation button
-                    cmdIDs[9] = cmdGroup.get_CommandID(cmdIndex9);
-                    TextType[9] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
-                    
-                    bResult = cmdBox.AddCommands(cmdIDs, TextType);
+                    cmdIDs[2] = cmdGroup.get_CommandID(cmdIndex9);
+                    TextType[2] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
 
-                    cmdTab.AddSeparator(cmdBox, cmdIDs[7]);
+                    bResult = cmdBox2.AddCommands(cmdIDs, TextType);
+                    cmdTab.AddSeparator(cmdBox2, cmdGroup.ToolbarId);
+
+                    //add another group
+                    CommandTabBox cmdBox3 = cmdTab.AddCommandTabBox();
+                    cmdIDs = new int[2];
+                    TextType = new int[2];
+
+                    //Set open face button
+                    cmdIDs[0] = cmdGroup.get_CommandID(cmdIndex10);
+                    TextType[0] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+
+                    cmdIDs[1] = cmdGroup.get_CommandID(cmdIndex11);
+                    TextType[1] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
                     
+                    bResult = cmdBox3.AddCommands(cmdIDs, TextType);
+
+                    cmdTab.AddSeparator(cmdBox3, cmdGroup.ToolbarId);
                     
                     /*
                     CommandTabBox cmdBox1 = cmdTab.AddCommandTabBox();
@@ -547,8 +573,6 @@ namespace cs_ppx
                     ModelDoc2[] availModel = getModels(rpList, modelList);
                     //AttributeDef attDef = null;
 
-                   
-
                     //markBBfaces(ref availModel[0], ref attDef);
 
                     addComponents(assyModel, availModel);
@@ -565,7 +589,8 @@ namespace cs_ppx
         
         //contains user selection list for raw material and product
         public string[] rpList {get; set;}
-        public AttributeDef attDef = null;
+        public AttributeDef BBDef = null;
+        public AttributeDef NFDef = null;
 
         //keep all open models
         private List<ModelDoc2> allModels;
@@ -651,44 +676,50 @@ namespace cs_ppx
         }
 
         //mark all the faces coincide with the bounding box
-        private void markBBfaces(ref ModelDoc2 Model, ref AttributeDef attributDefinition)
+        private void markBBfaces(Component2 SwComp, ref AttributeDef attributDefinition)
         {
             bool bRet;
-
-            //define the bounding box as BB
-            AttributeDef attDef = SwApp.DefineAttribute("bb properties");
-
-            attributDefinition = attDef;
-
-            bRet = attDef.AddParameter("status", (int)swParamType_e.swParamTypeString, -1, 0);
-            bRet = attDef.Register();
-            
-            PartDoc swPartDoc = (PartDoc) Model;            
-            object[] arrBody = (object[])swPartDoc.GetBodies2((int)swBodyType_e.swSolidBody, true);
-
-            Body2 swBody = (Body2) arrBody[0];
-
-            object[] swFaces = (object[]) swBody.GetFaces();
-
+            Array BodyArray = null;
+            Body2 TmpBody = null;
+            Face2 SwFace = null;
+            int Errors = 0;
+            int Warnings = 0;
             int i = 1;
 
-            foreach (Face2 tmpFace in swFaces)
+            String CompPathName = SwComp.GetPathName();
+            iSwApp.DocumentVisible(false, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be invisble
+            ModelDoc2 CompDocumentModel = (ModelDoc2)SwApp.OpenDoc6(CompPathName, (int)swDocumentTypes_e.swDocPART,
+                (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
+
+            //create the BB attribute definition
+            AttributeDef attDef = SwApp.DefineAttribute("bb");
+            attributDefinition = attDef;
+            bRet = attDef.AddParameter("bb", (int)swParamType_e.swParamTypeDouble, 1, 0);
+            bRet = attDef.Register();
+            
+            PartDoc swPartDoc = (PartDoc) CompDocumentModel;
+            BodyArray = (Array)swPartDoc.GetBodies2((int)swBodyType_e.swSolidBody, true);
+
+            if (BodyArray.Length == 1)
             {
-                string attName = "bb" + i.ToString();
-                IAttribute swAtt = attDef.CreateInstance5(Model, tmpFace, attName, 0, (int) swInConfigurationOpts_e.swThisConfiguration);
+                
+                TmpBody = (Body2) BodyArray.GetValue(0);
 
-                //set the face name as "bb"
-                swPartDoc.SetEntityName(tmpFace, attName);
+                SwFace = (Face2)TmpBody.GetFirstFace();
 
-                if (swAtt != null)
+                while (SwFace !=null)
                 {
-                    Parameter bbStatus = swAtt.GetParameter("status");
-                    bRet = bbStatus.SetStringValue2("1", (int)swInConfigurationOpts_e.swThisConfiguration, "");
+                    
+                    SolidWorks.Interop.sldworks.Attribute swAtt = default(SolidWorks.Interop.sldworks.Attribute);
+                    swAtt = attDef.CreateInstance5(CompDocumentModel, SwFace, "bb_face" + i.ToString(), 0, (int)swInConfigurationOpts_e.swAllConfiguration);
+
+                    SwFace = (Face2)SwFace.GetNextFace();
+                    i++;
                 }
-
-                i = i + 1;
-
             }
+
+            iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(CompPathName));
+            iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be visble
 
         }
 
@@ -740,7 +771,7 @@ namespace cs_ppx
                     boolStatus = compName[0].Select2(true, 0);
 
                     ModelDoc2 ModDoc2 = (ModelDoc2)compName[0].GetModelDoc2();
-                    markBBfaces(ref ModDoc2, ref attDef);
+                    markBBfaces(compName[0], ref BBDef);
 
                     assyModel = (AssemblyDoc) Doc;
 
@@ -755,7 +786,11 @@ namespace cs_ppx
                     assyModel.InsertCavity4(0, 0, 0, true, 1, -1);
 
                     assyModel.EditAssembly();
-                    
+
+                    boolStatus = compName[0].Select2(true, 0);
+                    Boolean retVal = false;
+                    retVal = SetAttribute(compName[0], ref NFDef);
+
                     boolStatus = compName[1].Select2(true, 0);
                     boolStatus = assyModel.SetComponentTransparent(true);
                                         
@@ -765,6 +800,37 @@ namespace cs_ppx
                     changeColor(ref compName[0]);
 
                     Doc.GraphicsRedraw2();
+                    Doc.ForceRebuild3(false);
+                                        
+                    Array BodyArray = (Array) compName[0].GetBodies2((int)swBodyType_e.swSolidBody);
+
+                    Body2 TmpBody = (Body2)BodyArray.GetValue(0);
+
+                    Entity TmpEntity = null;
+                    Face2 TmpFace = (Face2)TmpBody.GetFirstFace();
+
+                    SolidWorks.Interop.sldworks.Attribute swAtt = default(SolidWorks.Interop.sldworks.Attribute);
+                    
+                    int i = 0;
+
+                    while (swAtt == null && TmpFace != null)
+                    {
+                       TmpEntity = (Entity)TmpFace;
+
+                        while (swAtt == null && i < 300)
+                        {
+                            swAtt = TmpEntity.FindAttribute(NFDef, i);
+                            i++;
+                        }
+
+                        TmpFace = (Face2)TmpFace.GetNextFace();
+                        i = 0;
+                    }
+                    if (swAtt != null)
+                    {
+                        TmpEntity.Select(true);
+                    }
+                    
 
                 }
             }
@@ -833,6 +899,82 @@ namespace cs_ppx
                 return false;
             }
         }
+
+        //set an attribute to the the new created faces
+        public bool SetAttribute(Component2 SwComp, ref AttributeDef NewFace)
+        {
+            Array BodyArray;
+            Object BodiesInfo;
+            Body2 TmpBody;
+            Face2 SwFace;
+            Entity SwEntity;
+            int Errors = 0;
+            int Warnings = 0;
+            Boolean bRet = false;
+            int faceIndex = 1;
+
+            //create the BB attribute definition
+            AttributeDef attDef = SwApp.DefineAttribute("newface");
+            NewFace = attDef;
+            bRet = attDef.AddParameter("newface", (int)swParamType_e.swParamTypeDouble, 1, 0);
+            bRet = attDef.Register();
+
+            String CompPathName = SwComp.GetPathName();
+            iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be invisble
+            ModelDoc2 CompDocumentModel = (ModelDoc2)SwApp.OpenDoc6(CompPathName, (int)swDocumentTypes_e.swDocPART,
+                (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
+
+            BodyArray = null;
+            BodiesInfo = null;
+            TmpBody = null;
+
+            PartDoc PartDocument = (PartDoc)CompDocumentModel;
+            BodyArray = (Array)PartDocument.GetBodies2((int)swBodyType_e.swSolidBody, true);
+
+            if (BodyArray.Length == 1)
+            {
+                TmpBody = (Body2)BodyArray.GetValue(0);
+
+                SwFace = null;
+                SwEntity = null;
+
+                SwFace = (Face2)TmpBody.GetFirstFace();
+                while (SwFace != null)
+                {
+                    SwEntity = (Entity)SwFace;
+
+                    SolidWorks.Interop.sldworks.Attribute swAtt = default(SolidWorks.Interop.sldworks.Attribute);
+
+                    int i = 0;
+
+                    while (swAtt == null && i < 300)
+                    {
+                        swAtt = SwEntity.FindAttribute(BBDef, i);
+                        i++;
+                    }
+
+                    if (swAtt == null)
+                    {
+                        swAtt = attDef.CreateInstance5(CompDocumentModel, SwFace, "new_face" + faceIndex.ToString(), 0, (int)swInConfigurationOpts_e.swAllConfiguration);
+                        faceIndex++;
+                    }
+
+                    SwFace = (Face2)SwFace.GetNextFace();
+                }
+
+            }
+            else if (BodyArray.Length > 1)
+            {
+
+
+            }
+           
+            //iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(CompPathName));
+            //iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be visble
+
+            return true;
+           
+        }
         
         #endregion
 
@@ -874,10 +1016,9 @@ namespace cs_ppx
                     RefPlane swRefPlane = null;
                     Entity swEnt = null;
 
-                    addedReferencePlane tmpInitPlane = null;
-                    initRefPlane = new List<addedReferencePlane>();
-
-                                                         
+                    AddedReferencePlane tmpInitPlane = null;
+                    InitialRefPlane = new List<AddedReferencePlane>(); //set the instance for the first time for sacing all the reference planes
+                                     
                     //select the raw material for editing
                     boolStatus = compName[0].Select2(true, 0);
 
@@ -902,15 +1043,17 @@ namespace cs_ppx
                                 countFace += 1;
 
                                 //set reference name
-                                refName = "#plane" + countFace.ToString();
+                                refName = "REF_PLANE" + countFace.ToString();
                                 swPartDoc.SetEntityName(swRefPlane, refName);
 
-                                tmpInitPlane = new addedReferencePlane();
+                                //set the reference plane, included with name, coincided face, and its pointer
+                                tmpInitPlane = new AddedReferencePlane();
                                 tmpInitPlane.name = refName;
-                                tmpInitPlane.attachedFace = tmpFace;
-                                tmpInitPlane.refPlane = swRefPlane;
+                                tmpInitPlane.AttachedFace = tmpFace;
+                                tmpInitPlane.ReferencePlane = swRefPlane;
 
-                                initRefPlane.Add(tmpInitPlane);
+                                //add the reference plane
+                                InitialRefPlane.Add(tmpInitPlane);
 
                             }
                         }
@@ -933,11 +1076,12 @@ namespace cs_ppx
         //tools for plane generator
         #region PlaneGenerator
 
+        //save the number of generated reference plane
         public int addedRefPlane { get; set; }
 
-        public List<addedReferencePlane> initRefPlane;
+        //save all generate reference plane
+        public List<AddedReferencePlane> InitialRefPlane;
         
-
         #endregion 
 
         //plane Calculator
@@ -984,7 +1128,7 @@ namespace cs_ppx
                         bodyProperties.UseSystemUnits = false;
                         centroid = (double[]) bodyProperties.CenterOfMass;
                         
-                        //create the virtual centroid
+                        //draw the virtual centroid
                         Doc.SketchManager.Insert3DSketch(true);
                         double[] tmpPoint = (double[])virtualCentroid;
                         SketchPoint skPoint = (SketchPoint)Doc.SketchManager.CreatePoint(tmpPoint[0], tmpPoint[1], tmpPoint[2]);
@@ -995,17 +1139,19 @@ namespace cs_ppx
                         PartDoc swPartDoc = (PartDoc)compModDoc;
 
                         //get the plane feature
-                        boolStatus = getPlanes(swPartDoc, addedRefPlane, ref planeNames);
+                        boolStatus = getPlanes(swPartDoc, ref InitialRefPlane);
 
                         if (boolStatus == true)
                         {
                             //get the plane normal
-                            boolStatus = getPlaneNormal(swMathUtils, planeNames, ref planeNormal);
+                            boolStatus = getPlaneNormal(swMathUtils, ref InitialRefPlane);
                             if (boolStatus == true)
                             {
                                 //analyze intersection
-                                boolStatus = planeIntersection(planeNormal, ref planeValue);
-                                setDistance(Doc, swMathUtils, planeNames, planeNormal, tmpPoint, ref distance);
+                                boolStatus = planeIntersection(planeNormal, ref planeValue); // <=================== DO THIS PART
+
+                                //set the distance
+                                setDistance(Doc, swMathUtils, ref InitialRefPlane, tmpPoint);
                             }
                         }
 
@@ -1014,7 +1160,9 @@ namespace cs_ppx
                             List<int> removeId = new List<int>();
 
                             //store the plane feature, rank, and normal to planeList
-                            registerPlane(planeValue, planeNames, planeNormal, distance, ref removeId, swMathUtils);
+                            //registerPlane(planeValue, planeNames, planeNormal, distance, ref removeId, swMathUtils);
+
+                            registerPlane(InitialRefPlane, ref removeId, swMathUtils);
 
                             if (removeId.Count > 0)
                             {
@@ -1040,6 +1188,8 @@ namespace cs_ppx
 
         public object virtualCentroid { get; set; }
 
+        public Double[] centroid { get; set; }
+
         //get midpoint between two points
         public double[] getMidPoint(object boxVertices)
         {
@@ -1062,21 +1212,20 @@ namespace cs_ppx
         }
 
         //get the plane name
-        public bool getPlanes(PartDoc swPart, int numRefPlanes, ref List<Feature> refPlanes)
+        public bool getPlanes(PartDoc swPart, ref List<AddedReferencePlane> RefPlanes)
         {   
             Feature tmpFeature = null;
             string refName = null;
-            refPlanes = new List<Feature>();
-
+            
             //get the reference plane feature
-            for (int i = 1; i <= numRefPlanes; i++)
+            for (int i = 1; i <= RefPlanes.Count(); i++)
             {
-                refName = "#plane" + i.ToString();
+                refName = "REF_PLANE" + i.ToString();
                 tmpFeature = swPart.FeatureByName(refName);
 
                 if (tmpFeature != null)
                 {
-                    refPlanes.Add(tmpFeature);
+                    RefPlanes[i].CorrespondFeature = tmpFeature;
                 }
             }
 
@@ -1115,6 +1264,41 @@ namespace cs_ppx
                 swNormalPlane = swNormalPlane.Scale(-1);
 
                 planeNorms.Add(swNormalPlane.ArrayData);
+            }
+
+            return true;
+
+        }
+
+        //OVERLOAD getPlaneNormal
+        public bool getPlaneNormal(MathUtility swMathUtils, ref List<AddedReferencePlane> refPlanes)
+        {
+            MathVector swNormalVector = null;
+            MathVector swNormalPlane = null;
+            
+            RefPlane swRefPlane = null;
+            MathTransform planeTransform = null;
+            object worldOrientation = null;
+
+            //set the initial canonical orientation in world coordinates
+            double[] initOri = new double[3];
+            initOri[0] = 0;
+            initOri[1] = 0;
+            initOri[2] = 1;
+
+            //get plane normal
+            for (int i = 0; i < refPlanes.Count(); i++ )
+            {
+                swRefPlane = refPlanes[i].ReferencePlane;
+                worldOrientation = initOri;
+                planeTransform = swRefPlane.Transform;
+                swNormalVector = swMathUtils.CreateVector(worldOrientation);
+                swNormalPlane = swNormalVector.MultiplyTransform(planeTransform);
+
+                //change the normal direction
+                swNormalPlane = swNormalPlane.Scale(-1);
+
+                refPlanes[i].PlaneNormal = swNormalPlane.ArrayData;
             }
 
             return true;
@@ -1183,7 +1367,7 @@ namespace cs_ppx
                     tmpDistance = new double();
                     Face2 tmpFace = getAttachedFace(planeFeatures[i]);
 
-                    tmpDistance = checkDistance(Doc, planeFeatures[i], planeNormal[i], centroid, swMathUtils);
+                    //tmpDistance = checkDistance(Doc, planeFeatures[i], planeNormal[i], centroid, swMathUtils);
 
                     //tmpDistance = checkDistance(Doc, tmpFace, planeNormal[i], centroid, swMathUtils);
 
@@ -1196,16 +1380,43 @@ namespace cs_ppx
 
         }
 
+        //OVERLOAD setDistance
+        public void setDistance(ModelDoc2 Doc, MathUtility swMathUtils, ref List<AddedReferencePlane> RefPlanes, Double[] centroid)
+        {
+            double TmpDistance;
+
+            if (RefPlanes.Count() > 0)
+            {
+                for (int i = 0; i < RefPlanes.Count; i++)
+                {
+                    TmpDistance = new double();
+                    RefPlane TmpRefPlane = RefPlanes[i].ReferencePlane;
+                    Object TmpNormal = RefPlanes[i].PlaneNormal;
+
+                    TmpDistance = checkDistance(Doc, TmpRefPlane, TmpNormal, centroid, swMathUtils);
+
+                    //tmpDistance = checkDistance(Doc, tmpFace, planeNormal[i], centroid, swMathUtils);
+
+                    if (TmpDistance != null)
+                    {
+                        RefPlanes[i].DistanceFromCentroid = TmpDistance;
+                        
+                    }
+                }
+            }
+
+        }
+
         //get face that corresponds to refplane
         public Face2 getAttachedFace(Feature feature)
         {
-            if (initRefPlane != null)
+            if (InitialRefPlane.Count != 0)
             {
-                foreach (addedReferencePlane tmpCheck in initRefPlane)
+                foreach (AddedReferencePlane CheckRefPlane in InitialRefPlane)
                 {
-                    if (tmpCheck.name.Equals(feature.Name))
+                    if (CheckRefPlane.name.Equals(feature.Name))
                     {
-                        return tmpCheck.attachedFace;
+                        return CheckRefPlane.AttachedFace;
                     }
                 }
             }
@@ -1214,7 +1425,7 @@ namespace cs_ppx
         }
 
         //check distance between plane and point
-        public double checkDistance(ModelDoc2 Doc, Feature Plane, object planeNormal, double[] point2Check, MathUtility swMathUtils)
+        public double checkDistance(ModelDoc2 Doc, RefPlane Plane, object planeNormal, double[] point2Check, MathUtility swMathUtils)
         {
             //reference: http://mathworld.wolfram.com/Point-PlaneDistance.html
             
@@ -1264,30 +1475,33 @@ namespace cs_ppx
         }
 
         //add all plane into one list
-        public bool registerPlane(List<int> planeRank, List<Feature> planeFeatures, List<object> planeNorms, List<double> distance, ref List<int> removeId,
+        public bool registerPlane(List<AddedReferencePlane> ListOfPlanes, List<int> planeRank, List<Feature> planeFeatures, List<object> planeNorms, List<double> distance, ref List<int> removeId,
             MathUtility mathUtils)
         {
-            _planeProperties tmpSetPlane;
+            AddedReferencePlane tmpSetPlane;
             bool retSim = false;
             
             planeList = new List<_planeProperties>();
 
-            for (int i = 0; i<planeRank.Count; i++)
+            for (int i = 0; i<ListOfPlanes.Count; i++)
             { 
-                tmpSetPlane = new _planeProperties();
+                tmpSetPlane = new AddedReferencePlane();
+                tmpSetPlane = ListOfPlanes[i];
 
+                /*
                 tmpSetPlane.name = planeFeatures[i].Name;
                 tmpSetPlane.rankNum = planeRank[i];
                 tmpSetPlane.featureObj = planeFeatures[i];
                 tmpSetPlane.planeNormal = planeNorms[i];
                 tmpSetPlane.distance = distance[i];
                 tmpSetPlane.mark = 0;
+                 * */
 
                 //check the similarity (parallel and coincident)
-                if (planeList.Count != 0)
-                {
-                    retSim = checkPlaneSim(planeList, tmpSetPlane, mathUtils);
-                }
+                //if (planeList.Count != 0)
+                //{
+                    retSim = checkPlaneSim(ListOfPlanes, tmpSetPlane, mathUtils);
+                //}
 
                 //add the plane that has to be removed
                 if (retSim == true)
@@ -1296,10 +1510,54 @@ namespace cs_ppx
                 }
 
                 //add only unsimilar plane
-                if (planeList.Count == 0 || retSim == false)
+                //if (planeList.Count == 0 || retSim == false)
+                //{
+                //    planeList.Add(tmpSetPlane);
+                //}
+            }
+
+            return true;
+        }
+
+        //OVERLOAD add all plane into one list
+        public bool registerPlane(List<AddedReferencePlane> ListOfPlanes, ref List<int> removeId, MathUtility mathUtils)
+        {
+            AddedReferencePlane tmpSetPlane;
+            bool retSim = false;
+
+            planeList = new List<_planeProperties>();
+
+            for (int i = 0; i < ListOfPlanes.Count; i++)
+            {
+                tmpSetPlane = new AddedReferencePlane();
+                tmpSetPlane = ListOfPlanes[i];
+
+                /*
+                tmpSetPlane.name = planeFeatures[i].Name;
+                tmpSetPlane.rankNum = planeRank[i];
+                tmpSetPlane.featureObj = planeFeatures[i];
+                tmpSetPlane.planeNormal = planeNorms[i];
+                tmpSetPlane.distance = distance[i];
+                tmpSetPlane.mark = 0;
+                 * */
+
+                //check the similarity (parallel and coincident)
+                //if (planeList.Count != 0)
+                //{
+                retSim = checkPlaneSim(ListOfPlanes, tmpSetPlane, mathUtils);
+                //}
+
+                //add the plane that has to be removed
+                if (retSim == true)
                 {
-                    planeList.Add(tmpSetPlane);
+                    removeId.Add(i);
                 }
+
+                //add only unsimilar plane
+                //if (planeList.Count == 0 || retSim == false)
+                //{
+                //    planeList.Add(tmpSetPlane);
+                //}
             }
 
             return true;
@@ -1329,6 +1587,36 @@ namespace cs_ppx
                     }
                 }
                 
+            }
+
+            //if similar, parallel and coincident, then it should return true
+            return similarity;
+        }
+
+        //OVERLOAD plane similarity
+        public bool checkPlaneSim(List<AddedReferencePlane> ListOfPlanes, AddedReferencePlane plane2Check, MathUtility mathUtils)
+        {
+            bool normalSim = false;
+            bool similarity = false;
+            bool sameLevel = false;
+
+            foreach (AddedReferencePlane tmpPlane in ListOfPlanes)
+            {
+                //check if parallel
+                normalSim = checkNormalSim(tmpPlane.PlaneNormal, plane2Check.PlaneNormal, mathUtils);
+
+                if (normalSim == true)
+                {
+                    //check if coincident
+                    sameLevel = checkPlaneLevel(tmpPlane.CorrespondFeature, tmpPlane.PlaneNormal, plane2Check.CorrespondFeature, mathUtils);
+
+                    if (sameLevel == true)
+                    {
+                        similarity = true;
+                        break;
+                    }
+                }
+
             }
 
             //if similar, parallel and coincident, then it should return true
@@ -1469,7 +1757,7 @@ namespace cs_ppx
 
                     TraverseComponentFeatures(compName[0], ref featureList);
 
-                    initMachiningPlan();
+                    //initMachiningPlan();
 
                     List<Body2> RVList = new List<Body2>();
                                        
@@ -1507,7 +1795,7 @@ namespace cs_ppx
             while ((swFeat != null))
             {
 
-                if (swFeat.Name.Contains("#plane") && swFeat.GetTypeName2().Equals("RefPlane"))
+                if (swFeat.Name.Contains("REF_PLANE") && swFeat.GetTypeName2().Equals("RefPlane"))
                 {
                     planeList.Add(swFeat);
                 }
@@ -1530,7 +1818,7 @@ namespace cs_ppx
 
             
             String CompPathName = swComp.GetPathName();
-            SwApp.DocumentVisible(false, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be invisble
+            iSwApp.DocumentVisible(false, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be invisble
             ModelDoc2 CompDocumentModel = (ModelDoc2)SwApp.OpenDoc6(CompPathName, (int)swDocumentTypes_e.swDocPART,
                 (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
             
@@ -1732,6 +2020,7 @@ namespace cs_ppx
             //Doc.ClearSelection2(true);
 
             iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(CompPathName));
+            iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be visble
              
         }
 
@@ -1742,8 +2031,8 @@ namespace cs_ppx
 
             if (position < tmpListMP.Length)
             {
-                machiningPlan MP = (machiningPlan)tmpListMP[position];
-                return  MP.planeProperties;
+                //machiningPlan MP = (machiningPlan)tmpListMP[position];
+                //return  MP.planeProperties;
             }
 
             return null;
@@ -2051,6 +2340,7 @@ namespace cs_ppx
 
         public List<Object> machiningPlanList;
 
+        /*
         //initialize machining plane... example
         public void initMachiningPlan()
         {
@@ -2179,6 +2469,8 @@ namespace cs_ppx
             machiningPlanList.Add((machiningPlan[])machiningCandidate.ToArray());
 
         }
+         * */
+
 
         //get and return the plane
         public Feature getByMP(_planeProperties plane, List<Feature> _featureList)
@@ -2226,14 +2518,14 @@ namespace cs_ppx
             {
                 if (tmpPlane.mark == 0)
                 {
-                    if (tmpPlane.rankNum == tmpRank)
+                    if (tmpPlane.rankByDistance == tmpRank)
                     {
                         rankSimilarity++;
                     }
-                    else if (tmpPlane.rankNum > tmpRank)
+                    else if (tmpPlane.rankByDistance > tmpRank)
                     {
                         selectedIndex = _planeList.IndexOf(tmpPlane);
-                        tmpRank = tmpPlane.rankNum;
+                        tmpRank = tmpPlane.rankByDistance;
                         rankSimilarity = 1;
                     }
                     
@@ -2340,7 +2632,7 @@ namespace cs_ppx
 
             for (int i = 0; i < planeList.Count; i++)
             {
-                planeList[0].rankNum = planeValue[i];
+                planeList[0].rankByDistance = planeValue[i];
             }
 
         }
@@ -2780,6 +3072,19 @@ namespace cs_ppx
 
             return tmpPoint;
         }
+
+        //OVERLOAD getPointOnPlane
+        public MathPoint getPointOnPlane(RefPlane tmpRefPlane)
+        {
+            MathPoint tmpPoint = null;
+            Object[] arrayOfCorners = null;
+            Random rnd = new Random();
+            
+            arrayOfCorners = (Object[])tmpRefPlane.CornerPoints;
+            tmpPoint = (MathPoint)arrayOfCorners[rnd.Next(0, 3)];
+
+            return tmpPoint;
+        }
         
         #endregion
 
@@ -2838,6 +3143,78 @@ namespace cs_ppx
 
         #endregion
 
+        //marking the openface
+        public void SetOpenFace()
+        {
+            ModelDoc2 DocumentModel = SwApp.ActiveDoc;
+            SelectionMgr SwSelMgr = DocumentModel.SelectionManager;
+            Object SelectedObject = SwSelMgr.GetSelectedObject5(1);
+            Entity SwEntity = (Entity)SelectedObject;
+
+            //create the definition
+            AttributeDef SwAttDef = SwApp.DefineAttribute("open_face");
+            Boolean RetVal = SwAttDef.AddParameter("status", (int)swParamType_e.swParamTypeDouble, 1, 0);
+            
+            RetVal = SwAttDef.Register();
+
+            SolidWorks.Interop.sldworks.Attribute SwAttribute = default(SolidWorks.Interop.sldworks.Attribute);
+            OpenFaceCounter++;
+
+            SwAttribute = SwAttDef.CreateInstance5(DocumentModel, SwEntity, "open_face" + OpenFaceCounter.ToString(), 0, (int)swInConfigurationOpts_e.swAllConfiguration);
+
+            if (SwAttribute != null)
+            {
+                iSwApp.SendMsgToUser("face got name");
+            }
+            
+            //iSwApp.SendMsgToUser("got from SetOpenFace");
+        }
+
+        //reading the open face
+        public void ReadOpenFace()
+        {
+            ModelDoc2 DocumentModel = SwApp.ActiveDoc;
+            SelectionMgr SwSelMgr = DocumentModel.SelectionManager;
+            Object SelectedObject = SwSelMgr.GetSelectedObject5(1);
+            Entity SwEntity = (Entity)SelectedObject;
+
+            //Create the definition
+            AttributeDef SwAttDef = SwApp.DefineAttribute("open_face");
+            Boolean RetVal = SwAttDef.AddParameter("status", (int)swParamType_e.swParamTypeDouble, 1, 0);
+            RetVal = SwAttDef.Register();
+            
+            SolidWorks.Interop.sldworks.Attribute SwAttribute = default(SolidWorks.Interop.sldworks.Attribute);
+
+            int i = 0;
+            while (SwAttribute == null && i < 300)
+            {
+                SwAttribute = SwEntity.FindAttribute(SwAttDef, i);
+                i++;
+            }
+
+            if (SwAttribute == null)
+            {
+                iSwApp.SendMsgToUser("attribute was not found");
+            }
+            else
+            {
+                Parameter OpenParam = SwAttribute.GetParameter("status");
+                String Value = OpenParam.GetDoubleValue().ToString();
+
+                if (Value.Equals("1"))
+                {
+                    iSwApp.SendMsgToUser("this is a open face");
+                }
+                else
+                {
+                    iSwApp.SendMsgToUser("this is not a open face");
+                }
+
+            }
+
+        }
+
+        public int OpenFaceCounter;
 
         public void ShowPMP()
         {
@@ -3052,14 +3429,13 @@ namespace cs_ppx
 
     }
 
-    /// <summary>
-    /// class for saving properties for each generated reference plane
-    /// </summary>
+    
+    // class for saving properties for each generated reference plane
     public class _planeProperties
     {
-        public string name { get; set; } //name of the feature
+        public string name { get; set; } //name of the feature plane
 
-        public int rankNum { get; set; } //rank number of plane
+        public int rankByDistance { get; set; } //rank number of plane
 
         public double distance {get; set;} //distance from centroid
 
@@ -3074,28 +3450,91 @@ namespace cs_ppx
         public double[] centroid { get; set; } //saving the centroid
     }
 
-    //class for saving addedReferencePlane
-    public class addedReferencePlane
+    //class for removal body
+    public class RemovalBody
     {
-        public string name { get; set; }
+        public Body2 BodyObj { get; set; } //keep pointer to body object
 
-        public RefPlane refPlane { get; set; }
+        public double[] BodyCentroid { get; set; } //keep the body centroid information
 
-        public Face2 attachedFace { get; set; }
+        public List<TAD> ListOfTAD { get; set; } //keep all the candidate of TAD
+    }
+
+    //class for plane and removal volume body relation
+    public class PlaneWithBody
+    {
+        public string name { get; set; } //keep the name
+        
+        public AddedReferencePlane SelectedReferencePlane { get; set; } //keep pointer to selected AddedReferencePlane
+
+        public RemovalBody TMpRemovalBody { get; set; } //keep all bodies that related to AddedReferencePlane
+
+        public TAD SelectedTAD { get; set; } //keep the selected TAD
+        
+    }
+
+    //class for saving addedReferencePlane
+    public class AddedReferencePlane
+    {
+        public string name { get; set; } //keep the name
+
+        public RefPlane ReferencePlane { get; set; } //keep the pointer to the original plane
+
+        public Face2 AttachedFace { get; set; } //keep the pointer to the corresponding face
+
+        public Feature CorrespondFeature { get; set; } //keep the pointer to the corresponding feature
+
+        public int RankByDistance { get; set; } //keep the rank by the distance
+
+        public Double DistanceFromCentroid { get; set; } //keep the distance from centroid
+
+        public object PlaneNormal { get; set; } //keep the plane normal
+        
+        public int MarkingOpt { get; set; } //keep the marking options that is used for iterating the plane
+
+        public int Remark { get; set; } //keep additional remark for the plane
 
     }
 
     //class for saving the machining plan
-    public class machiningPlan
+    public class MachiningProcess
     { 
-        public _planeProperties planeProperties {get;set;}
+        public AddedReferencePlane MachiningReference {get;set;} //keep the reference plane for machining
 
-        public string cuttingTool { get; set; }
+        public string cuttingTool { get; set; } //keep the cutting tool type information
 
-        public string toolPath { get; set; }
+        public string toolPath { get; set; } //keep the type of suggested tool path
 
-        public double[] TAD { get; set; }
+        public TAD SelectedTAD { get; set; } //keep the tool access direction for machining
 
+        public RemovalBody TRV { get; set; } //keep the volume of the removal body
+
+        public double[] VisibilityCone { get; set; } //keep the visibility cone information
+
+    }
+
+    //class for TAD
+    public class TAD
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Z { get; set; }
+    }
+
+    //class for candidate of machining plan
+    public class MachiningPlan
+    {
+        public List<MachiningProcess> MachiningProceses { get; set; } //keep the pointer of selected machining process
+
+        public double MachiningCost { get; set; } //keep the machining cost
+
+        public double MachiningTime { get; set; } //keep the machining time
+
+        public int NumberOfTADchanges { get; set; } //keep the number of TAD changes
+
+        public int NumberOfTool { get; set; } //keep the number of needed tools
+
+        public int NumberOfSetups { get; set; } //keep the number of setups
     }
 
 }
