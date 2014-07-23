@@ -1017,7 +1017,7 @@ namespace cs_ppx
                     Entity swEnt = null;
 
                     AddedReferencePlane tmpInitPlane = null;
-                    InitialRefPlane = new List<AddedReferencePlane>(); //set the instance for the first time for sacing all the reference planes
+                    InitialRefPlanes = new List<AddedReferencePlane>(); //set the instance for the first time for sacing all the reference planes
                                      
                     //select the raw material for editing
                     boolStatus = compName[0].Select2(true, 0);
@@ -1053,7 +1053,7 @@ namespace cs_ppx
                                 tmpInitPlane.ReferencePlane = swRefPlane;
 
                                 //add the reference plane
-                                InitialRefPlane.Add(tmpInitPlane);
+                                InitialRefPlanes.Add(tmpInitPlane);
 
                             }
                         }
@@ -1080,8 +1080,8 @@ namespace cs_ppx
         public int addedRefPlane { get; set; }
 
         //save all generate reference plane
-        public List<AddedReferencePlane> InitialRefPlane;
-        
+        public List<AddedReferencePlane> InitialRefPlanes;
+
         #endregion 
 
         //plane Calculator
@@ -1139,37 +1139,38 @@ namespace cs_ppx
                         PartDoc swPartDoc = (PartDoc)compModDoc;
 
                         //get the plane feature
-                        boolStatus = getPlanes(swPartDoc, ref InitialRefPlane);
+                        boolStatus = getPlanes(swPartDoc, ref InitialRefPlanes);
 
                         if (boolStatus == true)
                         {
                             //get the plane normal
-                            boolStatus = getPlaneNormal(swMathUtils, ref InitialRefPlane);
+                            boolStatus = getPlaneNormal(swMathUtils, ref InitialRefPlanes);
                             if (boolStatus == true)
                             {
-                                //analyze intersection
-                                boolStatus = planeIntersection(planeNormal, ref planeValue); // <=================== DO THIS PART
-
                                 //set the distance
-                                setDistance(Doc, swMathUtils, ref InitialRefPlane, tmpPoint);
+                                setDistance(Doc, swMathUtils, ref InitialRefPlanes, tmpPoint);
+
+                                List<int> removeId = new List<int>();
+
+                                //store the plane feature, rank, and normal to planeList
+                                //registerPlane(planeValue, planeNames, planeNormal, distance, ref removeId, swMathUtils);
+
+                                registerPlane(InitialRefPlanes, ref removeId, swMathUtils);
+
+                                if (removeId.Count > 0)
+                                {
+                                    suppressFeature(Doc, assyModel, compName[0], planeNames, removeId);
+                                }
+
                             }
                         }
 
-                        if (boolStatus == true)
+                        if (SelectedRefPlanes.Count == 0)
                         {
-                            List<int> removeId = new List<int>();
-
-                            //store the plane feature, rank, and normal to planeList
-                            //registerPlane(planeValue, planeNames, planeNormal, distance, ref removeId, swMathUtils);
-
-                            registerPlane(InitialRefPlane, ref removeId, swMathUtils);
-
-                            if (removeId.Count > 0)
-                            {
-                                suppressFeature(Doc, assyModel, compName[0], planeNames, removeId);
-                            }
-
+                            //analyze intersection
+                            boolStatus = planeIntersection(planeNormal, ref planeValue); // <=================== DO THIS PART
                         }
+
                     }
 
                     finally
@@ -1225,7 +1226,7 @@ namespace cs_ppx
 
                 if (tmpFeature != null)
                 {
-                    RefPlanes[i].CorrespondFeature = tmpFeature;
+                    RefPlanes[i-1].CorrespondFeature = tmpFeature;
                 }
             }
 
@@ -1410,9 +1411,9 @@ namespace cs_ppx
         //get face that corresponds to refplane
         public Face2 getAttachedFace(Feature feature)
         {
-            if (InitialRefPlane.Count != 0)
+            if (InitialRefPlanes.Count != 0)
             {
-                foreach (AddedReferencePlane CheckRefPlane in InitialRefPlane)
+                foreach (AddedReferencePlane CheckRefPlane in InitialRefPlanes)
                 {
                     if (CheckRefPlane.name.Equals(feature.Name))
                     {
@@ -1480,7 +1481,8 @@ namespace cs_ppx
         {
             AddedReferencePlane tmpSetPlane;
             bool retSim = false;
-            
+
+            //set the instance for the list that will keep the reference planes
             planeList = new List<_planeProperties>();
 
             for (int i = 0; i<ListOfPlanes.Count; i++)
@@ -1525,6 +1527,8 @@ namespace cs_ppx
             AddedReferencePlane tmpSetPlane;
             bool retSim = false;
 
+            //set the instance for the list that will keep the reference planes
+            SelectedRefPlanes = new List<AddedReferencePlane>();
             planeList = new List<_planeProperties>();
 
             for (int i = 0; i < ListOfPlanes.Count; i++)
@@ -1717,9 +1721,11 @@ namespace cs_ppx
             
         }
             
-        //storage for all generated plane
+        //storage for all generated planes *OLD ONE
         public List<_planeProperties> planeList;
-         
+
+        //save only the selected reference planes *NEW ONE
+        public List<AddedReferencePlane> SelectedRefPlanes;
 
         #endregion
 
