@@ -1145,10 +1145,14 @@ namespace cs_ppx
                         {
                             //get the plane normal
                             boolStatus = getPlaneNormal(swMathUtils, ref InitialRefPlanes);
+
                             if (boolStatus == true)
                             {
                                 //set the distance
                                 setDistance(Doc, swMathUtils, ref InitialRefPlanes, tmpPoint);
+
+                                //find the centroid position refer to the normal direction
+                                findCPost(ref InitialRefPlanes, tmpPoint);
 
                                 List<int> removeId = new List<int>();
 
@@ -1159,16 +1163,16 @@ namespace cs_ppx
 
                                 if (removeId.Count > 0)
                                 {
-                                    suppressFeature(Doc, assyModel, compName[0], planeNames, removeId);
+                                    suppressFeature(Doc, assyModel, compName[0], InitialRefPlanes, removeId);
                                 }
 
                             }
                         }
 
-                        if (SelectedRefPlanes.Count == 0)
+                        if (SelectedRefPlanes.Count != 0)
                         {
                             //analyze intersection
-                            boolStatus = planeIntersection(planeNormal, ref planeValue); // <=================== DO THIS PART
+                            //boolStatus = planeIntersection(planeNormal, ref planeValue); // <=================== DO THIS PART
                         }
 
                     }
@@ -1525,7 +1529,7 @@ namespace cs_ppx
         public bool registerPlane(List<AddedReferencePlane> ListOfPlanes, ref List<int> removeId, MathUtility mathUtils)
         {
             AddedReferencePlane tmpSetPlane;
-            bool retSim = false;
+            bool retSim;
 
             //set the instance for the list that will keep the reference planes
             SelectedRefPlanes = new List<AddedReferencePlane>();
@@ -1535,33 +1539,61 @@ namespace cs_ppx
             {
                 tmpSetPlane = new AddedReferencePlane();
                 tmpSetPlane = ListOfPlanes[i];
+                retSim = false;
 
-                /*
-                tmpSetPlane.name = planeFeatures[i].Name;
-                tmpSetPlane.rankNum = planeRank[i];
-                tmpSetPlane.featureObj = planeFeatures[i];
-                tmpSetPlane.planeNormal = planeNorms[i];
-                tmpSetPlane.distance = distance[i];
-                tmpSetPlane.mark = 0;
-                 * */
-
-                //check the similarity (parallel and coincident)
-                //if (planeList.Count != 0)
-                //{
-                retSim = checkPlaneSim(ListOfPlanes, tmpSetPlane, mathUtils);
-                //}
-
-                //add the plane that has to be removed
-                if (retSim == true)
+                //add the reference plane for the first time if the list still empty
+                if (SelectedRefPlanes.Count == 0)
                 {
-                    removeId.Add(i);
+                    retSim = checkPlaneSim(ListOfPlanes, tmpSetPlane, mathUtils);
+
+                    if (retSim == true)
+                    {
+                        SelectedRefPlanes.Add(tmpSetPlane);
+                    }
+                    else
+                    {
+                        if (tmpSetPlane.CPost == false)
+                        {
+                            SelectedRefPlanes.Add(tmpSetPlane);
+                        }
+                        else
+                        {
+                            removeId.Add(i); //add the plane that need to be removed
+                        }
+                    }
+                }
+                else
+                {
+                    //check the similarity (parallel and coincident)
+                    retSim = checkPlaneSim(SelectedRefPlanes, tmpSetPlane, mathUtils);
+
+                    if (retSim == true)
+                    {
+                        removeId.Add(i); //add the plane that need to be removed
+                    }
+                    else
+                    {
+                        if (tmpSetPlane.CPost == false)
+                        {
+                            SelectedRefPlanes.Add(tmpSetPlane);
+                        }
+                        else
+                        {
+                            retSim = checkPlaneSim(ListOfPlanes, removeId, tmpSetPlane, mathUtils);
+
+                            if (retSim == true)
+                            {
+                                SelectedRefPlanes.Add(tmpSetPlane);
+                            }
+                            else
+                            {
+                                removeId.Add(i); //add the plane that need to be removed
+                            }
+                        }
+                    }
+
                 }
 
-                //add only unsimilar plane
-                //if (planeList.Count == 0 || retSim == false)
-                //{
-                //    planeList.Add(tmpSetPlane);
-                //}
             }
 
             return true;
@@ -1603,24 +1635,68 @@ namespace cs_ppx
             bool normalSim = false;
             bool similarity = false;
             bool sameLevel = false;
+            bool NameCheck = false;
 
             foreach (AddedReferencePlane tmpPlane in ListOfPlanes)
             {
-                //check if parallel
-                normalSim = checkNormalSim(tmpPlane.PlaneNormal, plane2Check.PlaneNormal, mathUtils);
+                NameCheck = plane2Check.name.ToString().Equals(tmpPlane.name.ToString());
 
-                if (normalSim == true)
+                if (NameCheck == false)
                 {
-                    //check if coincident
-                    sameLevel = checkPlaneLevel(tmpPlane.CorrespondFeature, tmpPlane.PlaneNormal, plane2Check.CorrespondFeature, mathUtils);
+                    //check if parallel
+                    normalSim = checkNormalSim(tmpPlane.PlaneNormal, plane2Check.PlaneNormal, mathUtils);
 
-                    if (sameLevel == true)
+                    if (normalSim == true)
                     {
-                        similarity = true;
-                        break;
+                        //check if coincident
+                        sameLevel = checkPlaneLevel(tmpPlane.CorrespondFeature, tmpPlane.PlaneNormal, plane2Check.CorrespondFeature, mathUtils);
+
+                        if (sameLevel == true)
+                        {
+                            similarity = true;
+                            break;
+                        }
                     }
                 }
+            }
 
+            //if similar, parallel and coincident, then it should return true
+            return similarity;
+        }
+
+        //OVERLOAD plane similarity
+        public bool checkPlaneSim(List<AddedReferencePlane> ListOfPlanes, List<int> RemoveList, AddedReferencePlane plane2Check, MathUtility mathUtils)
+        {
+            bool normalSim = false;
+            bool similarity = false;
+            bool sameLevel = false;
+            bool NameCheck = false;
+            AddedReferencePlane tmpPlane;
+
+            foreach (int RemoveIndex in RemoveList)
+            {
+                tmpPlane = new AddedReferencePlane();
+                tmpPlane = ListOfPlanes[RemoveIndex];
+
+                NameCheck = plane2Check.name.ToString().Equals(tmpPlane.name.ToString());
+
+                if (NameCheck == false)
+                {
+                    //check if parallel
+                    normalSim = checkNormalSim(tmpPlane.PlaneNormal, plane2Check.PlaneNormal, mathUtils);
+
+                    if (normalSim == true)
+                    {
+                        //check if coincident
+                        sameLevel = checkPlaneLevel(tmpPlane.CorrespondFeature, tmpPlane.PlaneNormal, plane2Check.CorrespondFeature, mathUtils);
+
+                        if (sameLevel == true)
+                        {
+                            similarity = true;
+                            break;
+                        }
+                    }
+                }
             }
 
             //if similar, parallel and coincident, then it should return true
@@ -1666,7 +1742,7 @@ namespace cs_ppx
         }
 
         //delete feature from document
-        public void suppressFeature(ModelDoc2 Doc, AssemblyDoc assyDoc, Component2 compName, List<Feature> feature2Del, List<int> removeId)
+        public void suppressFeature(ModelDoc2 Doc, AssemblyDoc assyDoc, Component2 compName, List<AddedReferencePlane> ListOfPlanes, List<int> removeId)
         {   
             Feature tmpFeature = null;
             bool boolStatus;
@@ -1686,7 +1762,7 @@ namespace cs_ppx
 
                     foreach (int i in removeId)
                     {
-                        tmpFeature = swPartDoc.FeatureByName(feature2Del[i].Name);
+                        tmpFeature = swPartDoc.FeatureByName(ListOfPlanes[i].name);
                         tmpFeature.Select2(true, 0);
                         Doc.EditDelete();
                         
@@ -1719,6 +1795,53 @@ namespace cs_ppx
         {
             return (Math.Abs(Math.Round((value1 - value2), 4)) < 0.0001);
             
+        }
+
+        //find the centroid position for each reference planes
+        public void findCPost(ref List<AddedReferencePlane> AllReferencePlanes, Double[] centroid)
+        {
+            Boolean Location = false;
+            
+            foreach (AddedReferencePlane TmpReferencePlane in AllReferencePlanes)
+            {
+                Location = checkCentroidLocation(centroid, TmpReferencePlane.ReferencePlane, TmpReferencePlane.PlaneNormal);
+                TmpReferencePlane.CPost = Location;
+            }
+        }
+
+        //Check centroid location
+        public bool checkCentroidLocation(Double[] Centroid, RefPlane ReferencePlane, object objPlaneNormal)
+        {
+            MathVector planeNormal, tmpMathVector = null;
+            MathPoint pointOnPlane, pointOnBox = null;
+            Double returnLocation = 0;
+            MathUtility swMath = (MathUtility)SwApp.GetMathUtility();// = new MathUtility();
+
+            //get random point on the plane
+            pointOnPlane = getPointOnPlane(ReferencePlane);
+            double[] TmpPointOnBox = (double[])pointOnPlane.ArrayData;
+
+            //get the centroid of the body box
+            pointOnBox = swMath.CreatePoint(Centroid);
+            double[] TmpPointBox = (double[])pointOnBox.ArrayData;
+
+            //create vector of plane normal
+            planeNormal = swMath.CreateVector(objPlaneNormal);
+            double[] TmpPlaneNormal = (double[])planeNormal.ArrayData;
+
+            //find the dot product of normal and the subtracted value from point on plane with point on box
+            tmpMathVector = (MathVector)pointOnBox.Subtract(pointOnPlane);
+            returnLocation = planeNormal.Dot(tmpMathVector);
+
+            if (returnLocation > 0)
+            {
+                return true; //the centroid is on the same side with with the plane normal direction
+            }
+            else
+            {
+                return false; //the centroid is not on the same side with with the plane normal direction
+            }
+
         }
             
         //storage for all generated planes *OLD ONE
@@ -3495,6 +3618,8 @@ namespace cs_ppx
         public Double DistanceFromCentroid { get; set; } //keep the distance from centroid
 
         public object PlaneNormal { get; set; } //keep the plane normal
+
+        public Boolean CPost { get; set; } //keep the centroid position refer to the normal direction
         
         public int MarkingOpt { get; set; } //keep the marking options that is used for iterating the plane
 
