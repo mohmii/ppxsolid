@@ -36,6 +36,14 @@ namespace cs_ppx
         int addinID = 0;
         BitmapHandler iBmp;
 
+        //variable for PP Details taskpane
+        public TaskpaneView PPDetails_TaskPaneView;
+        public control_pp_details PPDetails_TaskPaneHost;
+
+        //variable for Process Log taskpane
+        public TaskpaneView ProcessLog_TaskPaneView;
+        public control_pp_details ProcessLog_TaskPaneHost;
+
         public const int mainCmdGroupID = 20;
         public const int mainItemID1 = 0;
         public const int mainItemID2 = 1;
@@ -191,11 +199,16 @@ namespace cs_ppx
             AddPMP();
             #endregion
 
+            AddTaskPane_PPDetails();
+            AddTaskPane_ProcessLog();
+
             return true;
         }
 
         public bool DisconnectFromSW()
         {
+            RemoveTaskPane_PPDetails();
+            RemoveTaskPane_ProcessLog();
             RemoveCommandMgr();
             RemovePMP();
             DetachEventHandlers();
@@ -216,6 +229,52 @@ namespace cs_ppx
         #endregion
 
         #region UI Methods
+
+        public void AddTaskPane_PPDetails()
+        {
+            PPDetails_TaskPaneView = SwApp.CreateTaskpaneView2("", "PP Details");
+            PPDetails_TaskPaneView.AddControl("cs_ppx.TaskPane_PP_Details", "");
+            //PPDetails_TaskPaneHost.getSwApp(ref iSwApp);
+        }
+
+        public void RemoveTaskPane_PPDetails()
+        {
+            try
+            {
+                PPDetails_TaskPaneHost = null;
+                PPDetails_TaskPaneView.DeleteView();
+                Marshal.ReleaseComObject(PPDetails_TaskPaneView);
+                PPDetails_TaskPaneView = null;
+            }
+            catch (Exception EX)
+            { 
+
+            }
+            
+        }
+
+        public void AddTaskPane_ProcessLog()
+        {
+            ProcessLog_TaskPaneView = SwApp.CreateTaskpaneView2("", "Process Log");
+            ProcessLog_TaskPaneView.AddControl("cs_ppx.TaskPane_Process_Log", "");            
+        }
+
+        public void RemoveTaskPane_ProcessLog()
+        {
+            try
+            {
+                ProcessLog_TaskPaneHost = null;
+                ProcessLog_TaskPaneView.DeleteView();
+                Marshal.ReleaseComObject(ProcessLog_TaskPaneView);
+                ProcessLog_TaskPaneView = null;
+            }
+            catch (Exception EX)
+            {
+
+            }
+
+        }
+        
         public void AddCommandMgr()
         {
             ICommandGroup cmdGroup;
@@ -965,7 +1024,37 @@ namespace cs_ppx
             }
             else if (BodyArray.Length > 1)
             {
+                for (int m = 0; m < BodyArray.Length; m++)
+                {
+                    TmpBody = (Body2)BodyArray.GetValue(m);
 
+                    SwFace = null;
+                    SwEntity = null;
+
+                    SwFace = (Face2)TmpBody.GetFirstFace();
+                    while (SwFace != null)
+                    {
+                        SwEntity = (Entity)SwFace;
+
+                        SolidWorks.Interop.sldworks.Attribute swAtt = default(SolidWorks.Interop.sldworks.Attribute);
+
+                        int n = 0; // arbitrary counter
+
+                        while (swAtt == null && n < 300)
+                        {
+                            swAtt = SwEntity.FindAttribute(BBDef, n);
+                            n++;
+                        }
+
+                        if (swAtt == null)
+                        {
+                            swAtt = attDef.CreateInstance5(CompDocumentModel, SwFace, "new_face" + faceIndex.ToString(), 0, (int)swInConfigurationOpts_e.swAllConfiguration);
+                            faceIndex++;
+                        }
+
+                        SwFace = (Face2)SwFace.GetNextFace();
+                    }
+                }
 
             }
            
@@ -975,6 +1064,8 @@ namespace cs_ppx
             return true;
            
         }
+
+        
         
         #endregion
 
@@ -3308,8 +3399,12 @@ namespace cs_ppx
             Entity SwEntity = (Entity)SelectedObject;
 
             //Create the definition
-            AttributeDef SwAttDef = SwApp.DefineAttribute("open_face");
-            Boolean RetVal = SwAttDef.AddParameter("status", (int)swParamType_e.swParamTypeDouble, 1, 0);
+            //AttributeDef SwAttDef = SwApp.DefineAttribute("open_face");
+            //Boolean RetVal = SwAttDef.AddParameter("status", (int)swParamType_e.swParamTypeDouble, 1, 0);
+
+            AttributeDef SwAttDef = SwApp.DefineAttribute("bb");
+            Boolean RetVal = SwAttDef.AddParameter("bb", (int)swParamType_e.swParamTypeDouble, 1, 0);
+
             RetVal = SwAttDef.Register();
             
             SolidWorks.Interop.sldworks.Attribute SwAttribute = default(SolidWorks.Interop.sldworks.Attribute);
@@ -3327,7 +3422,9 @@ namespace cs_ppx
             }
             else
             {
-                Parameter OpenParam = SwAttribute.GetParameter("status");
+                //Parameter OpenParam = SwAttribute.GetParameter("status");
+                Parameter OpenParam = SwAttribute.GetParameter("bb");
+
                 String Value = OpenParam.GetDoubleValue().ToString();
 
                 if (Value.Equals("1"))
