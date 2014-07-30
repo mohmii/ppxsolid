@@ -2021,7 +2021,7 @@ namespace cs_ppx
 
                     FeatureManager docFeatureMgr = Doc.FeatureManager;
                     object featArr = docFeatureMgr.GetFeatures(false);
-                    List<Feature> featureList = null;
+                    List<Feature> PlaneFeatures = null;
 
                     //get the components
                     ConfigurationManager configDocManager = (ConfigurationManager)Doc.ConfigurationManager;
@@ -2038,13 +2038,20 @@ namespace cs_ppx
                     
                     boolStatus = compName[0].Select2(true, 0);
 
-                    TraverseComponentFeatures(compName[0], ref featureList);
+                    TraverseComponentFeatures(compName[0], ref PlaneFeatures);
+
+                    PlaneFeatures = new List<Feature>();
+                    //collect the feature of reference planes
+                    foreach (AddedReferencePlane TmpPlane in SelectedRefPlanes)
+                    {
+                        PlaneFeatures.Add(TmpPlane.CorrespondFeature);
+                    }
 
                     //initMachiningPlan();
 
                     List<Body2> RVList = new List<Body2>();
                                        
-                    traversePlanes(Doc, assyModel, compName[0], featureList, ref RVList);
+                    traversePlanes(Doc, assyModel, compName[0], PlaneFeatures, ref RVList);
 
                     iSwApp.SendMsgToUser("Number of process: " + RVList.Count.ToString());
 

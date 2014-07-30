@@ -59,6 +59,7 @@ namespace cs_ppx
 
             this.MP_details.Columns[1].DefaultCellStyle.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
             this.MP_details.Columns[2].DefaultCellStyle.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.MP_details.Columns[3].DefaultCellStyle.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
 
             foreach (AddedReferencePlane TmpPlane in SelectedPlanes)
             {
