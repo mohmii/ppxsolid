@@ -32,5 +32,13 @@ namespace cs_ppx
         {
 
         }
+
+        public void LogProcess(string CurrentProcess)
+        {
+            String Text = ">>> " + CurrentProcess;
+            this.LogMessages.AppendText(Text);
+            this.LogMessages.AppendText(System.Environment.NewLine);
+        }
+
     }
 }

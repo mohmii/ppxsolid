@@ -37,12 +37,12 @@ namespace cs_ppx
         BitmapHandler iBmp;
 
         //variable for PP Details taskpane
-        public TaskpaneView PPDetails_TaskPaneView;
-        public control_pp_details PPDetails_TaskPaneHost;
+        TaskpaneView PPDetails_TaskPaneView;
+        control_pp_details PPDetails_TaskPaneHost;
 
         //variable for Process Log taskpane
-        public TaskpaneView ProcessLog_TaskPaneView;
-        public control_pp_details ProcessLog_TaskPaneHost;
+        TaskpaneView ProcessLog_TaskPaneView;
+        control_process_log ProcessLog_TaskPaneHost;
 
         public const int mainCmdGroupID = 20;
         public const int mainItemID1 = 0;
@@ -61,8 +61,7 @@ namespace cs_ppx
         public const int mainItemID12 = 11;
         
         public const int flyoutGroupID = 91;
-
-        
+                
 
         #region Event Handler Variables
         Hashtable openDocs = new Hashtable();
@@ -233,8 +232,9 @@ namespace cs_ppx
         public void AddTaskPane_PPDetails()
         {
             PPDetails_TaskPaneView = SwApp.CreateTaskpaneView2("", "PP Details");
-            PPDetails_TaskPaneView.AddControl("cs_ppx.TaskPane_PP_Details", "");
-            //PPDetails_TaskPaneHost.getSwApp(ref iSwApp);
+            PPDetails_TaskPaneHost = PPDetails_TaskPaneView.AddControl("cs_ppx.TaskPane_PP_Details", "");
+            PPDetails_TaskPaneHost.getSwApp(ref iSwApp);
+            //PPDetails_TaskPaneHost.getCompName(ref compName);
         }
 
         public void RemoveTaskPane_PPDetails()
@@ -256,7 +256,7 @@ namespace cs_ppx
         public void AddTaskPane_ProcessLog()
         {
             ProcessLog_TaskPaneView = SwApp.CreateTaskpaneView2("", "Process Log");
-            ProcessLog_TaskPaneView.AddControl("cs_ppx.TaskPane_Process_Log", "");            
+            ProcessLog_TaskPaneHost = ProcessLog_TaskPaneView.AddControl("cs_ppx.TaskPane_Process_Log", "");            
         }
 
         public void RemoveTaskPane_ProcessLog()
@@ -821,11 +821,15 @@ namespace cs_ppx
                 {
                     ConfigurationManager configDocManager = (ConfigurationManager)Doc.ConfigurationManager;
                     Configuration configDoc = (Configuration)configDocManager.ActiveConfiguration;
-                    Component2 compInAssembly = (Component2)configDoc.GetRootComponent3(true);                                      
-                    
-                    Component2[] compName = new Component2[2];
-                    
-                    GetCompName(compInAssembly, ref compName);
+                    Component2 compInAssembly = (Component2)configDoc.GetRootComponent3(true);
+
+                    //check the initial existing component name
+                    if (compName == null)
+                    {
+                        compName = new Component2[2];
+                        GetCompName(compInAssembly, ref compName);
+                        PPDetails_TaskPaneHost.getCompName(ref compName);
+                    }
                                         
                     boolStatus = compName[0].Select2(true, 0);
 
@@ -1086,10 +1090,14 @@ namespace cs_ppx
                     ConfigurationManager configDocManager = (ConfigurationManager)Doc.ConfigurationManager;
                     Configuration configDoc = (Configuration)configDocManager.ActiveConfiguration;
                     Component2 compInAssembly = (Component2)configDoc.GetRootComponent3(true);
-                    
-                    //define the raw material and product
-                    Component2[] compName = new Component2[2];
-                    GetCompName(compInAssembly, ref compName);
+
+                    if (compName == null)
+                    {
+                        //define the raw material and product
+                        compName = new Component2[2];
+                        GetCompName(compInAssembly, ref compName);
+                        PPDetails_TaskPaneHost.getCompName(ref compName);
+                    }
 
                     //get faces from raw material (at this stage is main trv)
                     object bodyEnts = (object) compName[0].GetBody();
@@ -1162,6 +1170,8 @@ namespace cs_ppx
             }
 
             Doc.ClearSelection2(true);
+
+            ProcessLog_TaskPaneHost.LogProcess("Generate all coincident planes");
         }
 
         //tools for plane generator
@@ -1182,6 +1192,7 @@ namespace cs_ppx
             MathUtility swMathUtils = (MathUtility)SwApp.GetMathUtility();
             int docType = (int)Doc.GetType();
             bool boolStatus = false;
+            bool RegStatus = false;
             
             AssemblyDoc assyModel = null;
             Component2[] compName = null;
@@ -1204,9 +1215,13 @@ namespace cs_ppx
                         Configuration configDoc = (Configuration)configDocManager.ActiveConfiguration;
                         Component2 compInAssembly = (Component2)configDoc.GetRootComponent3(true);
 
-                        //define the raw material and product
-                        compName = new Component2[2];
-                        GetCompName(compInAssembly, ref compName);
+                        if (compName == null)
+                        {
+                            //define the raw material and product
+                            compName = new Component2[2];
+                            GetCompName(compInAssembly, ref compName);
+                            PPDetails_TaskPaneHost.getCompName(ref compName);
+                        }
 
                         //get the virtual centroid
                         object boxVertices = compName[0].GetBox(false, false);
@@ -1250,11 +1265,14 @@ namespace cs_ppx
                                 //store the plane feature, rank, and normal to planeList
                                 //registerPlane(planeValue, planeNames, planeNormal, distance, ref removeId, swMathUtils);
 
-                                registerPlane(InitialRefPlanes, ref removeId, swMathUtils);
+                                
+                                RegStatus = registerPlane(InitialRefPlanes, ref removeId, swMathUtils);
+                                ProcessLog_TaskPaneHost.LogProcess("Calculate reference planes");
 
-                                if (removeId.Count > 0)
+                                if ((RegStatus == true) && (removeId.Count > 0))
                                 {
                                     suppressFeature(Doc, assyModel, compName[0], InitialRefPlanes, removeId);
+
                                 }
 
                             }
@@ -1263,7 +1281,13 @@ namespace cs_ppx
                         if (SelectedRefPlanes.Count != 0)
                         {
                             //analyze intersection
-                            //boolStatus = planeIntersection(planeNormal, ref planeValue); // <=================== DO THIS PART
+                            boolStatus = planeIntersection(SelectedRefPlanes);
+
+                            if (boolStatus == true)
+                            {
+                                PPDetails_TaskPaneHost.RegisterToPlaneTable(SelectedRefPlanes);
+                                ProcessLog_TaskPaneHost.LogProcess("Add selected planes to the table");
+                            }
                         }
 
                     }
@@ -1436,6 +1460,41 @@ namespace cs_ppx
             return true;
         }
 
+        //OVERLOAD intersect all the plane using based on their normal
+        public bool planeIntersection(List<AddedReferencePlane> SelectedPlanesIn)
+        {
+            //double[] normVectorA, normVectorB = null;
+            //Vector normVectorA, normVectorB;
+            Vector3D crossProduct;
+            Vector3D normVectorA, normVectorB;
+
+            int trueIntersection;
+
+            foreach (AddedReferencePlane TmpPlaneA in SelectedPlanesIn)
+            {
+                normVectorA = getVector(TmpPlaneA.PlaneNormal);
+                trueIntersection = 0;
+
+                foreach (AddedReferencePlane TmpPlaneB in SelectedPlanesIn)
+                {
+                    normVectorB = getVector(TmpPlaneB.PlaneNormal);
+
+                    crossProduct = new Vector3D();
+                    crossProduct = Vector3D.CrossProduct(normVectorA, normVectorB);
+
+                    if (isIntersect(crossProduct) == true)
+                    {
+                        trueIntersection += 1;
+                    }
+                }
+
+                TmpPlaneA.Score = trueIntersection;
+
+            }
+
+            return true;
+        }
+
         //get vector
         static Vector3D getVector(object vectorObject)
         {
@@ -1495,7 +1554,7 @@ namespace cs_ppx
 
                     if (TmpDistance != null)
                     {
-                        RefPlanes[i].DistanceFromCentroid = TmpDistance;
+                        RefPlanes[i].DistanceFromCentroid = TmpDistance * 1000;
                         
                     }
                 }
@@ -1969,9 +2028,13 @@ namespace cs_ppx
                     Configuration configDoc = (Configuration)configDocManager.ActiveConfiguration;
                     Component2 compInAssembly = (Component2)configDoc.GetRootComponent3(true);
 
-                    //define the raw material and product
-                    Component2[] compName = new Component2[2];
-                    GetCompName(compInAssembly, ref compName);
+                    if (compName == null)
+                    {
+                        //define the raw material and product
+                        compName = new Component2[2];
+                        GetCompName(compInAssembly, ref compName);
+                        PPDetails_TaskPaneHost.getCompName(ref compName);
+                    }
                     
                     boolStatus = compName[0].Select2(true, 0);
 
@@ -3713,6 +3776,8 @@ namespace cs_ppx
         public int RankByDistance { get; set; } //keep the rank by the distance
 
         public Double DistanceFromCentroid { get; set; } //keep the distance from centroid
+
+        public int Score { get; set; } //keep the score of intersection
 
         public object PlaneNormal { get; set; } //keep the plane normal
 
