@@ -2040,12 +2040,13 @@ namespace cs_ppx
 
                     TraverseComponentFeatures(compName[0], ref PlaneFeatures);
 
-                    PlaneFeatures = new List<Feature>();
+                    /*PlaneFeatures = new List<Feature>();
                     //collect the feature of reference planes
                     foreach (AddedReferencePlane TmpPlane in SelectedRefPlanes)
                     {
                         PlaneFeatures.Add(TmpPlane.CorrespondFeature);
                     }
+                     * */
 
                     //initMachiningPlan();
 
@@ -2056,6 +2057,8 @@ namespace cs_ppx
                     iSwApp.SendMsgToUser("Number of process: " + RVList.Count.ToString());
 
                     boolStatus = compName[0].Select2(true, 0);
+
+                    ProcessLog_TaskPaneHost.LogProcess("Calculate machining processes");
 
                 }
             }
@@ -2097,7 +2100,7 @@ namespace cs_ppx
         }
 
         //traverse planes
-        public void traversePlanes(ModelDoc2 Doc, AssemblyDoc assyModel, Component2 swComp, List< Feature> featureList, ref List<Body2> VolumeList)
+        public void traversePlanes(ModelDoc2 Doc, AssemblyDoc assyModel, Component2 swComp, List<Feature> featureList, ref List<Body2> VolumeList)
         {
             Feature selFeature = null;
             bool boolStatus;
@@ -2121,7 +2124,10 @@ namespace cs_ppx
 
             //selFeature = getByMP(getNextPlan(selectedMP, position), featureList);
 
-            selFeature = getThePlane(planeList, featureList, ref index);
+            List<AddedReferencePlane> PlaneListByScore =
+                SelectedRefPlanes.OrderByDescending(Plane => Plane.Score).ThenByDescending(Plane => Plane.DistanceFromCentroid).ToList();
+
+            selFeature = getThePlane(ref PlaneListByScore, featureList, ref index);
 
             //selFeature = featureList[4];
             //index = 3;
@@ -2141,7 +2147,7 @@ namespace cs_ppx
                 //check if there are body 
                 if (bodyArray == null)
                 {
-                    setMarkOnPlane(ref planeList, index, 1); //mark the plane because no bodies was collected
+                    setMarkOnPlane(ref SelectedRefPlanes, index, "EMPTYSPLIT"); //mark the plane because no bodies was collected
                 }
                 else
                 {  
@@ -2245,13 +2251,13 @@ namespace cs_ppx
                                 }
 
                                 //set 0 mark that indicates this plane can be set with removal volume
-                                setMarkOnPlane(ref planeList, index, 0);
+                                setMarkOnPlane(ref SelectedRefPlanes, index, "PROCESSOK");
 
                             }
                             else
                             {
-                                //set 3 on this plane that indicates nothing can be set to this plane
-                                setMarkOnPlane(ref planeList, index, 3);
+                                //set 1 on this plane that indicates nothing can be set to this plane
+                                setMarkOnPlane(ref SelectedRefPlanes, index, "NOBODYFOUND");
 
                                 ModelDoc2 DocumentModel = (ModelDoc2) swComp.GetModelDoc2();
 
@@ -2290,7 +2296,7 @@ namespace cs_ppx
                     else
                     { 
                         //set 2 on this plane that indicates nothing can be found
-                        setMarkOnPlane(ref planeList, index, 2);
+                        setMarkOnPlane(ref SelectedRefPlanes, index, "NOBODYSET");
 
                     }
 
@@ -2301,7 +2307,7 @@ namespace cs_ppx
                 Doc = ((ModelDoc2)(SwApp.ActiveDoc));
                 Doc.ClearSelection2(true);
 
-                selFeature = getThePlane(planeList, featureList, ref index);
+                selFeature = getThePlane(ref PlaneListByScore, featureList, ref index);
 
                 //selFeature = null;
 
@@ -2763,7 +2769,7 @@ namespace cs_ppx
 
 
         //get and return the plane
-        public Feature getByMP(_planeProperties plane, List<Feature> _featureList)
+        public Feature getByMP(AddedReferencePlane plane, List<Feature> _featureList)
         {
             if (plane != null)
             {
@@ -2774,29 +2780,46 @@ namespace cs_ppx
         }
 
         //get and return the plane
-        public Feature getThePlane(List<_planeProperties> _planeList, List<Feature> _featureList, ref int index)
+        public Feature getThePlane(ref List<AddedReferencePlane> PlaneListIn, List<Feature> _featureList, ref int index)
         {
-            //bool boolResult = false;
-            //Feature nextPlane = null;
-            Feature selectedPlane = null;
-
-            int selectedIndex;
-            selectedIndex = getPlaneIndex(_planeList);
-
-            if (selectedIndex != -1)
-            {
-                selectedPlane = getSelectedPlane(_planeList[selectedIndex], _featureList);
-                index = selectedIndex;
+            //select the index that has no marking option
+            index = 0;
+            while (PlaneListIn[index].MarkingOpt != 0)
+            { 
+                index++;
+                if (index == PlaneListIn.Count) 
+                {
+                    index = -1;
+                    break; 
+                }                 
             }
 
-            //nextPlane = selectPlanes(_planeList, _featurelist, ref index);
+            //get the plane in the current active document by the selected index
+            if (index != -1)
+            {
+                return getSelectedPlane(PlaneListIn[index], _featureList);
+            }
 
-            return selectedPlane;
+            return null;
+        }
 
+        //get the similar plane and pass the pointer to selected feature
+        public Feature getSelectedPlane(AddedReferencePlane listOfPlane, List<Feature> listOfModelPlane)
+        {
+
+            foreach (Feature CheckedPlane in listOfModelPlane)
+            {
+                if (CheckedPlane.Name == listOfPlane.CorrespondFeature.Name)
+                {
+                    return CheckedPlane;
+                }
+            }
+
+            return null;
         }
 
         //get and return the plane index
-        public int getPlaneIndex(List<_planeProperties> _planeList)
+        public int getPlaneIndex(List<AddedReferencePlane> PlaneListIn)
         {
             int selectedIndex = -1;
             int tmpRank = 0;
@@ -2804,102 +2827,52 @@ namespace cs_ppx
             int distSimilarity = 0;
             double tmpDistance = 0.0;
 
-            foreach (_planeProperties tmpPlane in _planeList)
-            {
-                if (tmpPlane.mark == 0)
-                {
-                    if (tmpPlane.rankByDistance == tmpRank)
-                    {
-                        rankSimilarity++;
-                    }
-                    else if (tmpPlane.rankByDistance > tmpRank)
-                    {
-                        selectedIndex = _planeList.IndexOf(tmpPlane);
-                        tmpRank = tmpPlane.rankByDistance;
-                        rankSimilarity = 1;
-                    }
-                    
-                }
+            List<AddedReferencePlane> ListByScore = 
+                PlaneListIn.OrderByDescending(Plane => Plane.Score).ThenByDescending(Plane => Plane.DistanceFromCentroid).ToList();
+
+            for (int index = 0; index < ListByScore.Count(); index++)
+            { 
+                
             }
 
-            if (rankSimilarity == 0)
-            {
-                return selectedIndex;
-            }
-            else
-            {
-                foreach (_planeProperties tmpPlane in _planeList)
-                { 
-                    if (tmpPlane.mark == 0)
-                    {
-                        if (isEqual(tmpPlane.distance, tmpDistance) == true)
-                        {
-                            distSimilarity++;
-                        }
-                        else if (tmpPlane.distance > tmpDistance)
-                        {
-                            selectedIndex = _planeList.IndexOf(tmpPlane);
-                            tmpDistance = tmpPlane.distance;
-                            distSimilarity = 1;
-                        }
-                    }
-                }
-            }
-
+            
             return selectedIndex;
 
         }
 
-        //get the similar plane and pass the pointer to selected feature
-        public Feature getSelectedPlane(_planeProperties listOfPlane, List<Feature> listOfModelPlane)
-        {
-            Feature tmpFeature = null;
 
-            for (int i = 0; i < listOfModelPlane.Count; i++)
-            {   
-                //tmpFeature = listOfModelPlane[i];
-
-                if (listOfModelPlane[i].Name == listOfPlane.featureObj.Name)
-                {
-                    tmpFeature = listOfModelPlane[i];
-                    
-                }
-            }
-
-            return tmpFeature;
-        }
 
         //mark the plane according the message code
-        public bool setMarkOnPlane(ref List<_planeProperties> planeList, int index, int message)
+        public bool setMarkOnPlane(ref List<AddedReferencePlane> planeList, int index, string message)
         {
             switch (message)
             {
                 //if the process runs ok, mark the plane
-                //as 1 to avoid the system select it again    
-                case 0:
-                    planeList[index].mark = 1;
+                //as 0 to avoid the system select it again    
+                case "PROCESSOK":
+                    planeList[index].Remark = 0;
 
-                    renewIntersection(ref planeList, index);
+                    //renewIntersection(ref planeList, index);
                     break;
 
                 //if no body found
-                case 1:
-                    planeList[index].mark = 2;
+                case "NOBODYFOUND":
+                    planeList[index].Remark = 1;
                     break;
 
                 //if no body can be set to the corresponding plane
-                case 2:
-                    planeList[index].mark = 3;
+                case "NOBODYSET":
+                    planeList[index].Remark = 2;
                     break;
 
                 //split body process has failed
-                case 3:
-                    planeList[index].mark = 4;
+                case "EMPTYSPLIT":
+                    planeList[index].Remark = 3;
                     break;
 
                 //safe normal critearia is not achieved
-                case 4:
-                    planeList[index].mark = 5;
+                case "UNSAFE":
+                    planeList[index].Remark = 4;
                     break;
             }
             
