@@ -1943,7 +1943,7 @@ namespace cs_ppx
         //checking the double is zero to avoid trailing zeros
         static bool isEqual(double value1, double value2)
         {
-            return (Math.Abs(Math.Round((value1 - value2), 4)) < 0.0001);
+            return (Math.Abs(Math.Round((value1 - value2), 4)) < 0.0000001);
             
         }
 
@@ -2069,6 +2069,8 @@ namespace cs_ppx
         //tools for calculating TRV feature
         #region TRV Feature
 
+        public List<AddedReferencePlane> PlaneListByScore;
+
         //initiate the traverse with the first feature
         public void TraverseComponentFeatures(Component2 swComp, ref List<Feature> planeList)
         {
@@ -2124,7 +2126,8 @@ namespace cs_ppx
 
             //selFeature = getByMP(getNextPlan(selectedMP, position), featureList);
 
-            List<AddedReferencePlane> PlaneListByScore =
+            //sort the selected Reference plane by its score
+            PlaneListByScore =
                 SelectedRefPlanes.OrderByDescending(Plane => Plane.Score).ThenByDescending(Plane => Plane.DistanceFromCentroid).ToList();
 
             selFeature = getThePlane(ref PlaneListByScore, featureList, ref index);
@@ -2261,14 +2264,11 @@ namespace cs_ppx
 
                                 ModelDoc2 DocumentModel = (ModelDoc2) swComp.GetModelDoc2();
 
+                                //delete the split feature
                                 string ComponentName = swComp.Name2;
-
                                 Feature LastFeature = (Feature) swComp.FeatureByName("Split" + SplitCounter.ToString());
-
                                 string FeatureName = LastFeature.Name;
-
                                 bool SStatus = LastFeature.Select2(true, 3);
-
                                 Doc.EditDelete();
 
                                 //myFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
@@ -2372,7 +2372,7 @@ namespace cs_ppx
 
                             //check the feasibility of the splitted body (current)
                             bool bodyStatus = false;
-                            bodyStatus = setBodyToPlane(ModDoc, BodyToCheck, Centroid, planeList[index]);
+                            bodyStatus = setBodyToPlane(ModDoc, BodyToCheck, Centroid, PlaneListByScore[index]);
 
                             if (bodyStatus == true)
                             {
@@ -2457,7 +2457,7 @@ namespace cs_ppx
                         
                         //check the feasibility of the splitted body (current)
 
-                        bodyStatus = setBodyToPlane(CompDocumentModel, TmpBodyToCheck, Centroid, planeList[index]);
+                        bodyStatus = setBodyToPlane(CompDocumentModel, TmpBodyToCheck, Centroid, PlaneListByScore[index]);
 
                         if (bodyStatus == true)
                         {
@@ -2797,6 +2797,7 @@ namespace cs_ppx
             //get the plane in the current active document by the selected index
             if (index != -1)
             {
+                PlaneListIn[index].MarkingOpt = -1;
                 return getSelectedPlane(PlaneListIn[index], _featureList);
             }
 
@@ -2943,20 +2944,21 @@ namespace cs_ppx
         }
 
         //OVERLOAD setBodyToPlane
-        public bool setBodyToPlane(ModelDoc2 DocumentModel, Body2 BodyToCheck, Double[] Centroid, _planeProperties SelectedPlane)
+        public bool setBodyToPlane(ModelDoc2 DocumentModel, Body2 BodyToCheck, Double[] Centroid, AddedReferencePlane SelectedPlane)
         {
-            bool Status = false;
 
             if (isBodyConvex(DocumentModel, BodyToCheck) == true)
             {
-                if (checkBodyLocation(BodyToCheck, Centroid, SelectedPlane.featureObj, SelectedPlane.planeNormal) == true)
+                if (SelectedPlane.CPost == true) { return true; }
+                                
+                if (checkBodyLocation(BodyToCheck, Centroid, SelectedPlane.CorrespondFeature, SelectedPlane.PlaneNormal) == true)
                 {
-                    Status = true;
+                    return true;
                 }
 
             }
 
-            return Status;
+            return false;
         }
 
         //check whether if the body convex or concave, return true if convex
@@ -3176,28 +3178,31 @@ namespace cs_ppx
         //check the sign of vertex
         public bool checkSign(double[] crossProduct)
         {
-            int totalNum = 0;
+            int PositiveNum = 0;
+            int NegativeNum = 0;
             bool returnValue = false;
             
-            //check first value
+            //check number of positive and negative value
             if (crossProduct != null)
             {   
                 for (int i = 0; i < crossProduct.Length; i++)
                 {
-                    if (isEqual(crossProduct[i], Math.Abs(crossProduct[i])))
+                    if (crossProduct[i] != 0)
                     {
-                        totalNum++;
-                    }
-                    else
-                    {
-                        totalNum--;
+                        if (crossProduct[i] > 0)
+                        {
+                            PositiveNum++;
+                        }
+                        else
+                        {
+                            NegativeNum++;
+                        }
                     }
                     
                 }
 
-                //if the total number is equal with the number of point, then
-                //sign is never change and this means this loop is convex.
-                if (Math.Abs(totalNum) == crossProduct.Length)
+                //if either positive or negative leads to zero it means the sign never changes                
+                if (PositiveNum == 0 | NegativeNum==0) 
                 {
                     returnValue = true;
                 }
