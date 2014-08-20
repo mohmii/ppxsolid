@@ -1474,6 +1474,7 @@ namespace cs_ppx
             {
                 normVectorA = getVector(TmpPlaneA.PlaneNormal);
                 trueIntersection = 0;
+                TmpPlaneA.PlaneIntersection = new List<string>();
 
                 foreach (AddedReferencePlane TmpPlaneB in SelectedPlanesIn)
                 {
@@ -1485,7 +1486,9 @@ namespace cs_ppx
                     if (isIntersect(crossProduct) == true)
                     {
                         trueIntersection += 1;
+                        TmpPlaneA.PlaneIntersection.Add(TmpPlaneB.name);
                     }
+                    
                 }
 
                 TmpPlaneA.Score = trueIntersection;
@@ -2051,8 +2054,10 @@ namespace cs_ppx
                     //initMachiningPlan();
 
                     List<Body2> RVList = new List<Body2>();
+                    List<AddedReferencePlane> ParentList = null;
+                    AddedReferencePlane ParentPlane = null;                   
                                        
-                    traversePlanes(Doc, assyModel, compName[0], PlaneFeatures, ref RVList);
+                    traversePlanes(Doc, assyModel, compName[0], PlaneFeatures, ParentPlane, ParentList);
 
                     iSwApp.SendMsgToUser("Number of process: " + RVList.Count.ToString());
 
@@ -2068,6 +2073,8 @@ namespace cs_ppx
 
         //tools for calculating TRV feature
         #region TRV Feature
+
+        public List<MachiningPlan> MachiningPlanList;
 
         public List<AddedReferencePlane> PlaneListByScore;
 
@@ -2101,45 +2108,95 @@ namespace cs_ppx
 
         }
 
-        //traverse planes
-        public void traversePlanes(ModelDoc2 Doc, AssemblyDoc assyModel, Component2 swComp, List<Feature> featureList, ref List<Body2> VolumeList)
+        //try to make a recursive function
+        public void AnalyzePlanes()
         {
-            Feature selFeature = null;
+            //sort the selected Reference plane by its score
+           
+            Boolean ReachBottom = false;
+            
+
+            while (ReachBottom == false)
+            {
+                foreach (AddedReferencePlane SelectedPlane in PlaneListByScore)
+                {
+                    
+                }
+
+                ReachBottom = true;
+            }
+        }
+
+        //copy the AddedReferencePlane
+        public void CopyReference(ref List<AddedReferencePlane> TargetList, List<AddedReferencePlane> SourceList)
+        {
+            AddedReferencePlane TargetItem;
+            foreach (AddedReferencePlane Source in SourceList)
+            {
+                TargetItem = new AddedReferencePlane();
+                TargetItem.name = Source.name;
+                TargetItem.ReferencePlane = Source.ReferencePlane;
+                TargetItem.AttachedFace = Source.AttachedFace;
+                TargetItem.CorrespondFeature = Source.CorrespondFeature;
+                TargetItem.RankByDistance = Source.RankByDistance;
+                TargetItem.DistanceFromCentroid = Source.DistanceFromCentroid;
+                TargetItem.PlaneIntersection = Source.PlaneIntersection;
+                TargetItem.Score = Source.Score;
+                TargetItem.PlaneNormal = Source.PlaneNormal;
+                TargetItem.CPost = Source.CPost;
+                TargetItem.MarkingOpt = Source.MarkingOpt;
+                TargetItem.Remark = Source.Remark;
+                TargetItem.Possibility = Source.Possibility;
+                TargetList.Add(TargetItem);
+            }
+        }
+
+
+        //traverse planes
+        public void traversePlanes(ModelDoc2 Doc, AssemblyDoc assyModel, Component2 swComp, List<Feature> featureList, 
+            AddedReferencePlane ParentPlane, List<AddedReferencePlane> ListOfParentPlanes)
+        {
+            Feature SelectedFeature = null;
             bool boolStatus;
             int index = 0;
             int SplitCounter = 0;
             int Errors = 0;
             int Warnings = 0;
-
             
+            List<Feature> ListOfParentFeature = null;
+
+            //sort the selected Reference plane by its score
+            List<AddedReferencePlane> SortedList = 
+                SelectedRefPlanes.OrderByDescending(Plane => Plane.Score).ThenByDescending(Plane => Plane.DistanceFromCentroid).ToList();
+
+            PlaneListByScore = new List<AddedReferencePlane>();
+            CopyReference(ref PlaneListByScore, SortedList);
+            
+            //set parent and child status to manage the iteration
+            Boolean ChildStatus;
+            if (ParentPlane == null)
+            {
+                SelectedFeature = getThePlane(ref PlaneListByScore, featureList, ref index, ListOfParentPlanes);
+                ChildStatus = false;
+            }
+            else
+            {
+                ChildStatus = true;
+                SelectedFeature = getSelectedPlane(ParentPlane, featureList);
+                ListOfParentFeature = new List<Feature>();
+            }
+
+            //make the loaded document to be invisble
             String CompPathName = swComp.GetPathName();
-            iSwApp.DocumentVisible(false, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be invisble
+            iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART);
             ModelDoc2 CompDocumentModel = (ModelDoc2)SwApp.OpenDoc6(CompPathName, (int)swDocumentTypes_e.swDocPART,
                 (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
             
-            
-            //setMarkOnPlane(ref planeList, 5, 4);
-            //setMarkOnPlane(ref planeList, 6, 4);
-
-            //int selectedMP = 1;
-            int position = 0;
-
-            //selFeature = getByMP(getNextPlan(selectedMP, position), featureList);
-
-            //sort the selected Reference plane by its score
-            PlaneListByScore =
-                SelectedRefPlanes.OrderByDescending(Plane => Plane.Score).ThenByDescending(Plane => Plane.DistanceFromCentroid).ToList();
-
-            selFeature = getThePlane(ref PlaneListByScore, featureList, ref index);
-
-            //selFeature = featureList[4];
-            //index = 3;
-
-            while (selFeature != null)
+            while (SelectedFeature != null)
             {
                 assyModel.EditPart();
-               
-                boolStatus = selFeature.Select2(true, 0);
+
+                boolStatus = SelectedFeature.Select2(true, 0);
                 //int longstatus = 0;
                 
                 //split and collect the body
@@ -2150,21 +2207,30 @@ namespace cs_ppx
                 //check if there are body 
                 if (bodyArray == null)
                 {
-                    setMarkOnPlane(ref SelectedRefPlanes, index, "EMPTYSPLIT"); //mark the plane because no bodies was collected
+                    if (ChildStatus == true)
+                    {
+                        ChildStatus = false;
+                    }
+                    else
+                    {
+                        setMarkOnPlane(ref PlaneListByScore, index, "EMPTYSPLIT"); //mark the plane because no bodies was collected
+                        //set the continnuity to be false
+                        PlaneListByScore[index].Possibility = false;
+                    }
                 }
                 else
                 {  
                     string[] bodyNames = new string[bodyArray.Length]; //set the name
                     
-                    Feature myFeature = null;
-                    
-                    myFeature = SplitAndSaveBody(Doc, swComp, selFeature, bodyArray, ref bodyNames);
+                    Feature SplitFeature = null;
+                    Feature DeleteFeature = null;
 
-                    if (myFeature != null)
+                    SplitFeature = SplitAndSaveBody(Doc, swComp, SelectedFeature, bodyArray, ref bodyNames);
+
+                    if (SplitFeature != null)
                     {
                         try
-                        {
-                            String SelectedBody = null;
+                        {   
                             List<double> Volume = new List<double>();
                             Object BodiesInfo = null;
                             List<string> BodyToDelete = null;
@@ -2181,14 +2247,14 @@ namespace cs_ppx
                             if (Status == true)
                             {
                                 iSwApp.SendMsgToUser("Feasible body exist, ready to be registered in the removal sequence");
-                                
 
-                                if (BodyToDelete.Count > 1)
+                                if (ChildStatus == true)
                                 {
-                                    //iSwApp.SendMsgToUser("Body > 1 still underdevelopment");
+                                    ChildStatus = false;
 
-                                    foreach (String BodyName in BodyToDelete)
+                                    if (BodyToDelete.Count == 1)
                                     {
+                                        //prepare the deletion of the splitted body
                                         BodiesInfo = null;
                                         Body2 TmpBody = null;
                                         int DeleteIndex = 0;
@@ -2200,7 +2266,7 @@ namespace cs_ppx
                                         {
                                             TmpBody = (Body2)bodyArray.GetValue(j);
 
-                                            if (TmpBody.Name.Equals(BodyName))
+                                            if (TmpBody.Name.Equals(BodyToDelete[0]))
                                             {
                                                 DeleteIndex = j;
                                                 break;
@@ -2208,72 +2274,89 @@ namespace cs_ppx
                                         }
 
                                         SelectData TmpSelectData = null;
-
                                         bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
+                                        SwApp.SendMsgToUser("Removed shape by " + SelectedFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
+                                        DeleteFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
 
-                                        VolumeList.Add(TmpBody);
+                                        ListOfParentPlanes.Add(ParentPlane);
+                                        ListOfParentFeature.Add(SplitFeature);
+                                        ListOfParentFeature.Add(DeleteFeature);
 
-                                        SwApp.SendMsgToUser("Removed shape by " + selFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
+                                    }
+                                    else
+                                    {
+                                        iSwApp.SendMsgToUser("Body > 1 section still underdevelopment");
 
-                                        myFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
+                                        //foreach (String BodyName in BodyToDelete)
+                                        //{
+                                        //    BodiesInfo = null;
+                                        //    Body2 TmpBody = null;
+                                        //    int DeleteIndex = 0;
+                                        //    bodyArray = null;
+
+                                        //    bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
+
+                                        //    for (int j = 0; j < bodyArray.Length; j++)
+                                        //    {
+                                        //        TmpBody = (Body2)bodyArray.GetValue(j);
+
+                                        //        if (TmpBody.Name.Equals(BodyName))
+                                        //        {
+                                        //            DeleteIndex = j;
+                                        //            break;
+                                        //        }
+                                        //    }
+
+                                        //    SelectData TmpSelectData = null;
+                                        //    bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
+                                        //    SwApp.SendMsgToUser("Removed shape by " + SelectedFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
+                                        //    DeleteFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
+
+
+                                        //}
+
+
                                     }
 
                                 }
                                 else
                                 {
+                                    //set the status of possibiliity to be true
+                                    PlaneListByScore[index].Possibility = true;
+
+                                    //set 0 mark that indicates this plane can be set with removal volume
+                                    setMarkOnPlane(ref PlaneListByScore, index, "PROCESSOK");
+
+                                    //delete the split feature
+                                    ModelDoc2 DocumentModel = (ModelDoc2)swComp.GetModelDoc2();
+                                    Feature LastFeature = (Feature)swComp.FeatureByName(SplitFeature.Name);
+                                    bool SStatus = LastFeature.Select2(true, 3);
+                                    Doc.EditDelete();
                                     
-                                    //prepare the deletion of the splitted body
-                                    BodiesInfo = null;
-                                    Body2 TmpBody = null;
-                                    int DeleteIndex = 0;
-                                    bodyArray = null;
-
-                                    bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
-
-                                    for (int j = 0; j < bodyArray.Length; j++)
-                                    {
-                                        TmpBody = (Body2)bodyArray.GetValue(j);
-
-                                        if (TmpBody.Name.Equals(BodyToDelete[0]))
-                                        {
-                                            DeleteIndex = j;
-                                            break;
-                                        }
-                                    }
-
-                                    SelectData TmpSelectData = null;
-
-                                    bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
-
-                                    VolumeList.Add(TmpBody);
-
-                                    SwApp.SendMsgToUser("Removed shape by " + selFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
-
-                                    myFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
-
                                 }
-
-                                //set 0 mark that indicates this plane can be set with removal volume
-                                setMarkOnPlane(ref SelectedRefPlanes, index, "PROCESSOK");
+                                
 
                             }
                             else
                             {
-                                //set 1 on this plane that indicates nothing can be set to this plane
-                                setMarkOnPlane(ref SelectedRefPlanes, index, "NOBODYFOUND");
+                                if (ChildStatus == true)
+                                {
+                                    ChildStatus = false;
+                                }
+                                else
+                                {
+                                    //set 1 on this plane that indicates nothing can be set to this plane
+                                    setMarkOnPlane(ref PlaneListByScore, index, "NOBODYFOUND");
 
-                                ModelDoc2 DocumentModel = (ModelDoc2) swComp.GetModelDoc2();
+                                    //set the continuity to be false
+                                    PlaneListByScore[index].Possibility = false;
 
-                                //delete the split feature
-                                string ComponentName = swComp.Name2;
-                                Feature LastFeature = (Feature) swComp.FeatureByName("Split" + SplitCounter.ToString());
-                                string FeatureName = LastFeature.Name;
-                                bool SStatus = LastFeature.Select2(true, 3);
-                                Doc.EditDelete();
-
-                                //myFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
-
-                                //SplitCounter--;
+                                    //delete the split feature
+                                    ModelDoc2 DocumentModel = (ModelDoc2)swComp.GetModelDoc2();
+                                    Feature LastFeature = (Feature)swComp.FeatureByName(SplitFeature.Name);
+                                    bool SStatus = LastFeature.Select2(true, 3);
+                                    Doc.EditDelete();
+                                }
 
                             }
 
@@ -2286,6 +2369,7 @@ namespace cs_ppx
 
                         finally
                         {
+
                             //Object BodiesInfo = null;
                             //Array NewBodies = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
 
@@ -2294,30 +2378,53 @@ namespace cs_ppx
                     }
 
                     else
-                    { 
-                        //set 2 on this plane that indicates nothing can be found
-                        setMarkOnPlane(ref SelectedRefPlanes, index, "NOBODYSET");
+                    {
+                        if (ChildStatus == true)
+                        {
+                            ChildStatus = false;
+                        }
+                        else
+                        {
+                            //set 2 on this plane that indicates nothing can be found
+                            setMarkOnPlane(ref PlaneListByScore, index, "NOBODYSET");
 
+                            //set the continuity to be false
+                            PlaneListByScore[index].Possibility = false;
+                        }
                     }
-
-                    position++;
-
                 }
 
                 Doc = ((ModelDoc2)(SwApp.ActiveDoc));
                 Doc.ClearSelection2(true);
+                assyModel.EditPart();
 
-                selFeature = getThePlane(ref PlaneListByScore, featureList, ref index);
-
-                //selFeature = null;
+                SelectedFeature = getThePlane(ref PlaneListByScore, featureList, ref index, ListOfParentPlanes);
 
             }
 
-            //Doc.ClearSelection2(true);
+            
 
             iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(CompPathName));
             iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be visble
-             
+
+            //collect only the true possibilities
+            List<AddedReferencePlane> PlaneListByPosibility = new List<AddedReferencePlane>();
+            PlaneListByPosibility = 
+                PlaneListByScore.Where(Plane => Plane.Possibility == true).
+                OrderByDescending(Plane => Plane.Score).ThenByDescending(Plane => Plane.DistanceFromCentroid).ToList();
+
+            if (PlaneListByPosibility.Count != 0)
+            {
+                foreach (AddedReferencePlane PossiblePlane in PlaneListByPosibility)
+                {
+                    if (ListOfParentPlanes == null) { ListOfParentPlanes = new List<AddedReferencePlane>(); }
+
+                    traversePlanes(Doc, assyModel, swComp, featureList, PossiblePlane, ListOfParentPlanes);
+                }
+            }
+
+            //Doc.ClearSelection2(true);
+ 
         }
 
         //getNextPlane
@@ -2780,28 +2887,44 @@ namespace cs_ppx
         }
 
         //get and return the plane
-        public Feature getThePlane(ref List<AddedReferencePlane> PlaneListIn, List<Feature> _featureList, ref int index)
+        public Feature getThePlane(ref List<AddedReferencePlane> PlaneListIn, List<Feature> _featureList, ref int index, List<AddedReferencePlane> ParentList)
         {
             //select the index that has no marking option
             index = 0;
             while (PlaneListIn[index].MarkingOpt != 0)
-            { 
+            {
                 index++;
-                if (index == PlaneListIn.Count) 
+                if (index == PlaneListIn.Count)
                 {
                     index = -1;
-                    break; 
-                }                 
+                    break;
+                }
             }
 
             //get the plane in the current active document by the selected index
             if (index != -1)
             {
                 PlaneListIn[index].MarkingOpt = -1;
+
+                if (ParentList != null && IsParent(PlaneListIn[index], ParentList))
+                {
+                    getThePlane(ref PlaneListIn, _featureList, ref index, ParentList);
+                }
+
                 return getSelectedPlane(PlaneListIn[index], _featureList);
             }
 
             return null;
+        }
+
+        //check if it is a parent or not
+        public Boolean IsParent(AddedReferencePlane CheckThisPlane, List<AddedReferencePlane> ParentListReference)
+        {
+            int Check = ParentListReference.Where(Parent => Parent.name.Equals(CheckThisPlane.name)).Count();
+
+            if (Check == 0) { return false; }
+
+            return true;
         }
 
         //get the similar plane and pass the pointer to selected feature
@@ -3073,7 +3196,7 @@ namespace cs_ppx
                 if (tmpLoop.IsOuter() == true)
                 {
                     //process this loop
-                    retVal = isLoopConvex(tmpLoop);
+                    retVal = isLoopConvex(tmpLoop, face2Check);
                 }
             }
 
@@ -3093,7 +3216,7 @@ namespace cs_ppx
         }
 
         //check whether if the loop is convex or concave
-        public bool isLoopConvex(Loop2 loop2Check)
+        public bool isLoopConvex(Loop2 loop2Check, Face2 face2Check)
         {
             Object[] objVertices = null;
             List<Vertex> verticesList = new List<Vertex>();
@@ -3131,7 +3254,7 @@ namespace cs_ppx
             }
              * */
 
-            if (checkTriplets(ref zCrossProduct, verticesArray) == true)
+            if (checkTriplets(ref zCrossProduct, verticesArray, face2Check) == true)
             {
                 returnValue = checkSign(zCrossProduct);
             }
@@ -3140,14 +3263,16 @@ namespace cs_ppx
         }
 
         //check triplets
-        public bool checkTriplets(ref double[] crossProduct, Vertex[] vertexList)
+        public bool checkTriplets(ref double[] UVCrossProduct, Vertex[] vertexList, Face2 face2Check)
         {
             Object objPoint1, objPoint2, objPoint3 = null;
             Double[] point1, point2, point3 = null;
             //Vertex tmpVertex1, tmpVertex2, tmpVertex3 = null;
             double dx1, dx2, dy1, dy2;
+            double du1, du2, dv1, dv2;
 
-            crossProduct = new double[vertexList.Length - 2];
+            //crossProduct = new double[vertexList.Length - 2];
+            UVCrossProduct = new double[vertexList.Length - 2];
             
             //iterate to check each triplets
             for (int i = 0; i < (vertexList.Length - 2); i++)
@@ -3164,12 +3289,23 @@ namespace cs_ppx
                 point2 = (double[])objPoint2;
                 point3 = (double[])objPoint3;
 
+                Double[] UVPoint1 = (Double[])face2Check.ReverseEvaluate(point1[0], point1[1], point1[2]);
+                Double[] UVPoint2 = (Double[])face2Check.ReverseEvaluate(point2[0], point2[1], point2[2]);
+                Double[] UVPoint3 = (Double[])face2Check.ReverseEvaluate(point3[0], point3[1], point3[2]);
+
                 dx1 = point2[0] - point1[0];
                 dx2 = point3[0] - point2[0];
                 dy1 = point2[1] - point1[1];
                 dy2 = point3[1] - point2[1];
 
-                crossProduct[i] = (dx1 * dy2) - (dx2 * dy1);
+                du1 = UVPoint2[0] - UVPoint1[0];
+                du2 = UVPoint3[0] - UVPoint2[0];
+                dv1 = UVPoint2[1] - UVPoint1[1];
+                dv2 = UVPoint3[1] - UVPoint2[1];
+
+                //crossProduct[i] = (dx1 * dy2) - (dx2 * dy1);
+
+                UVCrossProduct[i] = (du1 * dv2) - (du2 * dv1);
             }
 
             return true;
@@ -3762,6 +3898,8 @@ namespace cs_ppx
 
         public Double DistanceFromCentroid { get; set; } //keep the distance from centroid
 
+        public List<string> PlaneIntersection { get; set; } //keep the intersection with other planes
+
         public int Score { get; set; } //keep the score of intersection
 
         public object PlaneNormal { get; set; } //keep the plane normal
@@ -3771,6 +3909,8 @@ namespace cs_ppx
         public int MarkingOpt { get; set; } //keep the marking options that is used for iterating the plane
 
         public int Remark { get; set; } //keep additional remark for the plane
+
+        public Boolean Possibility { get; set; } //keep the status for possibility to add as a plane candidate
 
     }
 
