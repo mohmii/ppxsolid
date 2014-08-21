@@ -1996,6 +1996,41 @@ namespace cs_ppx
             }
 
         }
+
+        //check if point location is on a plane or not
+        public bool CheckPointLocation(Vertex ThisPoint, RefPlane ReferencePlane, object objPlaneNormal)
+        {
+            MathVector planeNormal, tmpMathVector = null;
+            MathPoint pointOnPlane, pointOnBox = null;
+            Double returnLocation = 0;
+            MathUtility swMath = (MathUtility)SwApp.GetMathUtility();// = new MathUtility();
+
+            //get random point on the plane
+            pointOnPlane = getPointOnPlane(ReferencePlane);
+            double[] TmpPointOnBox = (double[])pointOnPlane.ArrayData;
+
+            //get the centroid of the body box
+            pointOnBox = swMath.CreatePoint(ThisPoint.GetPoint());
+            double[] TmpPointBox = (double[])pointOnBox.ArrayData;
+
+            //create vector of plane normal
+            planeNormal = swMath.CreateVector(objPlaneNormal);
+            double[] TmpPlaneNormal = (double[])planeNormal.ArrayData;
+
+            //find the dot product of normal and the subtracted value from point on plane with point on box
+            tmpMathVector = (MathVector)pointOnBox.Subtract(pointOnPlane);
+            returnLocation = planeNormal.Dot(tmpMathVector);
+
+            if (isEqual(returnLocation, 0) == true)
+            {
+                return true; //the centroid is on the same side with with the plane normal direction
+            }
+            else
+            {
+                return false; //the centroid is not on the same side with with the plane normal direction
+            }
+
+        }
             
         //storage for all generated planes *OLD ONE
         public List<_planeProperties> planeList;
@@ -3062,52 +3097,52 @@ namespace cs_ppx
         }
 
         // the reference plane belonging body
-        public bool setBodyToPlane(ModelDoc2 Doc, Body2[] bodyList, _planeProperties selectedPlane, ref List<int> selectedId)
-        {
-            List<Body2> tmpBodyList = new List<Body2>();
-            selectedId = new List<int>();
+        //public bool setBodyToPlane(ModelDoc2 Doc, Body2[] bodyList, _planeProperties selectedPlane, ref List<int> selectedId)
+        //{
+        //    List<Body2> tmpBodyList = new List<Body2>();
+        //    selectedId = new List<int>();
 
-            bool returnValue = false;
+        //    bool returnValue = false;
             
-            try
-            {
-                int index = 0;
+        //    try
+        //    {
+        //        int index = 0;
 
-                foreach (Body2 tmpBody in bodyList)
-                {
-                    if (isBodyConvex(Doc, tmpBody) == true)
-                    {
-                        if (checkBodyLocation(tmpBody, selectedPlane.featureObj, selectedPlane.planeNormal) == true)
-                        {
-                            tmpBodyList.Add(tmpBody);
-                            selectedId.Add(index);
-                        }
+        //        foreach (Body2 tmpBody in bodyList)
+        //        {
+        //            if (isBodyConvex(Doc, tmpBody) == true)
+        //            {
+        //                if (checkBodyLocation(tmpBody, selectedPlane.featureObj, selectedPlane.planeNormal) == true)
+        //                {
+        //                    tmpBodyList.Add(tmpBody);
+        //                    selectedId.Add(index);
+        //                }
 
-                    }
+        //            }
 
-                    index++;
+        //            index++;
                     
-                }
-            }
+        //        }
+        //    }
 
-            finally
-            {
-                if (tmpBodyList.Count > 0)
-                {
-                    //tmpBodyList.CopyTo(selectedPlane.bodyList);
-                    selectedPlane.bodyList = tmpBodyList;
-                    returnValue = true;
-                }
-            }
+        //    finally
+        //    {
+        //        if (tmpBodyList.Count > 0)
+        //        {
+        //            //tmpBodyList.CopyTo(selectedPlane.bodyList);
+        //            selectedPlane.bodyList = tmpBodyList;
+        //            returnValue = true;
+        //        }
+        //    }
 
-            return returnValue;
-        }
+        //    return returnValue;
+        //}
 
         //OVERLOAD setBodyToPlane
         public bool setBodyToPlane(ModelDoc2 DocumentModel, Body2 BodyToCheck, Double[] Centroid, AddedReferencePlane SelectedPlane)
         {
 
-            if (isBodyConvex(DocumentModel, BodyToCheck) == true)
+            if (isBodyConvex(DocumentModel, BodyToCheck, SelectedPlane) == true)
             {
                 if (SelectedPlane.CPost == true) { return true; }
                                 
@@ -3122,134 +3157,101 @@ namespace cs_ppx
         }
 
         //check whether if the body convex or concave, return true if convex
-        public bool isBodyConvex(ModelDoc2 Doc, Body2 body2Check)
+        public bool isBodyConvex(ModelDoc2 Doc, Body2 body2Check, AddedReferencePlane SelectedPlane)
         {
             object[] objFaces = null;
-            //Face2[] faceList = null;
-            bool retVal = true;
-
+            
             objFaces = (object[])body2Check.GetFaces();
-
             List<Face2> filteredFaces = new List<Face2>();
 
-            filteredFaces = filterFaces(Doc, objFaces);
-
-            //faceList = (Face2[])objFaces;
-
-            foreach (Face2 tmpFace in objFaces)
+            if (filterFaces(Doc, objFaces, SelectedPlane) == true)
             {
-                retVal = isFaceConvex(tmpFace);
-
-                if (retVal == false)
+                foreach (Face2 tmpFace in objFaces)
                 {
-                    break;
+                    if (isFaceConvex(tmpFace) == false)
+                    {
+                        return false;
+                    }
                 }
             }
+            else { return false; }
 
-            /*
-            for (int i = 0; i < faceList.Length; i++)
-            {
-                retVal = isFaceConvex(faceList[i]);
-
-                if (retVal == false)
-                {
-                    break;
-                }
-            }
-             */ 
-
-            return retVal;
+            return true;
         }
 
         //filter the face
-        public List<Face2> filterFaces(ModelDoc2 Doc, object[] faceList)
-        {
-            object pointA, pointB;
-            List<Face2> returnFaces = new List<Face2>();
+        public bool filterFaces(ModelDoc2 Doc, object[] faceList, AddedReferencePlane SelectedPlane)
+        {   
             List<Face2> tmpFaces = new List<Face2>();
-            List<bool> boolFaces = new List<bool>();
-
-            List<int> equality = new List<int>();
-            
-            int index = 0;
-            int similarity = 0;
-            
-            foreach (Face2 faceA in faceList)
-            {
-                bool tmpBool = false;
-
-                tmpBool = isFaceConvex(faceA);
-
-                if (tmpBool == true)
-                {
-                    tmpFaces.Add(faceA);
-                }
-
-                boolFaces.Add(tmpBool);
-            }
+            List<bool> FacesLocation = new List<bool>();
 
             foreach (Face2 faceA in faceList)
-            {
-                if (boolFaces[index] == false)
-                {
-                    similarity = 0;
-
-                    foreach (Face2 faceB in tmpFaces)
-                    {   
-                        Double distance = Doc.ClosestDistance(faceA, faceB, out pointA, out pointB);
-
-                        if (isEqual(distance, 0))
-                        {
-                            similarity++;
-                        }
-                    }
-
-                    if (similarity == 0)
-                    {
-                        tmpFaces.Add(faceA);
-                    }
-                }
-            
-                index++;
+            {   
+                FacesLocation.Add(isFaceCollinear(faceA, SelectedPlane));
             }
-            
-            return tmpFaces;
+
+            //get all face that is true (collinear with the reference plane)
+            List<bool> CollinearFace = FacesLocation.Where(value => value.Equals(true)).ToList();
+
+            if (CollinearFace.Count == 1) { return true; }
+            if (CollinearFace.Count > 1) { iSwApp.SendMsgToUser("More than two faces are collinear with this reference plane"); }
+
+            return false;
         }
 
-        //check whether if the face convex or concave
-        public bool isFaceConvex(Face2 face2Check)
+        //check the location of the face
+        public bool isFaceCollinear(Face2 Face2Check, AddedReferencePlane SelectedPlane)
         {
             Object[] objLoops = null;
-            //Loop2[] loopList = null;
-
-            bool retVal = false;
-
-            objLoops = (Object[])face2Check.GetLoops();
-
-            //loopList = (Loop2[])objLoops;
+            objLoops = (Object[])Face2Check.GetLoops();
 
             foreach (Loop2 tmpLoop in objLoops)
             {
                 if (tmpLoop.IsOuter() == true)
                 {
                     //process this loop
-                    retVal = isLoopConvex(tmpLoop, face2Check);
+                    return isLoopOnThePlane(tmpLoop, SelectedPlane);
                 }
             }
 
-            /*
-            for (int i = 0; i < loopList.Length; i++)
+            return false;
+        }
+
+        //check the location of the face loop
+        public bool isLoopOnThePlane(Loop2 loop2Check, AddedReferencePlane SelectedPlane)
+        {
+            Object[] objVertices = null;
+            List<Vertex> verticesList = new List<Vertex>();
+            
+            objVertices = (Object[])loop2Check.GetVertices();
+
+            foreach (Vertex tmpVertex in objVertices)
             {
-                if (loopList[i].IsOuter() == true)
-                { 
-                    //process this loop
-                    retVal = isLoopConvex(loopList[i]);
+                if (CheckPointLocation(tmpVertex, SelectedPlane.ReferencePlane, SelectedPlane.PlaneNormal) == false)
+                {
+                    return false;
                 }
             }
-             */ 
 
-            return retVal;
+            return true;
+        }
+    
+        //check whether if the face convex or concave
+        public bool isFaceConvex(Face2 face2Check)
+        {
+            Object[] objLoops = null;
+            objLoops = (Object[])face2Check.GetLoops();
 
+            foreach (Loop2 tmpLoop in objLoops)
+            {
+                if (tmpLoop.IsOuter() == true)
+                {
+                    //process this loop
+                    return isLoopConvex(tmpLoop, face2Check);
+                }
+            }
+
+            return false;
         }
 
         //check whether if the loop is convex or concave
@@ -3259,44 +3261,27 @@ namespace cs_ppx
             List<Vertex> verticesList = new List<Vertex>();
             Vertex[] verticesArray = null;
             double[] zCrossProduct = null;
-            int length = 0;
-
-            bool returnValue = false;
             
             objVertices = (Object[])loop2Check.GetVertices();
-
-            //verticesList = (Vertex[])objVertices;
-            //length = verticesList.Length;
 
             foreach (Vertex tmpVertex in objVertices)
             {
                 verticesList.Add(tmpVertex);
             }
 
+            //add additional vertices
             verticesList.Add(objVertices[0] as Vertex);
             verticesList.Add(objVertices[1] as Vertex);
 
             verticesArray = new Vertex[verticesList.Count];
-            
             verticesList.CopyTo(verticesArray);
-
-            length = verticesArray.Length;
-
-            /* 
-            //add first two value at the last of the array
-            for (int i = 0; i < 2; i++)
-            {
-                //verticesList[length + i] = verticesList[i];
-                objVertices[length + i] = objVertices[i];
-            }
-             * */
 
             if (checkTriplets(ref zCrossProduct, verticesArray, face2Check) == true)
             {
-                returnValue = checkSign(zCrossProduct);
+                return checkSign(zCrossProduct);
             }
             
-            return returnValue;
+            return false;
         }
 
         //check triplets
