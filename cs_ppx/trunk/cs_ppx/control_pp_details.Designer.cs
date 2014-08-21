@@ -31,14 +31,14 @@
         {
             this.label1 = new System.Windows.Forms.Label();
             this.MP_details = new System.Windows.Forms.DataGridView();
-            this.label2 = new System.Windows.Forms.Label();
-            this.treeView1 = new System.Windows.Forms.TreeView();
-            this.textBox1 = new System.Windows.Forms.TextBox();
             this.PlaneName = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Distance = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.PlaneScore = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.AddRemark = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.ObjectPtr = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.label2 = new System.Windows.Forms.Label();
+            this.button1 = new System.Windows.Forms.Button();
+            this.MachiningTree = new HiddenCbTreeView.MixedCheckBoxesTreeView();
             ((System.ComponentModel.ISupportInitialize)(this.MP_details)).BeginInit();
             this.SuspendLayout();
             // 
@@ -71,35 +71,6 @@
             this.MP_details.Size = new System.Drawing.Size(304, 212);
             this.MP_details.TabIndex = 2;
             this.MP_details.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.MP_details_CellContentClick);
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(3, 231);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(115, 13);
-            this.label2.TabIndex = 3;
-            this.label2.Text = "Machining Plan Details";
-            // 
-            // treeView1
-            // 
-            this.treeView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.treeView1.Location = new System.Drawing.Point(3, 247);
-            this.treeView1.Name = "treeView1";
-            this.treeView1.Size = new System.Drawing.Size(304, 138);
-            this.treeView1.TabIndex = 4;
-            // 
-            // textBox1
-            // 
-            this.textBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBox1.Location = new System.Drawing.Point(3, 391);
-            this.textBox1.Multiline = true;
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(304, 181);
-            this.textBox1.TabIndex = 5;
             // 
             // PlaneName
             // 
@@ -142,12 +113,41 @@
             this.ObjectPtr.ReadOnly = true;
             this.ObjectPtr.Visible = false;
             // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(3, 231);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(115, 13);
+            this.label2.TabIndex = 3;
+            this.label2.Text = "Machining Plan Details";
+            // 
+            // button1
+            // 
+            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.button1.Location = new System.Drawing.Point(211, 537);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(96, 35);
+            this.button1.TabIndex = 5;
+            this.button1.Text = "Generate";
+            this.button1.UseVisualStyleBackColor = true;
+            // 
+            // MachiningTree
+            // 
+            this.MachiningTree.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.MachiningTree.Location = new System.Drawing.Point(3, 247);
+            this.MachiningTree.Name = "MachiningTree";
+            this.MachiningTree.Size = new System.Drawing.Size(304, 284);
+            this.MachiningTree.TabIndex = 6;
+            // 
             // control_pp_details
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.textBox1);
-            this.Controls.Add(this.treeView1);
+            this.Controls.Add(this.MachiningTree);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.MP_details);
             this.Controls.Add(this.label1);
@@ -165,12 +165,12 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.DataGridView MP_details;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.TreeView treeView1;
-        private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.DataGridViewTextBoxColumn PlaneName;
         private System.Windows.Forms.DataGridViewTextBoxColumn Distance;
         private System.Windows.Forms.DataGridViewTextBoxColumn PlaneScore;
         private System.Windows.Forms.DataGridViewTextBoxColumn AddRemark;
         private System.Windows.Forms.DataGridViewTextBoxColumn ObjectPtr;
+        private System.Windows.Forms.Button button1;
+        private HiddenCbTreeView.MixedCheckBoxesTreeView MachiningTree;
     }
 }

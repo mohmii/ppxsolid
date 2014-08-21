@@ -34,12 +34,13 @@
             // 
             // LogMessages
             // 
-            this.LogMessages.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.LogMessages.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.LogMessages.Location = new System.Drawing.Point(3, 16);
             this.LogMessages.Multiline = true;
             this.LogMessages.Name = "LogMessages";
-            this.LogMessages.Size = new System.Drawing.Size(261, 242);
+            this.LogMessages.Size = new System.Drawing.Size(261, 361);
             this.LogMessages.TabIndex = 0;
             // 
             // label1

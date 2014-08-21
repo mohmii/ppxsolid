@@ -14,8 +14,6 @@ using SolidWorks.Interop.swconst;
 using SolidWorksTools;
 using SolidWorksTools.File;
 using System.Collections.Generic;
-using System.Diagnostics;
-
 
 namespace cs_ppx
 {
@@ -232,7 +230,7 @@ namespace cs_ppx
         public void AddTaskPane_PPDetails()
         {
             PPDetails_TaskPaneView = SwApp.CreateTaskpaneView2("", "PP Details");
-            PPDetails_TaskPaneHost = PPDetails_TaskPaneView.AddControl("cs_ppx.TaskPane_PP_Details", "");
+            PPDetails_TaskPaneHost = PPDetails_TaskPaneView.AddControl("TaskPane_PP_Details", "");
             PPDetails_TaskPaneHost.getSwApp(ref iSwApp);
             //PPDetails_TaskPaneHost.getCompName(ref compName);
         }
@@ -2100,8 +2098,10 @@ namespace cs_ppx
 
                     boolStatus = compName[0].Select2(true, 0);
                     assyModel.EditPart();
-
                     ProcessLog_TaskPaneHost.LogProcess("Calculate machining processes");
+                    
+                    PPDetails_TaskPaneHost.RegisterToTree(MachiningPlanList);
+                    ProcessLog_TaskPaneHost.LogProcess("Add machining plans to the tree");
 
                 }
             }
@@ -3897,6 +3897,8 @@ namespace cs_ppx
         public double[] BodyCentroid { get; set; } //keep the body centroid information
 
         public List<TAD> ListOfTAD { get; set; } //keep all the candidate of TAD
+
+        public double[] Volume { get; set; } //keep the volume of the body
     }
 
     //class for plane and removal volume body relation

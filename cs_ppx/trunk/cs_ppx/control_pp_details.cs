@@ -14,13 +14,13 @@ using SolidWorks.Interop.swpublished;
 using SolidWorks.Interop.swconst;
 using SolidWorksTools;
 using SolidWorksTools.File;
-using System.Collections.Generic;
 using System.Diagnostics;
+using HiddenCbTreeView;
 
 namespace cs_ppx
 {
     [ComVisible(true)]
-    [ProgId("cs_ppx.TaskPane_PP_Details")]
+    [ProgId("TaskPane_PP_Details")]
 
     public partial class control_pp_details : UserControl
     {
@@ -52,6 +52,65 @@ namespace cs_ppx
         private void UserControl1_Load(object sender, EventArgs e)
         {
             
+        }
+
+        public void RegisterToTree(List<MachiningPlan> MachiningPlanCollection)
+        {
+            this.MachiningTree.CheckBoxes = true;
+            this.MachiningTree.Nodes.Clear();
+
+            int index = 0;
+
+            foreach (MachiningPlan Plan in MachiningPlanCollection)
+            {
+                index++;
+
+                TreeNode PlanDetails = new TreeNode("PLAN " + index.ToString());
+
+                HiddenCheckBoxTreeNode Time = new HiddenCheckBoxTreeNode("Time: " + Plan.MachiningTime.ToString());
+                PlanDetails.Nodes.Add(Time);
+
+                HiddenCheckBoxTreeNode Cost = new HiddenCheckBoxTreeNode("Cost: " + Plan.MachiningCost.ToString());
+                PlanDetails.Nodes.Add(Cost);
+
+                HiddenCheckBoxTreeNode Setups = new HiddenCheckBoxTreeNode("Setups: " + Plan.NumberOfSetups.ToString());
+                PlanDetails.Nodes.Add(Setups);
+
+                HiddenCheckBoxTreeNode TAD = new HiddenCheckBoxTreeNode("TADs: " + Plan.NumberOfTADchanges.ToString());
+                PlanDetails.Nodes.Add(TAD);
+
+                HiddenCheckBoxTreeNode Tool = new HiddenCheckBoxTreeNode("Tools: " + Plan.NumberOfTool.ToString());
+                PlanDetails.Nodes.Add(Tool);
+
+                HiddenCheckBoxTreeNode ProcessPlan = new HiddenCheckBoxTreeNode("Sequence");
+
+                foreach (MachiningProcess MP in Plan.MachiningProceses)
+                {
+                    
+                    HiddenCheckBoxTreeNode ProcessDetails = new HiddenCheckBoxTreeNode(MP.MachiningReference.name);
+
+                    HiddenCheckBoxTreeNode CuttingTool = new HiddenCheckBoxTreeNode(MP.cuttingTool);
+                    ProcessDetails.Nodes.Add(CuttingTool);
+
+                    HiddenCheckBoxTreeNode ToolPath = new HiddenCheckBoxTreeNode(MP.toolPath);
+                    ProcessDetails.Nodes.Add(ToolPath);
+
+                    //TreeNode TAD = new TreeNode();
+                    //TAD.Nodes.Add(MP.SelectedTAD.X.ToString());
+                    //TAD.Nodes.Add(MP.SelectedTAD.Y.ToString());
+                    //TAD.Nodes.Add(MP.SelectedTAD.Z.ToString());
+
+                    //ProcessDetails.Nodes.Add(TAD);
+                    //ProcessDetails.Nodes.Add(MP.TRV.Volume.ToString());
+                    //ProcessDetails.Nodes.Add(MP.VisibilityCone.ToString());
+
+                    ProcessPlan.Nodes.Add(ProcessDetails);
+                }
+
+                PlanDetails.Nodes.Add(ProcessPlan);
+
+                this.MachiningTree.Nodes.Add(PlanDetails);
+            }
         }
 
         public void RegisterToPlaneTable(List<AddedReferencePlane> SelectedPlanes)
