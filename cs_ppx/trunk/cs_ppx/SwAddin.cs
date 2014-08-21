@@ -2183,6 +2183,7 @@ namespace cs_ppx
             {
                 ChildStatus = true;
                 SelectedFeature = getSelectedPlane(ParentPlane, featureList);
+                index = getPlaneIndex(ParentPlane, PlaneListByScore);
                 ListOfParentFeature = new List<Feature>();
             }
 
@@ -2402,8 +2403,6 @@ namespace cs_ppx
 
             }
 
-            
-
             iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(CompPathName));
             iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be visble
 
@@ -2418,6 +2417,21 @@ namespace cs_ppx
                 foreach (AddedReferencePlane PossiblePlane in PlaneListByPosibility)
                 {
                     if (ListOfParentPlanes == null) { ListOfParentPlanes = new List<AddedReferencePlane>(); }
+                    if (ListOfParentFeature != null)
+                    {
+                        if (ListOfParentFeature.Count > 0)
+                        {
+                            for (int i = ListOfParentFeature.Count -1; i>=0 ; i--)
+                            {
+                                //delete the split feature
+                                ModelDoc2 DocumentModel = (ModelDoc2)swComp.GetModelDoc2();
+                                Feature DeleteThisFeature = (Feature)swComp.FeatureByName(ListOfParentFeature[i].Name);
+                                bool SStatus = DeleteThisFeature.Select2(true, 3);
+                                Doc.EditDelete();
+                            }
+                        }
+                    }
+                    
 
                     traversePlanes(Doc, assyModel, swComp, featureList, PossiblePlane, ListOfParentPlanes);
                 }
@@ -2942,26 +2956,15 @@ namespace cs_ppx
             return null;
         }
 
-        //get and return the plane index
-        public int getPlaneIndex(List<AddedReferencePlane> PlaneListIn)
-        {
-            int selectedIndex = -1;
-            int tmpRank = 0;
-            int rankSimilarity = 0;
-            int distSimilarity = 0;
-            double tmpDistance = 0.0;
-
-            List<AddedReferencePlane> ListByScore = 
-                PlaneListIn.OrderByDescending(Plane => Plane.Score).ThenByDescending(Plane => Plane.DistanceFromCentroid).ToList();
-
-            for (int index = 0; index < ListByScore.Count(); index++)
-            { 
-                
+        //get and return the plane index (this assumes that the planes are already ordered by its score)
+        public int getPlaneIndex(AddedReferencePlane ParentPlane, List<AddedReferencePlane> PlaneListIn)
+        {   
+            for (int index = 0; index < PlaneListIn.Count(); index++)
+            {
+                if (PlaneListIn[index].name.Equals(ParentPlane.name)) { return index; }
             }
 
-            
-            return selectedIndex;
-
+            return -1;
         }
 
 
