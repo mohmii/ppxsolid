@@ -29,14 +29,14 @@ namespace cs_ppx
     public class SwAddin : ISwAddin
     {
         #region Local Variables
-        ISldWorks iSwApp = null;
+        static ISldWorks iSwApp = null;
         ICommandManager iCmdMgr = null;
         int addinID = 0;
         BitmapHandler iBmp;
 
         //variable for PP Details taskpane
         TaskpaneView PPDetails_TaskPaneView;
-        control_pp_details PPDetails_TaskPaneHost;
+        static control_pp_details PPDetails_TaskPaneHost;
 
         //variable for Process Log taskpane
         TaskpaneView ProcessLog_TaskPaneView;
@@ -72,7 +72,7 @@ namespace cs_ppx
 
 
         // Public Properties
-        public ISldWorks SwApp
+        public static ISldWorks SwApp
         {
             get { return iSwApp; }
         }
@@ -245,8 +245,8 @@ namespace cs_ppx
                 PPDetails_TaskPaneView = null;
             }
             catch (Exception EX)
-            { 
-
+            {
+                iSwApp.SendMsgToUser("Can't remove process plane task pane." + "\r\" Exception message :" + EX.Message);
             }
             
         }
@@ -268,7 +268,7 @@ namespace cs_ppx
             }
             catch (Exception EX)
             {
-
+                iSwApp.SendMsgToUser("Can't remove process log task pane." + "\r\" Exception message :" + EX.Message);
             }
 
         }
@@ -906,7 +906,7 @@ namespace cs_ppx
         # region MainTRV
         
         //traverse component and get the components name
-        public void GetCompName(Component2 components, ref Component2[] compName)
+        public static void GetCompName(Component2 components, ref Component2[] compName)
         {
             object[] childComp = (object[])components.GetChildren();            
             int i = 0;
@@ -933,7 +933,7 @@ namespace cs_ppx
             
         }
 
-        public Component2[] compName;
+        public static Component2[] compName;
 
         //change color of a the removal volume
         static bool changeColor(ref Component2 componentName)
@@ -965,7 +965,6 @@ namespace cs_ppx
         public bool SetAttribute(Component2 SwComp, ref AttributeDef NewFace)
         {
             Array BodyArray;
-            Object BodiesInfo;
             Body2 TmpBody;
             Face2 SwFace;
             Entity SwEntity;
@@ -986,7 +985,6 @@ namespace cs_ppx
                 (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
 
             BodyArray = null;
-            BodiesInfo = null;
             TmpBody = null;
 
             PartDoc PartDocument = (PartDoc)CompDocumentModel;
@@ -1200,12 +1198,6 @@ namespace cs_ppx
                 assyModel = (AssemblyDoc)Doc;
                 if (assyModel.GetComponentCount(false) != 0)
                 {
-                    //initiate plane properties
-                    List<Feature> planeNames = null;
-                    List<object> planeNormal = null;
-                    List<int> planeValue = null;
-                    List<double> distance = null;
-
                     try
                     {
                         //get the components
@@ -1526,11 +1518,7 @@ namespace cs_ppx
                     //tmpDistance = checkDistance(Doc, planeFeatures[i], planeNormal[i], centroid, swMathUtils);
 
                     //tmpDistance = checkDistance(Doc, tmpFace, planeNormal[i], centroid, swMathUtils);
-
-                    if (tmpDistance != null)
-                    {
-                        distance.Add(tmpDistance);
-                    }
+                    distance.Add(tmpDistance);
                 }
             }
 
@@ -1550,14 +1538,8 @@ namespace cs_ppx
                     Object TmpNormal = RefPlanes[i].PlaneNormal;
 
                     TmpDistance = checkDistance(Doc, TmpRefPlane, TmpNormal, centroid, swMathUtils);
-
-                    //tmpDistance = checkDistance(Doc, tmpFace, planeNormal[i], centroid, swMathUtils);
-
-                    if (TmpDistance != null)
-                    {
-                        RefPlanes[i].DistanceFromCentroid = TmpDistance * 1000;
-                        
-                    }
+                    RefPlanes[i].DistanceFromCentroid = TmpDistance * 1000;
+                    
                 }
             }
 
@@ -1996,7 +1978,7 @@ namespace cs_ppx
         }
 
         //check if point location is on a plane or not
-        public bool CheckPointLocation(Vertex ThisPoint, RefPlane ReferencePlane, object objPlaneNormal)
+        public static bool CheckPointLocation(Vertex ThisPoint, RefPlane ReferencePlane, object objPlaneNormal)
         {
             MathVector planeNormal, tmpMathVector = null;
             MathPoint pointOnPlane, pointOnBox = null;
@@ -2031,7 +2013,7 @@ namespace cs_ppx
         }
             
         //storage for all generated planes *OLD ONE
-        public List<_planeProperties> planeList;
+        public static List<_planeProperties> planeList;
 
         //save only the selected reference planes *NEW ONE
         public List<AddedReferencePlane> SelectedRefPlanes;
@@ -2041,6 +2023,8 @@ namespace cs_ppx
         //TRV feature
         public void TRVfeature()
         {
+            ProcessLog_TaskPaneHost.LogProcess("Calculate machining processes");
+
             ModelDoc2 Doc = (ModelDoc2)SwApp.ActiveDoc;
             
             int docType = (int)Doc.GetType();
@@ -2098,7 +2082,6 @@ namespace cs_ppx
 
                     boolStatus = compName[0].Select2(true, 0);
                     assyModel.EditPart();
-                    ProcessLog_TaskPaneHost.LogProcess("Calculate machining processes");
                     
                     PPDetails_TaskPaneHost.RegisterToTree(MachiningPlanList);
                     ProcessLog_TaskPaneHost.LogProcess("Add machining plans to the tree");
@@ -2112,12 +2095,12 @@ namespace cs_ppx
         //tools for calculating TRV feature
         #region TRV Feature
 
-        public List<MachiningPlan> MachiningPlanList;
+        public static List<MachiningPlan> MachiningPlanList;
 
-        public List<AddedReferencePlane> PlaneListByScore;
+        public static List<AddedReferencePlane> PlaneListByScore;
 
         //initiate the traverse with the first feature
-        public void TraverseComponentFeatures(Component2 swComp, ref List<Feature> planeList)
+        public static void TraverseComponentFeatures(Component2 swComp, ref List<Feature> planeList)
         {
             Feature swFeat;
 
@@ -2129,7 +2112,7 @@ namespace cs_ppx
         }
         
         //traverse to get previously created planes
-        public void TraverseFeatures(Feature swFeat, ref List<Feature> planeList)
+        public static void TraverseFeatures(Feature swFeat, ref List<Feature> planeList)
         {
 
             while ((swFeat != null))
@@ -2359,8 +2342,6 @@ namespace cs_ppx
 
 
                                         //}
-
-
                                     }
 
                                 }
@@ -2379,8 +2360,6 @@ namespace cs_ppx
                                     Doc.EditDelete();
                                     
                                 }
-                                
-
                             }
                             else
                             {
@@ -2409,17 +2388,8 @@ namespace cs_ppx
 
                         catch (Exception ex)
                         {
-                            iSwApp.SendMsgToUser("exception message: " + ex.Message);
+                            iSwApp.SendMsgToUser("Body evaluation failed" + "\r\"Exception message: " + ex.Message);
                         }
-
-                        finally
-                        {
-
-                            //Object BodiesInfo = null;
-                            //Array NewBodies = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
-
-                        }
-
                     }
 
                     else
@@ -2447,8 +2417,9 @@ namespace cs_ppx
 
             }
 
+            //Close the parallel opened document and make the document to be visble again
             iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(CompPathName));
-            iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be visble
+            iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART);
 
             //collect only the true possibilities
             List<AddedReferencePlane> PlaneListByPosibility = new List<AddedReferencePlane>();
@@ -2458,6 +2429,7 @@ namespace cs_ppx
 
             if (PlaneListByPosibility.Count != 0)
             {
+                //elaborate each possible plane
                 foreach (AddedReferencePlane PossiblePlane in PlaneListByPosibility)
                 {
                     if (PreviousRemoval == null) { PreviousRemoval = new List<RemovedBody>(); }
@@ -2465,47 +2437,312 @@ namespace cs_ppx
 
                     traversePlanes(Doc, assyModel, swComp, featureList, PossiblePlane, ListOfParentPlanes, PreviousRemoval);
 
+                    //roll back previous process before continuing the elaboration on next possible plane
                     if (PreviousRemoval.Count > 0)
                     {
-
                         List<RemovedBody> RemovedByPossiblePlane =
                             PreviousRemoval.Where(plane => plane.ParentPlane.name.Equals(PossiblePlane.name)).ToList();
 
-                        if (RemovedByPossiblePlane.Count > 0)
+                        bool RollBackStatus = RollBackProcess(Doc, swComp, RemovedByPossiblePlane);
+
+                        if (RollBackStatus == true)
                         {
-                            //access from the last index
-                            for (int i = RemovedByPossiblePlane.Count - 1; i >= 0; i--)
-                            {
-                                for (int j = RemovedByPossiblePlane[i].Removal.Count - 1; j >= 0; j--)
-                                {
-                                    //delete the split feature
-                                    ModelDoc2 DocumentModel = (ModelDoc2)swComp.GetModelDoc2();
-                                    Feature DeleteThisFeature = (Feature)swComp.FeatureByName(RemovedByPossiblePlane[i].Removal[j].Name);
-                                    bool SStatus = DeleteThisFeature.Select2(true, 3);
-                                    Doc.EditDelete();
-                                }
-                            }
+                            //remove the visited possible plane from removal list
+                            int RemoveThis = PreviousRemoval.FindIndex(plane => plane.ParentPlane.name.Equals(PossiblePlane.name));
+                            PreviousRemoval.RemoveAt(RemoveThis);
+
+                            //remove the visited possible plane from parent list
+                            RemoveThis = ListOfParentPlanes.FindIndex(plane => plane.name.Equals(PossiblePlane.name));
+                            ListOfParentPlanes.RemoveAt(RemoveThis);
                         }
-
-                        //remove the visited possible plane from removal list
-                        int RemoveThis = PreviousRemoval.FindIndex(plane => plane.ParentPlane.name.Equals(PossiblePlane.name));
-                        PreviousRemoval.RemoveAt(RemoveThis);
-
-                        //remove the visited possible plane from parent list
-                        RemoveThis = ListOfParentPlanes.FindIndex(plane => plane.name.Equals(PossiblePlane.name));
-                        ListOfParentPlanes.RemoveAt(RemoveThis);
                     }
                 }
             }
             else
             {
                 SetAsMachiningPlan(PreviousRemoval);
-                iSwApp.SendMsgToUser("Add one machining plan");
                 ProcessLog_TaskPaneHost.LogProcess("Found " + MachiningPlanList.Count.ToString() + " machining plans");
             }
-
-            //Doc.ClearSelection2(true);
  
+        }
+
+        //Rollback previous removal process
+        public static bool RollBackProcess(ModelDoc2 ThisDocument, Component2 ThisComponent, List<RemovedBody> ThisRemovalList)
+        {
+            try
+            {
+                if (ThisRemovalList.Count > 0)
+                {
+                    //access from the last index
+                    for (int i = ThisRemovalList.Count - 1; i >= 0; i--)
+                    {
+                        for (int j = ThisRemovalList[i].Removal.Count - 1; j >= 0; j--)
+                        {
+                            //delete the split feature
+                            ModelDoc2 DocumentModel = (ModelDoc2)ThisComponent.GetModelDoc2();
+                            Feature DeleteThisFeature = (Feature)ThisComponent.FeatureByName(ThisRemovalList[i].Removal[j].Name);
+                            bool SStatus = DeleteThisFeature.Select2(true, 3);
+                            ThisDocument.EditDelete();
+                        }
+                    }
+                }
+                else { return false; }
+            }
+            catch { return false; }
+
+            return true;
+        }
+
+        //Generate button click
+        public static bool GenerateMP(int MPIndex)
+        {
+            ModelDoc2 Doc = (ModelDoc2) SwApp.ActiveDoc;
+            
+            int docType = (int)Doc.GetType();
+            bool boolStatus = false;
+
+            if (Doc.GetType() == 2)
+            {
+                AssemblyDoc assyModel = (AssemblyDoc)Doc;
+                if (assyModel.GetComponentCount(false) != 0)
+                {
+                    List<_planeProperties> samplePlane = new List<_planeProperties>();
+                    samplePlane = planeList;
+                    int numPlane = samplePlane.Count;
+
+                    FeatureManager docFeatureMgr = Doc.FeatureManager;
+                    object featArr = docFeatureMgr.GetFeatures(false);
+                    List<Feature> PlaneFeatures = new List<Feature>();
+
+                    //get the components
+                    ConfigurationManager configDocManager = (ConfigurationManager)Doc.ConfigurationManager;
+                    Configuration configDoc = (Configuration)configDocManager.ActiveConfiguration;
+                    Component2 compInAssembly = (Component2)configDoc.GetRootComponent3(true);
+
+                    if (compName == null)
+                    {
+                        //define the raw material and product
+                        compName = new Component2[2];
+                        GetCompName(compInAssembly, ref compName);
+                        PPDetails_TaskPaneHost.getCompName(ref compName);
+                    }
+
+                    boolStatus = compName[0].Select2(true, 0);
+
+                    TraverseComponentFeatures(compName[0], ref PlaneFeatures);
+
+                    if (MPGenerator(Doc, assyModel, compName[0], PlaneFeatures, MachiningPlanList[MPIndex]) == false)
+                    {
+                        return false;
+                    }
+                }
+                else { return false; }
+
+            }
+            else { return false; }
+
+            return true;
+        }
+
+        //Generate the selected machining plane *Trigger by the "Generate" button in the process task pane
+        public static bool MPGenerator(ModelDoc2 Doc, AssemblyDoc assyModel, Component2 swComp, List<Feature> featureList, MachiningPlan ThisMP)
+        {
+            Feature SelectedFeature = null;
+            bool boolStatus;
+            int index = 0;
+            int SplitCounter = 0;
+            int Errors = 0;
+            int Warnings = 0;
+
+            List<AddedReferencePlane> ListOfRemovalPlanes = new List<AddedReferencePlane>();
+            List<Feature> ListOfRemovalFeature = null;
+            List<RemovedBody> PreviousRemoval = new List<RemovedBody>();
+
+            List<MachiningProcess> ProcessCollection = new List<MachiningProcess>();
+            
+            ProcessCollection = ThisMP.MachiningProceses;
+
+            //make the loaded document to be invisble
+            String CompPathName = swComp.GetPathName();
+            iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART);
+            ModelDoc2 CompDocumentModel = (ModelDoc2)SwApp.OpenDoc6(CompPathName, (int)swDocumentTypes_e.swDocPART,
+                (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
+
+            foreach (MachiningProcess SelectedProcess in ProcessCollection)
+            {
+                SelectedFeature = getSelectedPlane(SelectedProcess.MachiningReference, featureList);
+                index = getPlaneIndex(SelectedProcess.MachiningReference, PlaneListByScore);
+            
+                assyModel.EditPart();
+
+                boolStatus = SelectedFeature.Select2(true, 0);
+                
+                //split and collect the body
+                List<int> DeleteThisBody = null;
+                Array bodyArray = null;
+                bodyArray = (Array)Doc.FeatureManager.PreSplitBody();
+
+                //check if there are body 
+                if (bodyArray == null) 
+                { 
+                    iSwApp.SendMsgToUser("Nothing can be collected by using " + SelectedFeature.Name);
+                    return false;
+                }
+                else
+                {
+                    string[] bodyNames = new string[bodyArray.Length]; //set the name
+
+                    Feature SplitFeature = null;
+                    Feature DeleteFeature = null;
+
+                    SplitFeature = SplitAndSaveBody(Doc, swComp, SelectedFeature, bodyArray, ref bodyNames);
+
+                    if (SplitFeature != null)
+                    {
+                        try
+                        {
+                            List<double> Volume = new List<double>();
+                            Object BodiesInfo = null;
+                            List<string> BodyToDelete = null;
+
+                            DeleteThisBody = new List<int>();
+                            SplitCounter++; //add the split counter after successful splitting process
+
+                            bodyArray = null;
+                            bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
+
+                            //select body that needs to be deleted from the model
+                            bool Status = SelectBodyToDelete(CompDocumentModel, bodyArray, ref BodyToDelete, index, ref Volume);
+
+                            if (Status == true)
+                            {
+                                //iSwApp.SendMsgToUser("Feasible body exist, ready to be registered in the removal sequence");
+
+                                    if (BodyToDelete.Count == 1)
+                                    {
+                                        //prepare the deletion of the splitted body
+                                        BodiesInfo = null;
+                                        Body2 TmpBody = null;
+                                        int DeleteIndex = 0;
+                                        bodyArray = null;
+
+                                        bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
+
+                                        for (int j = 0; j < bodyArray.Length; j++)
+                                        {
+                                            TmpBody = (Body2)bodyArray.GetValue(j);
+
+                                            if (TmpBody.Name.Equals(BodyToDelete[0]))
+                                            {
+                                                DeleteIndex = j;
+                                                break;
+                                            }
+                                        }
+
+                                        SelectData TmpSelectData = null;
+                                        bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
+                                        //SwApp.SendMsgToUser("Removed shape by " + SelectedFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
+                                        DeleteFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
+
+                                        ListOfRemovalPlanes.Add(SelectedProcess.MachiningReference);
+
+                                        ListOfRemovalFeature = new List<Feature>();
+                                        ListOfRemovalFeature.Add(SplitFeature);
+                                        ListOfRemovalFeature.Add(DeleteFeature);
+
+                                        //register the split action
+                                        RemovedBody Removal = new RemovedBody();
+                                        Removal.ParentPlane = SelectedProcess.MachiningReference;
+                                        Removal.Removal = ListOfRemovalFeature;
+
+                                        if (PreviousRemoval != null) { PreviousRemoval.Add(Removal); }
+
+                                    }
+                                    else
+                                    {
+                                        iSwApp.SendMsgToUser("Body > 1 section still underdevelopment");
+
+                                        //foreach (String BodyName in BodyToDelete)
+                                        //{
+                                        //    BodiesInfo = null;
+                                        //    Body2 TmpBody = null;
+                                        //    int DeleteIndex = 0;
+                                        //    bodyArray = null;
+
+                                        //    bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
+
+                                        //    for (int j = 0; j < bodyArray.Length; j++)
+                                        //    {
+                                        //        TmpBody = (Body2)bodyArray.GetValue(j);
+
+                                        //        if (TmpBody.Name.Equals(BodyName))
+                                        //        {
+                                        //            DeleteIndex = j;
+                                        //            break;
+                                        //        }
+                                        //    }
+
+                                        //    SelectData TmpSelectData = null;
+                                        //    bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
+                                        //    SwApp.SendMsgToUser("Removed shape by " + SelectedFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
+                                        //    DeleteFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
+
+
+                                        //}
+                                    }
+                            }
+                            else
+                            {
+                                iSwApp.SendMsgToUser("No body can be determined by " + SelectedFeature.Name);
+
+                                //delete the split feature
+                                ModelDoc2 DocumentModel = (ModelDoc2)swComp.GetModelDoc2();
+                                Feature LastFeature = (Feature)swComp.FeatureByName(SplitFeature.Name);
+                                bool SStatus = LastFeature.Select2(true, 3);
+                                Doc.EditDelete();
+
+                                return false;
+                            }
+
+                        }
+
+                        catch (Exception ex)
+                        {
+                            iSwApp.SendMsgToUser("Body evaluation was error" + "\r\"Exception message: " + ex.Message);
+                            return false;
+                        }
+                    }
+
+                    else
+                    {
+                        iSwApp.SendMsgToUser("Split error by using " + SelectedFeature.Name);
+                        return false;
+                    }
+                }
+
+                Doc = ((ModelDoc2)(SwApp.ActiveDoc));
+                Doc.ClearSelection2(true);
+                assyModel.EditPart();
+            }
+
+            //Close the parallel opened document and make the document to be visble again
+            iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(CompPathName));
+            iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART);
+
+
+            //roll back previous process before continuing the elaboration on next possible plane
+            if (PreviousRemoval.Count > 0)
+            {
+                bool RollBackStatus = RollBackProcess(Doc, swComp, PreviousRemoval);
+
+                if (RollBackStatus == true)
+                {
+                    PreviousRemoval.Clear();
+                }
+            }
+            else { return false; }
+
+            return true;
         }
 
         //set the machining plan
@@ -2608,7 +2845,7 @@ namespace cs_ppx
         }
 
         //OVERLOAD selectbodytodelete
-        public bool SelectBodyToDelete(ModelDoc2 CompDocumentModel, Array BodyArray, ref List<string> BodyToDelete, int index, ref List<double> VolumeSize)
+        public static bool SelectBodyToDelete(ModelDoc2 CompDocumentModel, Array BodyArray, ref List<string> BodyToDelete, int index, ref List<double> VolumeSize)
         {
             
             BodyToDelete = new List<string>();
@@ -2680,7 +2917,7 @@ namespace cs_ppx
         }
         
         //split and save bodies
-        public Feature SplitAndSaveBody(ModelDoc2 DocumentModel, Component2 SwComp, Feature SelectedFeature, Array BodyArray, ref string[] BodyNames)
+        public static Feature SplitAndSaveBody(ModelDoc2 DocumentModel, Component2 SwComp, Feature SelectedFeature, Array BodyArray, ref string[] BodyNames)
         { 
             Body2[] bodyCandidate = new Body2[BodyArray.Length];
             Vertex[] bodyOrigins = new Vertex[BodyArray.Length];
@@ -2701,7 +2938,7 @@ namespace cs_ppx
         }
 
         //set and return the path for saving the body collections
-        public string getSavePath(string modelPath)
+        public static string getSavePath(string modelPath)
         { 
             string modelDirectory = "";
             string modelFileName = "";
@@ -2742,7 +2979,7 @@ namespace cs_ppx
         }
 
         //OVERLOAD
-        public bool getCentroidAndVolume(Body2 BodyToCheck, ref double[] Centroid, ref List<double> Volume)
+        public static bool getCentroidAndVolume(Body2 BodyToCheck, ref double[] Centroid, ref List<double> Volume)
         {
             int status = 0;
 
@@ -3011,7 +3248,7 @@ namespace cs_ppx
         }
 
         //get the similar plane and pass the pointer to selected feature
-        public Feature getSelectedPlane(AddedReferencePlane listOfPlane, List<Feature> listOfModelPlane)
+        public static Feature getSelectedPlane(AddedReferencePlane listOfPlane, List<Feature> listOfModelPlane)
         {
 
             foreach (Feature CheckedPlane in listOfModelPlane)
@@ -3026,7 +3263,7 @@ namespace cs_ppx
         }
 
         //get and return the plane index (this assumes that the planes are already ordered by its score)
-        public int getPlaneIndex(AddedReferencePlane ParentPlane, List<AddedReferencePlane> PlaneListIn)
+        public static int getPlaneIndex(AddedReferencePlane ParentPlane, List<AddedReferencePlane> PlaneListIn)
         {   
             for (int index = 0; index < PlaneListIn.Count(); index++)
             {
@@ -3035,8 +3272,6 @@ namespace cs_ppx
 
             return -1;
         }
-
-
 
         //mark the plane according the message code
         public bool setMarkOnPlane(ref List<AddedReferencePlane> planeList, int index, string message)
@@ -3139,7 +3374,7 @@ namespace cs_ppx
         //}
 
         //OVERLOAD setBodyToPlane
-        public bool setBodyToPlane(ModelDoc2 DocumentModel, Body2 BodyToCheck, Double[] Centroid, AddedReferencePlane SelectedPlane)
+        public static bool setBodyToPlane(ModelDoc2 DocumentModel, Body2 BodyToCheck, Double[] Centroid, AddedReferencePlane SelectedPlane)
         {
 
             if (isBodyConvex(DocumentModel, BodyToCheck, SelectedPlane) == true)
@@ -3157,7 +3392,7 @@ namespace cs_ppx
         }
 
         //check whether if the body convex or concave, return true if convex
-        public bool isBodyConvex(ModelDoc2 Doc, Body2 body2Check, AddedReferencePlane SelectedPlane)
+        public static bool isBodyConvex(ModelDoc2 Doc, Body2 body2Check, AddedReferencePlane SelectedPlane)
         {
             object[] objFaces = null;
             
@@ -3180,7 +3415,7 @@ namespace cs_ppx
         }
 
         //filter the face
-        public bool filterFaces(ModelDoc2 Doc, object[] faceList, AddedReferencePlane SelectedPlane)
+        public static bool filterFaces(ModelDoc2 Doc, object[] faceList, AddedReferencePlane SelectedPlane)
         {   
             List<Face2> tmpFaces = new List<Face2>();
             List<bool> FacesLocation = new List<bool>();
@@ -3200,7 +3435,7 @@ namespace cs_ppx
         }
 
         //check the location of the face
-        public bool isFaceCollinear(Face2 Face2Check, AddedReferencePlane SelectedPlane)
+        public static bool isFaceCollinear(Face2 Face2Check, AddedReferencePlane SelectedPlane)
         {
             Object[] objLoops = null;
             objLoops = (Object[])Face2Check.GetLoops();
@@ -3218,7 +3453,7 @@ namespace cs_ppx
         }
 
         //check the location of the face loop
-        public bool isLoopOnThePlane(Loop2 loop2Check, AddedReferencePlane SelectedPlane)
+        public static bool isLoopOnThePlane(Loop2 loop2Check, AddedReferencePlane SelectedPlane)
         {
             Object[] objVertices = null;
             List<Vertex> verticesList = new List<Vertex>();
@@ -3237,7 +3472,7 @@ namespace cs_ppx
         }
     
         //check whether if the face convex or concave
-        public bool isFaceConvex(Face2 face2Check)
+        public static bool isFaceConvex(Face2 face2Check)
         {
             Object[] objLoops = null;
             objLoops = (Object[])face2Check.GetLoops();
@@ -3255,7 +3490,7 @@ namespace cs_ppx
         }
 
         //check whether if the loop is convex or concave
-        public bool isLoopConvex(Loop2 loop2Check, Face2 face2Check)
+        public static bool isLoopConvex(Loop2 loop2Check, Face2 face2Check)
         {
             Object[] objVertices = null;
             List<Vertex> verticesList = new List<Vertex>();
@@ -3285,7 +3520,7 @@ namespace cs_ppx
         }
 
         //check triplets
-        public bool checkTriplets(ref double[] UVCrossProduct, Vertex[] vertexList, Face2 face2Check)
+        public static bool checkTriplets(ref double[] UVCrossProduct, Vertex[] vertexList, Face2 face2Check)
         {
             Object objPoint1, objPoint2, objPoint3 = null;
             Double[] point1, point2, point3 = null;
@@ -3334,7 +3569,7 @@ namespace cs_ppx
         }
 
         //check the sign of vertex
-        public bool checkSign(double[] crossProduct)
+        public static bool checkSign(double[] crossProduct)
         {
             int PositiveNum = 0;
             int NegativeNum = 0;
@@ -3431,7 +3666,7 @@ namespace cs_ppx
         }
 
         //OVERLOAD CheckBodyLocation
-        public bool checkBodyLocation(Body2 body2Check, Double[] Centroid, Feature featurePlane, object objPlaneNormal)
+        public static bool checkBodyLocation(Body2 body2Check, Double[] Centroid, Feature featurePlane, object objPlaneNormal)
         {
             MathVector planeNormal, tmpMathVector = null;
             MathPoint pointOnPlane, pointOnBox = null;
@@ -3471,7 +3706,7 @@ namespace cs_ppx
         }
 
         //get random point on a reference plane
-        public MathPoint getPointOnPlane(Feature tmpFeature)
+        public static MathPoint getPointOnPlane(Feature tmpFeature)
         {
             MathPoint tmpPoint = null;
             Object featDefinition = null;
@@ -3500,7 +3735,7 @@ namespace cs_ppx
         }
 
         //OVERLOAD getPointOnPlane
-        public MathPoint getPointOnPlane(RefPlane tmpRefPlane)
+        public static MathPoint getPointOnPlane(RefPlane tmpRefPlane)
         {
             MathPoint tmpPoint = null;
             Object[] arrayOfCorners = null;

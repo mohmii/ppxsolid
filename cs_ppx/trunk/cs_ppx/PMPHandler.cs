@@ -15,7 +15,7 @@ namespace cs_ppx
         public PMPHandler(SwAddin addin, UserPMPage userPMP)
         {
             userAddin = addin;
-            iSwApp = (ISldWorks)userAddin.SwApp;
+            iSwApp = (ISldWorks)SwAddin.SwApp;
             userPage = userPMP;
         }
 

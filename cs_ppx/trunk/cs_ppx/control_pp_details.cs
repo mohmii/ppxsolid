@@ -28,20 +28,14 @@ namespace cs_ppx
         public ISldWorks SwApp;
         public Component2[] CompName;
         
-        
         public control_pp_details()
         {
             InitializeComponent();
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            SwApp.SendMsgToUser("Success");
-        }
-
-        public void getSwApp(ref ISldWorks SwAppIn)
-        {
-            SwApp = SwAppIn;
+        public void getSwApp(ref ISldWorks iSwApp)
+        {   
+            SwApp = iSwApp;
         }
 
         public void getCompName(ref Component2[] CompNameIn)
@@ -65,7 +59,7 @@ namespace cs_ppx
             {
                 index++;
 
-                TreeNode PlanDetails = new TreeNode("PLAN " + index.ToString());
+                TreeNode PlanDetails = new TreeNode(index.ToString());
 
                 HiddenCheckBoxTreeNode Time = new HiddenCheckBoxTreeNode("Time: " + Plan.MachiningTime.ToString());
                 PlanDetails.Nodes.Add(Time);
@@ -153,32 +147,29 @@ namespace cs_ppx
 
         }
 
-        //traverse component and get the components name
-        private void GetCompName(Component2 components, ref Component2[] compName)
+        List<String> CheckedNodes = new List<String>();
+
+        private void treeView1_AfterCheck(object sender, TreeViewEventArgs e)
         {
-            object[] childComp = (object[])components.GetChildren();
-            int i = 0;
-
-            Component2[] Components = new Component2[2];
-
-            //get the names
-            while (i < childComp.Length)
+            if (e.Node.Checked)
             {
-                Components[i] = (Component2)childComp[i];
-                i++;
-            }
-
-            if (Components[0].Name2.Contains("rm"))
-            {
-                compName[0] = Components[0];
-                compName[1] = Components[1];
+                CheckedNodes.Add(e.Node.FullPath.ToString());
             }
             else
             {
-                compName[0] = Components[1];
-                compName[1] = Components[0];
+                CheckedNodes.Remove(e.Node.FullPath.ToString());
             }
+        }
 
+        private void button1_Click_1(object sender, EventArgs e)
+        {
+            if (CheckedNodes.Count > 0)
+            {
+                foreach (string NodeIndex in CheckedNodes)
+                {
+                    SwAddin.GenerateMP(Convert.ToInt32(NodeIndex) - 1);
+                }
+            }
         }
 
     }

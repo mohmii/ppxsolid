@@ -65,7 +65,7 @@ namespace cs_ppx
             userAddin = addin;
             if (userAddin != null)
             {
-                iSwApp = (ISldWorks)userAddin.SwApp;
+                iSwApp = (ISldWorks)SwAddin.SwApp;
                 CreatePropertyManagerPage();
             }
             else

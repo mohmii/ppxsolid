@@ -18,7 +18,7 @@ namespace cs_ppx
         {
             document = modDoc;
             userAddin = addin;
-            iSwApp = (ISldWorks)userAddin.SwApp;
+            iSwApp = (ISldWorks)SwAddin.SwApp;
             openModelViews = new Hashtable();
         }
 
@@ -311,7 +311,7 @@ namespace cs_ppx
         {
             userAddin = addin;
             mView = (ModelView)mv;
-            iSwApp = (ISldWorks)userAddin.SwApp;
+            iSwApp = (ISldWorks)SwAddin.SwApp;
             parent = doc;
         }
 
