@@ -2394,7 +2394,6 @@ namespace cs_ppx
 
                 Doc = ((ModelDoc2)(SwApp.ActiveDoc));
                 Doc.ClearSelection2(true);
-                assyModel.EditPart();
 
                 SelectedFeature = getThePlane(ref PlaneListByScore, featureList, ref index, ListOfParentPlanes);
 
@@ -2492,7 +2491,7 @@ namespace cs_ppx
         {
             if (MachiningPlanList[MPIndex].ViewName != null)
             {
-                iSwApp.CloseDoc(MachiningPlanList[MPIndex].ViewName);
+                //iSwApp.CloseDoc(MachiningPlanList[MPIndex].ViewName);
                 return false; 
             }
 
@@ -2539,7 +2538,7 @@ namespace cs_ppx
                     System.IO.Directory.CreateDirectory(PlanDirectory);
 
                     //check the generated MP
-                    if (MPGenerator(Doc, assyModel, compName[0], PlaneFeatures, MachiningPlanList[MPIndex], PlanDirectory, out PathList) == true)
+                    if (MPGenerator(Doc, assyModel, compName[0], PlaneFeatures, MachiningPlanList[MPIndex], MPIndex, PlanDirectory, out PathList) == true)
                     {   
                         ModelDoc2 NewDoc = (ModelDoc2)SwApp.NewDocument("G:\\Program Files\\SolidWorks Corp\\SolidWorks\\lang\\english\\Tutorial\\assem.asmdot", 0, 0, 0);
 
@@ -2572,7 +2571,10 @@ namespace cs_ppx
                         MachiningPlanList[MPIndex].ViewName = Path.GetFileNameWithoutExtension(NewDoc.GetPathName());
                         ProcessLog_TaskPaneHost.LogProcess("Generating Machining Plan " + (MPIndex+1).ToString());
 
-                        iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(NewDoc.GetPathName()));
+                        //iSwApp.ActivateDoc(Path.GetFileNameWithoutExtension(NewDoc.GetPathName()));
+                        NewDoc.ViewZoomtofit2();
+
+                        //iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(NewDoc.GetPathName()));
 
                     }
                     else
@@ -2590,8 +2592,8 @@ namespace cs_ppx
         }
 
         //Generate the selected machining plane *Trigger by the "Generate" button in the process task pane
-        public static bool MPGenerator(ModelDoc2 Doc, AssemblyDoc assyModel, Component2 swComp, List<Feature> featureList, MachiningPlan ThisMP, string ThisMPDir, 
-            out List<string> ThisPathList)
+        public static bool MPGenerator(ModelDoc2 Doc, AssemblyDoc assyModel, Component2 swComp, List<Feature> featureList, MachiningPlan ThisMP, int ThisMPIndex, 
+            string ThisMPDir, out List<string> ThisPathList)
         {
             Feature SelectedFeature = null;
             bool boolStatus;
@@ -2690,7 +2692,7 @@ namespace cs_ppx
 
                                         SelectData TmpSelectData = null;
                                         bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
-                                        string SavePath = ThisMPDir + "\\" + SelectedFeature.Name + ".sldprt";
+                                        string SavePath = ThisMPDir + "\\Plan" + (ThisMPIndex+1).ToString() + "_" + SelectedFeature.Name + ".sldprt";
                                         //Insert the Body into new part document
                                         bool SaveStatus = ((PartDoc) CompDocumentModel).SaveToFile3(SavePath, 1, 1, false, "", out Errors, out Warnings);
 
@@ -2788,7 +2790,6 @@ namespace cs_ppx
 
                 Doc = ((ModelDoc2)(SwApp.ActiveDoc));
                 Doc.ClearSelection2(true);
-                assyModel.EditPart();
             }
 
             //Close the parallel opened document and make the document to be visble again
@@ -2807,7 +2808,7 @@ namespace cs_ppx
             }
             else { return false; }
 
-            assyModel.EditAssembly();
+            //assyModel.EditAssembly();
             return true;
         }
 
