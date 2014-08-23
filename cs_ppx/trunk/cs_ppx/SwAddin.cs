@@ -40,7 +40,7 @@ namespace cs_ppx
 
         //variable for Process Log taskpane
         TaskpaneView ProcessLog_TaskPaneView;
-        control_process_log ProcessLog_TaskPaneHost;
+        static control_process_log ProcessLog_TaskPaneHost;
 
         public const int mainCmdGroupID = 20;
         public const int mainItemID1 = 0;
@@ -2026,6 +2026,8 @@ namespace cs_ppx
             ProcessLog_TaskPaneHost.LogProcess("Calculate machining processes");
 
             ModelDoc2 Doc = (ModelDoc2)SwApp.ActiveDoc;
+
+            MainView = Path.GetFileNameWithoutExtension(Doc.GetPathName());
             
             int docType = (int)Doc.GetType();
             bool boolStatus = false;
@@ -2127,25 +2129,6 @@ namespace cs_ppx
 
             }
 
-        }
-
-        //try to make a recursive function
-        public void AnalyzePlanes()
-        {
-            //sort the selected Reference plane by its score
-           
-            Boolean ReachBottom = false;
-            
-
-            while (ReachBottom == false)
-            {
-                foreach (AddedReferencePlane SelectedPlane in PlaneListByScore)
-                {
-                    
-                }
-
-                ReachBottom = true;
-            }
         }
 
         //copy the AddedReferencePlane
@@ -2493,10 +2476,29 @@ namespace cs_ppx
             return true;
         }
 
+        public static string MainView;
+
+        //show the generated MP
+        public static void ShowTheMP(int MPIndex)
+        {
+            if (MachiningPlanList[MPIndex].ViewName != null) 
+            {
+                iSwApp.ActivateDoc(MachiningPlanList[MPIndex].ViewName);
+            }
+        }
+
         //Generate button click
         public static bool GenerateMP(int MPIndex)
         {
-            ModelDoc2 Doc = (ModelDoc2) SwApp.ActiveDoc;
+            if (MachiningPlanList[MPIndex].ViewName != null)
+            {
+                iSwApp.CloseDoc(MachiningPlanList[MPIndex].ViewName);
+                return false; 
+            }
+
+            if (MainView == "") { return false; }
+
+            ModelDoc2 Doc = (ModelDoc2) SwApp.ActivateDoc(MainView);
             
             int docType = (int)Doc.GetType();
             bool boolStatus = false;
@@ -2530,9 +2532,52 @@ namespace cs_ppx
                     boolStatus = compName[0].Select2(true, 0);
 
                     TraverseComponentFeatures(compName[0], ref PlaneFeatures);
+                    List<string> PathList = null;
 
-                    if (MPGenerator(Doc, assyModel, compName[0], PlaneFeatures, MachiningPlanList[MPIndex]) == false)
+                    //create the plan directory
+                    string PlanDirectory = Path.GetDirectoryName(Doc.GetPathName()) + "\\Plan" + (MPIndex +1).ToString();
+                    System.IO.Directory.CreateDirectory(PlanDirectory);
+
+                    //check the generated MP
+                    if (MPGenerator(Doc, assyModel, compName[0], PlaneFeatures, MachiningPlanList[MPIndex], PlanDirectory, out PathList) == true)
+                    {   
+                        ModelDoc2 NewDoc = (ModelDoc2)SwApp.NewDocument("G:\\Program Files\\SolidWorks Corp\\SolidWorks\\lang\\english\\Tutorial\\assem.asmdot", 0, 0, 0);
+
+                        string[] StringNames = new string[PathList.Count + 1];
+                        string[] CoordinateName = new string[PathList.Count + 1];
+                        StringNames[0] = compName[1].GetPathName();
+                        CoordinateName[0] = "";
+
+                        for (int i = 1; i <= PathList.Count(); i++)
+                        {
+                            StringNames[i] = PathList[i-1];
+                            CoordinateName[i] = "";
+                        }
+
+                        AssemblyDoc NewAssy = (AssemblyDoc)NewDoc;
+                        Object vcomponents = NewAssy.AddComponents3((StringNames), null, (CoordinateName));
+
+                        string MPPath = PlanDirectory + "\\Machining Plan " + (MPIndex+1).ToString() + ".sldasm" ;
+                        bool SaveStatus = NewDoc.Extension.SaveAs(MPPath , (int) swSaveAsVersion_e.swSaveAsCurrentVersion,
+                            (int)swSaveAsOptions_e.swSaveAsOptions_Silent, null, 0, 0);
+
+                        if (SaveStatus == true) { MachiningPlanList[MPIndex].FullPath = MPPath; }
+
+                        for (int i = 0; i < PathList.Count(); i++)
+                        {
+                            iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(PathList[i]));
+                        }
+
+                        //save the document name
+                        MachiningPlanList[MPIndex].ViewName = Path.GetFileNameWithoutExtension(NewDoc.GetPathName());
+                        ProcessLog_TaskPaneHost.LogProcess("Generating Machining Plan " + (MPIndex+1).ToString());
+
+                        iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(NewDoc.GetPathName()));
+
+                    }
+                    else
                     {
+                        System.IO.Directory.Delete(PlanDirectory);
                         return false;
                     }
                 }
@@ -2540,12 +2585,13 @@ namespace cs_ppx
 
             }
             else { return false; }
-
+            
             return true;
         }
 
         //Generate the selected machining plane *Trigger by the "Generate" button in the process task pane
-        public static bool MPGenerator(ModelDoc2 Doc, AssemblyDoc assyModel, Component2 swComp, List<Feature> featureList, MachiningPlan ThisMP)
+        public static bool MPGenerator(ModelDoc2 Doc, AssemblyDoc assyModel, Component2 swComp, List<Feature> featureList, MachiningPlan ThisMP, string ThisMPDir, 
+            out List<string> ThisPathList)
         {
             Feature SelectedFeature = null;
             bool boolStatus;
@@ -2554,6 +2600,7 @@ namespace cs_ppx
             int Errors = 0;
             int Warnings = 0;
 
+            ThisPathList = new List<string>();
             List<AddedReferencePlane> ListOfRemovalPlanes = new List<AddedReferencePlane>();
             List<Feature> ListOfRemovalFeature = null;
             List<RemovedBody> PreviousRemoval = new List<RemovedBody>();
@@ -2626,7 +2673,9 @@ namespace cs_ppx
                                         int DeleteIndex = 0;
                                         bodyArray = null;
 
-                                        bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
+                                        PartDoc TmpPartDoc = (PartDoc)CompDocumentModel;
+                                        bodyArray = (Array)TmpPartDoc.GetBodies2((int)swBodyType_e.swSolidBody, true);
+                                        //bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
 
                                         for (int j = 0; j < bodyArray.Length; j++)
                                         {
@@ -2641,9 +2690,26 @@ namespace cs_ppx
 
                                         SelectData TmpSelectData = null;
                                         bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
-                                        //SwApp.SendMsgToUser("Removed shape by " + SelectedFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
-                                        DeleteFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
+                                        string SavePath = ThisMPDir + "\\" + SelectedFeature.Name + ".sldprt";
+                                        //Insert the Body into new part document
+                                        bool SaveStatus = ((PartDoc) CompDocumentModel).SaveToFile3(SavePath, 1, 1, false, "", out Errors, out Warnings);
 
+                                        if (SaveStatus == true)
+                                        {
+                                            ThisPathList.Add(SavePath);
+                                        }
+
+                                        //break the reference
+                                        ModelDoc2 TmpDoc = (ModelDoc2)SwApp.ActivateDoc2(Path.GetFileNameWithoutExtension(SavePath), true, 0);
+                                        ModelDocExtension TmpDocEx = (ModelDocExtension) TmpDoc.Extension;
+                                        TmpDocEx.BreakAllExternalFileReferences2(false);
+                                        TmpDoc.Save2(true);
+
+                                        //activate the assembly file
+                                        iSwApp.ActivateDoc(Path.GetFileNameWithoutExtension(Doc.GetPathName()));
+
+                                        //SwApp.SendMsgToUser("Removed shape by " + SelectedFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
+                                        DeleteFeature = (Feature)CompDocumentModel.FeatureManager.InsertDeleteBody();
                                         ListOfRemovalPlanes.Add(SelectedProcess.MachiningReference);
 
                                         ListOfRemovalFeature = new List<Feature>();
@@ -2729,7 +2795,6 @@ namespace cs_ppx
             iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(CompPathName));
             iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART);
 
-
             //roll back previous process before continuing the elaboration on next possible plane
             if (PreviousRemoval.Count > 0)
             {
@@ -2742,6 +2807,7 @@ namespace cs_ppx
             }
             else { return false; }
 
+            assyModel.EditAssembly();
             return true;
         }
 
@@ -2808,6 +2874,8 @@ namespace cs_ppx
                             if (bodyStatus == true)
                             {
                                 iSwApp.SendMsgToUser("This body is feasible (convex)");
+
+                                bool SelecBody = BodyToCheck.Select(true, 0);
 
                                 //check this body in the document tree and add collect the body pointer to the FeasibleBodies
                                 BodyToDelete.Add(i+1);
@@ -2893,6 +2961,8 @@ namespace cs_ppx
                         if (bodyStatus == true)
                         {
                             //iSwApp.SendMsgToUser("This body is feasible (convex)");
+                            //SelectData TmpSelectData = null;
+                            //bool SelectionStatus = TmpBodyToCheck.Select2(true, TmpSelectData);
 
                             //check this body in the document tree and add collect the body pointer to the FeasibleBodies
                             BodyToDelete.Add(BodyToCheck.Name);
@@ -4208,6 +4278,10 @@ namespace cs_ppx
     //class for candidate of machining plan
     public class MachiningPlan
     {
+        public string ViewName { get;set; } //keep the view name on solidwork window
+
+        public string FullPath { get; set; } //keep the path where is being saved
+
         public List<MachiningProcess> MachiningProceses { get; set; } //keep the pointer of selected machining process
 
         public double MachiningCost { get; set; } //keep the machining cost

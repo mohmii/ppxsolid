@@ -143,6 +143,7 @@
             this.MachiningTree.Size = new System.Drawing.Size(304, 284);
             this.MachiningTree.TabIndex = 6;
             this.MachiningTree.AfterCheck += new System.Windows.Forms.TreeViewEventHandler(this.treeView1_AfterCheck);
+            this.MachiningTree.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.MachiningTree_NodeMouseClick);
             // 
             // control_pp_details
             // 

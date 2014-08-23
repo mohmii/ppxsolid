@@ -172,5 +172,15 @@ namespace cs_ppx
             }
         }
 
+        private void MachiningTree_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            //SwApp.SendMsgToUser("I got this when the node is click and the value is " + e.Node.FullPath.ToString());
+
+            if (e.Node.FullPath.ToString().Count() == 1)
+            {
+                SwAddin.ShowTheMP(Convert.ToInt32(e.Node.FullPath.ToString()) - 1);
+            }
+        }
+
     }
 }
