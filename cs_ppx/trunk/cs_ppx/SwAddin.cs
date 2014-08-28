@@ -1685,14 +1685,14 @@ namespace cs_ppx
                     }
                     else
                     {
-                        if (tmpSetPlane.CPost == false)
-                        {
-                            SelectedRefPlanes.Add(tmpSetPlane);
-                        }
-                        else
-                        {
+                        //if (tmpSetPlane.CPost == false)
+                        //{
+                        //    SelectedRefPlanes.Add(tmpSetPlane);
+                        //}
+                        //else
+                        //{
                             removeId.Add(i); //add the plane that need to be removed
-                        }
+                        //}
                     }
                 }
                 else
@@ -1853,7 +1853,10 @@ namespace cs_ppx
             double dotProduct = firstNormalize.Dot(secondNormalize);
 
             //check the dotproduct, if equal to 1, means two vectors are in the same direction.
-            return isEqual(dotProduct, 1);
+
+            if (isEqual(dotProduct, 1) == true | isEqual(dotProduct, -1) == true) { return true; }
+
+            return false;
 
         }
 
@@ -2192,7 +2195,7 @@ namespace cs_ppx
 
             //make the loaded document to be invisble
             String CompPathName = swComp.GetPathName();
-            iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART);
+            iSwApp.DocumentVisible(false, (int)swDocumentTypes_e.swDocPART);
             ModelDoc2 CompDocumentModel = (ModelDoc2)SwApp.OpenDoc6(CompPathName, (int)swDocumentTypes_e.swDocPART,
                 (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
             
@@ -2571,10 +2574,7 @@ namespace cs_ppx
                         MachiningPlanList[MPIndex].ViewName = Path.GetFileNameWithoutExtension(NewDoc.GetPathName());
                         ProcessLog_TaskPaneHost.LogProcess("Generating Machining Plan " + (MPIndex+1).ToString());
 
-                        //iSwApp.ActivateDoc(Path.GetFileNameWithoutExtension(NewDoc.GetPathName()));
                         NewDoc.ViewZoomtofit2();
-
-                        //iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(NewDoc.GetPathName()));
 
                     }
                     else
@@ -2613,7 +2613,7 @@ namespace cs_ppx
 
             //make the loaded document to be invisble
             String CompPathName = swComp.GetPathName();
-            iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART);
+            iSwApp.DocumentVisible(false, (int)swDocumentTypes_e.swDocPART);
             ModelDoc2 CompDocumentModel = (ModelDoc2)SwApp.OpenDoc6(CompPathName, (int)swDocumentTypes_e.swDocPART,
                 (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
 
