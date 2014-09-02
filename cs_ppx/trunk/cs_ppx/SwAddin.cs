@@ -1690,14 +1690,14 @@ namespace cs_ppx
                     }
                     else
                     {
-                        //if (tmpSetPlane.CPost == false)
-                        //{
-                        //    SelectedRefPlanes.Add(tmpSetPlane);
-                        //}
-                        //else
-                        //{
+                        if (tmpSetPlane.CPost == false)
+                        {
+                            SelectedRefPlanes.Add(tmpSetPlane);
+                        }
+                        else
+                        {
                             removeId.Add(i); //add the plane that need to be removed
-                        //}
+                        }
                     }
                 }
                 else
@@ -2575,6 +2575,8 @@ namespace cs_ppx
                         //set the openfaces
                         Boolean OpenFaceStatus = FindOpenFaces(NewDoc, NewAssy);
 
+                        //NewDoc.Save();
+
                         for (int i = 0; i < PathList.Count(); i++)
                         {
                             iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(PathList[i]));
@@ -2608,6 +2610,7 @@ namespace cs_ppx
             Feature SelectedFeature = null;
             bool boolStatus;
             int index = 0;
+            int SequenceNUM = 1;
             int SplitCounter = 0;
             int Errors = 0;
             int Warnings = 0;
@@ -2702,13 +2705,14 @@ namespace cs_ppx
 
                                         SelectData TmpSelectData = null;
                                         bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
-                                        string SavePath = ThisMPDir + "\\Plan" + (ThisMPIndex+1).ToString() + "_" + SelectedFeature.Name + ".sldprt";
+                                        string SavePath = ThisMPDir + "\\Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
                                         //Insert the Body into new part document
                                         bool SaveStatus = ((PartDoc) CompDocumentModel).SaveToFile3(SavePath, 1, 1, false, "", out Errors, out Warnings);
 
                                         if (SaveStatus == true)
                                         {
                                             ThisPathList.Add(SavePath);
+                                            SequenceNUM++;
                                         }
 
                                         //break the reference
@@ -2871,6 +2875,9 @@ namespace cs_ppx
                     }
                 }
 
+                //order it by its name (may be triggering problem if the components more than 10)
+                List<Component2> ThisComponentsSorted = ThisComponents.OrderBy(c => c.Name2).ToList();
+
                 //get the product/workpiece (main component) faces
                 Array CompBodyArray = (Array)RootComponent.GetBodies2((int)swBodyType_e.swSolidBody);
                 Body2 MainCompBody = (Body2)CompBodyArray.GetValue(0);
@@ -2886,17 +2893,17 @@ namespace cs_ppx
                 PropValues[1] = 0; //G
                 PropValues[2] = 0; //B
 
-                for (int i = 0; i < ThisComponents.Count(); i++)
+                for (int i = 0; i < ThisComponentsSorted.Count(); i++)
                 {
                     //select and open the component for editing
-                    ThisComponents[i].Select2(true, 0);
+                    ThisComponentsSorted[i].Select2(true, 0);
                     ThisAssyDoc.EditPart();
 
                     //ModelDoc2 RefModel = ThisComponents[i].GetModelDoc2();
                     //Double[] PropValues = RefModel.MaterialPropertyValues;
 
                     //Compare with product's faces
-                    CompBodyArray = (Array) ThisComponents[i].GetBodies2((int)swBodyType_e.swSolidBody);
+                    CompBodyArray = (Array)ThisComponentsSorted[i].GetBodies2((int)swBodyType_e.swSolidBody);
                     Body2 CompBody = (Body2)CompBodyArray.GetValue(0);
                     Object[] CompFaces = (Object[])CompBody.GetFaces();
 
@@ -2905,7 +2912,7 @@ namespace cs_ppx
                     {
                         foreach (Face2 FaceReference in MainCompFaces)
                         {
-                            if (IsOverlapped(CheckThisFace, FaceReference, ThisComponents[i], RootComponent) == true)
+                            if (IsOverlapped(CheckThisFace, FaceReference, ThisComponentsSorted[i], RootComponent) == true)
                             {
                                 
                                 //change the face color to red and mark it with "90"
@@ -2926,15 +2933,15 @@ namespace cs_ppx
 
                         }
 
-                        for (int j = i + 1; j < ThisComponents.Count(); j++)
+                        for (int j = i + 1; j < ThisComponentsSorted.Count(); j++)
                         {
-                            CompBodyArray = (Array)ThisComponents[j].GetBodies2((int)swBodyType_e.swSolidBody);
+                            CompBodyArray = (Array)ThisComponentsSorted[j].GetBodies2((int)swBodyType_e.swSolidBody);
                             Body2 OtherCompBody = (Body2)CompBodyArray.GetValue(0);
                             Object[] OtherCompFaces = (Object[])OtherCompBody.GetFaces();
 
                             foreach (Face2 OtherFaceReference in OtherCompFaces)
                             {
-                                if (IsOverlapped(CheckThisFace, OtherFaceReference, ThisComponents[i], ThisComponents[j]) == true)
+                                if (IsOverlapped(CheckThisFace, OtherFaceReference, ThisComponentsSorted[i], ThisComponentsSorted[j]) == true)
                                 {
 
                                     //change the face color to red and mark it with "90"
