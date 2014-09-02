@@ -46,7 +46,7 @@ namespace cs_ppx
         public const int mainItemID1 = 0;
         public const int mainItemID2 = 1;
 
-        //just added (for tab registration)
+        //just added (for ribbon registration)
         public const int mainItemID3 = 2; 
         public const int mainItemID4 = 3;
         public const int mainItemID5 = 4;
@@ -57,6 +57,7 @@ namespace cs_ppx
         public const int mainItemID10 = 9;
         public const int mainItemID11 = 10;
         public const int mainItemID12 = 11;
+        public const int mainItemID13 = 12;
         
         public const int flyoutGroupID = 91;
                 
@@ -279,8 +280,10 @@ namespace cs_ppx
             if (iBmp == null)
                 iBmp = new BitmapHandler();
             Assembly thisAssembly;
-            int cmdIndex0, cmdIndex1, cmdIndex2, cmdIndex3, cmdIndex4, cmdIndex5, cmdIndex6, cmdIndex7, cmdIndex8, cmdIndex9, cmdIndex10, cmdIndex11;
-            string Title = "ppx", ToolTip = "flexible process planning";
+
+            //set the index for the button on the ribbon
+            int cmdIndex0, cmdIndex1, cmdIndex2, cmdIndex3, cmdIndex4, cmdIndex5, cmdIndex6, cmdIndex7, cmdIndex8, cmdIndex9, cmdIndex10, cmdIndex11, cmdIndex12;
+            string Title = "ppx", ToolTip = "Flexible Process Planning";
 
 
             int[] docTypes = new int[]{(int)swDocumentTypes_e.swDocASSEMBLY,
@@ -297,7 +300,8 @@ namespace cs_ppx
             //get the ID information stored in the registry
             bool getDataResult = iCmdMgr.GetGroupDataFromRegistry(mainCmdGroupID, out registryIDs);
 
-            int[] knownIDs = new int[12] { mainItemID1, mainItemID2, mainItemID3, mainItemID4, mainItemID5, mainItemID6, mainItemID7, mainItemID8, mainItemID9, mainItemID10, mainItemID11, mainItemID12 };
+            int[] knownIDs = new int[13] { mainItemID1, mainItemID2, mainItemID3, mainItemID4, mainItemID5, mainItemID6, mainItemID7, mainItemID8, mainItemID9, mainItemID10, 
+                mainItemID11, mainItemID12, mainItemID13 };
 
             if (getDataResult)
             {
@@ -328,6 +332,7 @@ namespace cs_ppx
             cmdIndex9 = cmdGroup.AddCommandItem2("Calculate Setup", -1, "Setup calculation", "Calculate Setup", 2, "SetupCalculator", "", mainItemID10, menuToolbarOption);
             cmdIndex10 = cmdGroup.AddCommandItem2("Set Open Face", -1, "Defining a open face", "Set Open Face", 2, "SetOpenFace", "", mainItemID11, menuToolbarOption);
             cmdIndex11 = cmdGroup.AddCommandItem2("Read Open Face", -1, "Reading a open face", "Read Open Face", 2, "ReadOpenFace", "", mainItemID12, menuToolbarOption);
+            cmdIndex12 = cmdGroup.AddCommandItem2("Analyze Open Faces", -1, "Analyzing open faces", "Analyze Open Faces", 2, "AnalyzeOpenFace", "", mainItemID13, menuToolbarOption);
             
 
             cmdGroup.HasToolbar = true;
@@ -419,8 +424,8 @@ namespace cs_ppx
 
                     //add another group
                     CommandTabBox cmdBox3 = cmdTab.AddCommandTabBox();
-                    cmdIDs = new int[2];
-                    TextType = new int[2];
+                    cmdIDs = new int[3];
+                    TextType = new int[3];
 
                     //Set open face button
                     cmdIDs[0] = cmdGroup.get_CommandID(cmdIndex10);
@@ -428,9 +433,11 @@ namespace cs_ppx
 
                     cmdIDs[1] = cmdGroup.get_CommandID(cmdIndex11);
                     TextType[1] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+
+                    cmdIDs[2] = cmdGroup.get_CommandID(cmdIndex12);
+                    TextType[2] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
                     
                     bResult = cmdBox3.AddCommands(cmdIDs, TextType);
-
                     cmdTab.AddSeparator(cmdBox3, cmdGroup.ToolbarId);
                     
                     /*
@@ -1065,8 +1072,6 @@ namespace cs_ppx
            
         }
 
-        
-        
         #endregion
 
         //generate the plane needed for TRV generation
@@ -1713,6 +1718,8 @@ namespace cs_ppx
                         else
                         {
                             retSim = checkPlaneSim(ListOfPlanes, removeId, tmpSetPlane, mathUtils);
+
+                            //retSim = checkPlaneSim(ListOfPlanes, tmpSetPlane, mathUtils);
 
                             if (retSim == true)
                             {
@@ -2544,7 +2551,7 @@ namespace cs_ppx
                     if (MPGenerator(Doc, assyModel, compName[0], PlaneFeatures, MachiningPlanList[MPIndex], MPIndex, PlanDirectory, out PathList) == true)
                     {   
                         ModelDoc2 NewDoc = (ModelDoc2)SwApp.NewDocument("G:\\Program Files\\SolidWorks Corp\\SolidWorks\\lang\\english\\Tutorial\\assem.asmdot", 0, 0, 0);
-
+                        
                         string[] StringNames = new string[PathList.Count + 1];
                         string[] CoordinateName = new string[PathList.Count + 1];
                         StringNames[0] = compName[1].GetPathName();
@@ -2564,6 +2571,9 @@ namespace cs_ppx
                             (int)swSaveAsOptions_e.swSaveAsOptions_Silent, null, 0, 0);
 
                         if (SaveStatus == true) { MachiningPlanList[MPIndex].FullPath = MPPath; }
+
+                        //set the openfaces
+                        Boolean OpenFaceStatus = FindOpenFaces(NewDoc, NewAssy);
 
                         for (int i = 0; i < PathList.Count(); i++)
                         {
@@ -2809,6 +2819,172 @@ namespace cs_ppx
             else { return false; }
 
             //assyModel.EditAssembly();
+            return true;
+        }
+
+        //analyze open faces in the active assembly document
+        public void AnalyzeOpenFace()
+        {
+            iSwApp.SendMsgToUser("start analyzing open faces...");
+            
+            ModelDoc2 Doc = (ModelDoc2) SwApp.ActiveDoc;
+            
+            int docType = (int)Doc.GetType();
+            
+            if (Doc.GetType() == 2)
+            {
+                AssemblyDoc AssyModel = (AssemblyDoc)Doc;
+                Boolean FindStatus = FindOpenFaces(Doc, AssyModel);
+            }
+        }
+
+        //find the open faces in each component
+        public static bool FindOpenFaces(ModelDoc2 ThisModelDoc ,AssemblyDoc ThisAssyDoc)
+        {
+
+            if (ThisAssyDoc.GetComponentCount(true) == 0) { return false; }
+            else
+            {
+                ProcessLog_TaskPaneHost.LogProcess("Analysing open faces of current assembly model");
+
+                //get the components
+                ConfigurationManager configDocManager = (ConfigurationManager)ThisModelDoc.ConfigurationManager;
+                Configuration configDoc = (Configuration)configDocManager.ActiveConfiguration;
+                Component2 compInAssembly = (Component2)configDoc.GetRootComponent3(true);
+                Object[] childComp = (Object[])compInAssembly.GetChildren();
+
+                //classify between the workpiece and trvs
+                List<Component2> ThisComponents = new List<Component2>();
+                Component2 RootComponent = null;
+                for (int i = 0; i < ThisAssyDoc.GetComponentCount(true); i++)
+                {
+                    Component2 TmpComponent = (Component2)childComp[i];
+                    if(TmpComponent.Name.Contains("workpiece")) 
+                    {
+                        RootComponent = TmpComponent;
+                        RootComponent.Select2(true, 0);
+                        ThisAssyDoc.SetComponentTransparent(true);
+                    }
+                    else
+                    {
+                        ThisComponents.Add(TmpComponent);
+                    }
+                }
+
+                //get the product/workpiece (main component) faces
+                Array CompBodyArray = (Array)RootComponent.GetBodies2((int)swBodyType_e.swSolidBody);
+                Body2 MainCompBody = (Body2)CompBodyArray.GetValue(0);
+                Object[] MainCompFaces = (Object[])MainCompBody.GetFaces();
+
+                //set the open face mark as "90"
+                SelectionMgr ThisSelMgr = (SelectionMgr)ThisModelDoc.SelectionManager;
+                SelectData ThisSelectData = ThisSelMgr.CreateSelectData();
+
+                //get the color template
+                Double[] PropValues = ThisModelDoc.MaterialPropertyValues;
+                PropValues[0] = 1; //R
+                PropValues[1] = 0; //G
+                PropValues[2] = 0; //B
+
+                for (int i = 0; i < ThisComponents.Count(); i++)
+                {
+                    //select and open the component for editing
+                    ThisComponents[i].Select2(true, 0);
+                    ThisAssyDoc.EditPart();
+
+                    //ModelDoc2 RefModel = ThisComponents[i].GetModelDoc2();
+                    //Double[] PropValues = RefModel.MaterialPropertyValues;
+
+                    //Compare with product's faces
+                    CompBodyArray = (Array) ThisComponents[i].GetBodies2((int)swBodyType_e.swSolidBody);
+                    Body2 CompBody = (Body2)CompBodyArray.GetValue(0);
+                    Object[] CompFaces = (Object[])CompBody.GetFaces();
+
+                    //check the face first with the main product
+                    foreach (Face2 CheckThisFace in CompFaces)
+                    {
+                        foreach (Face2 FaceReference in MainCompFaces)
+                        {
+                            if (IsOverlapped(CheckThisFace, FaceReference, ThisComponents[i], RootComponent) == true)
+                            {
+                                
+                                //change the face color to red and mark it with "90"
+                                CheckThisFace.MaterialPropertyValues = PropValues;
+                                ThisSelectData.Mark = 90;
+                                
+                            }
+                            else
+                            {
+                                
+                                //change the face color to green and mark it with "91"
+                                ThisSelectData.Mark = 91;
+                                
+                            }
+
+                            Entity ThisEntity = (Entity)CheckThisFace;
+                            Boolean MarkingStatus = ThisEntity.Select4(true, ThisSelectData);
+
+                        }
+
+                        for (int j = i + 1; j < ThisComponents.Count(); j++)
+                        {
+                            CompBodyArray = (Array)ThisComponents[j].GetBodies2((int)swBodyType_e.swSolidBody);
+                            Body2 OtherCompBody = (Body2)CompBodyArray.GetValue(0);
+                            Object[] OtherCompFaces = (Object[])OtherCompBody.GetFaces();
+
+                            foreach (Face2 OtherFaceReference in OtherCompFaces)
+                            {
+                                if (IsOverlapped(CheckThisFace, OtherFaceReference, ThisComponents[i], ThisComponents[j]) == true)
+                                {
+
+                                    //change the face color to red and mark it with "90"
+                                    CheckThisFace.MaterialPropertyValues = PropValues;
+                                    ThisSelectData.Mark = 90;
+
+                                }
+                                else
+                                {
+
+                                    //change the face color to green and mark it with "91"
+                                    ThisSelectData.Mark = 91;
+
+                                }
+
+                                Entity ThisEntity = (Entity)CheckThisFace;
+                                Boolean MarkingStatus = ThisEntity.Select4(true, ThisSelectData);
+                            }
+                        }
+
+                    }
+
+                    ThisAssyDoc.EditAssembly();
+                }
+                    
+            }
+
+            return true;
+        }
+
+        //check overlapping faces
+        public static Boolean IsOverlapped(Face2 FaceA, Face2 FaceB, Component2 CompA, Component2 CompB)
+        {
+            ModelDoc2 RefModelA = CompA.GetModelDoc2();
+            Face2 CorrespondFaceA = RefModelA.Extension.GetCorresponding(FaceA);
+            Body2 BodyA = CorrespondFaceA.CreateSheetBody();
+            BodyA.ApplyTransform(CompA.Transform2);
+
+            ModelDoc2 RefModelB = CompB.GetModelDoc2();
+            Face2 CorrespondFaceB = RefModelB.Extension.GetCorresponding(FaceB);
+            Body2 BodyB = CorrespondFaceB.CreateSheetBody();
+            BodyB.ApplyTransform(CompB.Transform2);
+
+            int Errors;
+            Object[] ReturnedBodies;
+
+            ReturnedBodies = BodyA.Operations2((int)swBodyOperationType_e.SWBODYINTERSECT, BodyB, out Errors);
+
+            if (ReturnedBodies == null) { return false; }
+
             return true;
         }
 
@@ -3443,6 +3619,7 @@ namespace cs_ppx
 
         //    return returnValue;
         //}
+
 
         //OVERLOAD setBodyToPlane
         public static bool setBodyToPlane(ModelDoc2 DocumentModel, Body2 BodyToCheck, Double[] Centroid, AddedReferencePlane SelectedPlane)
