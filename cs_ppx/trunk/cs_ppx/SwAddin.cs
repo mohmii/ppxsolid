@@ -1173,6 +1173,7 @@ namespace cs_ppx
             Doc.ClearSelection2(true);
 
             ProcessLog_TaskPaneHost.LogProcess("Generate all coincident planes");
+            PPDetails_TaskPaneHost.LogProcess("Generate all coincident planes");
         }
 
         //tools for plane generator
@@ -1263,6 +1264,7 @@ namespace cs_ppx
                                 
                                 RegStatus = registerPlane(InitialRefPlanes, ref removeId, swMathUtils);
                                 ProcessLog_TaskPaneHost.LogProcess("Calculate reference planes");
+                                PPDetails_TaskPaneHost.LogProcess("Calculate reference planes");
 
                                 if ((RegStatus == true) && (removeId.Count > 0))
                                 {
@@ -1282,6 +1284,8 @@ namespace cs_ppx
                             {
                                 PPDetails_TaskPaneHost.RegisterToPlaneTable(SelectedRefPlanes);
                                 ProcessLog_TaskPaneHost.LogProcess("Add selected planes to the table");
+                                PPDetails_TaskPaneHost.LogProcess("Add selected planes to the table");
+
                             }
                         }
 
@@ -2026,7 +2030,7 @@ namespace cs_ppx
         public static List<_planeProperties> planeList;
 
         //save only the selected reference planes *NEW ONE
-        public List<AddedReferencePlane> SelectedRefPlanes;
+        public static List<AddedReferencePlane> SelectedRefPlanes;
 
         #endregion
 
@@ -2034,6 +2038,7 @@ namespace cs_ppx
         public void TRVfeature()
         {
             ProcessLog_TaskPaneHost.LogProcess("Calculate machining processes");
+            PPDetails_TaskPaneHost.LogProcess("Calculate machining processes");
 
             ModelDoc2 Doc = (ModelDoc2)SwApp.ActiveDoc;
 
@@ -2097,6 +2102,7 @@ namespace cs_ppx
                     
                     PPDetails_TaskPaneHost.RegisterToTree(MachiningPlanList);
                     ProcessLog_TaskPaneHost.LogProcess("Add machining plans to the tree");
+                    PPDetails_TaskPaneHost.LogProcess("Add machining plans to the tree");
 
                 }
             }
@@ -2454,6 +2460,7 @@ namespace cs_ppx
             {
                 SetAsMachiningPlan(PreviousRemoval);
                 ProcessLog_TaskPaneHost.LogProcess("Found " + MachiningPlanList.Count.ToString() + " machining plans");
+                PPDetails_TaskPaneHost.LogProcess("Found " + MachiningPlanList.Count.ToString() + " machining plans");
             }
  
         }
@@ -2585,6 +2592,7 @@ namespace cs_ppx
                         //save the document name
                         MachiningPlanList[MPIndex].ViewName = Path.GetFileNameWithoutExtension(NewDoc.GetPathName());
                         ProcessLog_TaskPaneHost.LogProcess("Generating Machining Plan " + (MPIndex+1).ToString());
+                        PPDetails_TaskPaneHost.LogProcess("Generating Machining Plan " + (MPIndex + 1).ToString());
 
                         NewDoc.ViewZoomtofit2();
 
@@ -2850,6 +2858,7 @@ namespace cs_ppx
             else
             {
                 ProcessLog_TaskPaneHost.LogProcess("Analysing open faces of current assembly model");
+                PPDetails_TaskPaneHost.LogProcess("Analysing open faces of current assembly model");
 
                 //get the components
                 ConfigurationManager configDocManager = (ConfigurationManager)ThisModelDoc.ConfigurationManager;
@@ -3626,6 +3635,7 @@ namespace cs_ppx
 
         //    return returnValue;
         //}
+
 
 
         //OVERLOAD setBodyToPlane

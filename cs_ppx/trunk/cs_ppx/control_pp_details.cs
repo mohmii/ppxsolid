@@ -182,5 +182,30 @@ namespace cs_ppx
             }
         }
 
+        public void LogProcess(string CurrentProcess)
+        {
+            String Text = ">>> " + CurrentProcess;
+            this.log_messages.AppendText(Text);
+            this.log_messages.AppendText(System.Environment.NewLine);
+        }
+
+        private void clear_all_Click(object sender, EventArgs e)
+        {
+            this.log_messages.Clear();
+            this.log_messages.AppendText(">>> Clearing all variables");
+            this.log_messages.AppendText(System.Environment.NewLine);
+            
+            //clearing the tables
+            this.MachiningTree.Nodes.Clear();
+            this.MP_details.Rows.Clear();
+
+            //clearing the variable
+            SwAddin.MachiningPlanList.Clear();
+            SwAddin.SelectedRefPlanes.Clear();
+            SwAddin.planeList.Clear();
+            SwAddin.PlaneListByScore.Clear();
+            SwAddin.compName = null;
+        }
+
     }
 }
