@@ -106,6 +106,10 @@
       <HintPath>H:\IIS\research\system dev\opentk\opentk\Binaries\OpenTK\Release\OpenTK.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
+    <Reference Include="SolidWorks.Interop.sldcostingapi">
+      <HintPath>D:\PROGRAM FILES\Solidworks\SolidWorks\api\redist\SolidWorks.Interop.sldcostingapi.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
     <Reference Include="SolidWorks.Interop.sldworks">
       <HintPath>..\..\..\..\..\..\..\Program Files\SolidWorks Corp\SolidWorks\SolidWorks.Interop.sldworks.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>

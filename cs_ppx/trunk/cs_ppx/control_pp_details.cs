@@ -196,15 +196,15 @@ namespace cs_ppx
             this.log_messages.AppendText(System.Environment.NewLine);
             
             //clearing the tables
-            this.MachiningTree.Nodes.Clear();
-            this.MP_details.Rows.Clear();
+            if (this.MachiningTree.Nodes.Count != 0) { this.MachiningTree.Nodes.Clear(); }
+            if (this.MP_details.Rows.Count != 0) { this.MP_details.Rows.Clear(); }
 
             //clearing the variable
-            SwAddin.MachiningPlanList.Clear();
-            SwAddin.SelectedRefPlanes.Clear();
-            SwAddin.planeList.Clear();
-            SwAddin.PlaneListByScore.Clear();
-            SwAddin.compName = null;
+            if (SwAddin.MachiningPlanList != null) { SwAddin.MachiningPlanList.Clear(); }
+            if (SwAddin.SelectedRefPlanes != null) { SwAddin.SelectedRefPlanes.Clear(); }
+            if (SwAddin.planeList != null) { SwAddin.planeList.Clear(); }
+            if (SwAddin.PlaneListByScore != null) { SwAddin.PlaneListByScore.Clear(); }
+            if (SwAddin.compName != null) { SwAddin.compName = null; }
         }
 
     }

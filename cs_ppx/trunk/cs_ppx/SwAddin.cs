@@ -11,6 +11,7 @@ using System.Linq;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swpublished;
 using SolidWorks.Interop.swconst;
+using SolidWorks.Interop.sldcostingapi;
 using SolidWorksTools;
 using SolidWorksTools.File;
 using System.Collections.Generic;
@@ -58,6 +59,7 @@ namespace cs_ppx
         public const int mainItemID11 = 10;
         public const int mainItemID12 = 11;
         public const int mainItemID13 = 12;
+        public const int mainItemID14 = 13;
         
         public const int flyoutGroupID = 91;
                 
@@ -282,7 +284,7 @@ namespace cs_ppx
             Assembly thisAssembly;
 
             //set the index for the button on the ribbon
-            int cmdIndex0, cmdIndex1, cmdIndex2, cmdIndex3, cmdIndex4, cmdIndex5, cmdIndex6, cmdIndex7, cmdIndex8, cmdIndex9, cmdIndex10, cmdIndex11, cmdIndex12;
+            int cmdIndex0, cmdIndex1, cmdIndex2, cmdIndex3, cmdIndex4, cmdIndex5, cmdIndex6, cmdIndex7, cmdIndex8, cmdIndex9, cmdIndex10, cmdIndex11, cmdIndex12, cmdIndex13;
             string Title = "ppx", ToolTip = "Flexible Process Planning";
 
 
@@ -300,8 +302,8 @@ namespace cs_ppx
             //get the ID information stored in the registry
             bool getDataResult = iCmdMgr.GetGroupDataFromRegistry(mainCmdGroupID, out registryIDs);
 
-            int[] knownIDs = new int[13] { mainItemID1, mainItemID2, mainItemID3, mainItemID4, mainItemID5, mainItemID6, mainItemID7, mainItemID8, mainItemID9, mainItemID10, 
-                mainItemID11, mainItemID12, mainItemID13 };
+            int[] knownIDs = new int[14] { mainItemID1, mainItemID2, mainItemID3, mainItemID4, mainItemID5, mainItemID6, mainItemID7, mainItemID8, mainItemID9, mainItemID10, 
+                mainItemID11, mainItemID12, mainItemID13, mainItemID14 };
 
             if (getDataResult)
             {
@@ -333,6 +335,7 @@ namespace cs_ppx
             cmdIndex10 = cmdGroup.AddCommandItem2("Set Open Face", -1, "Defining a open face", "Set Open Face", 2, "SetOpenFace", "", mainItemID11, menuToolbarOption);
             cmdIndex11 = cmdGroup.AddCommandItem2("Read Open Face", -1, "Reading a open face", "Read Open Face", 2, "ReadOpenFace", "", mainItemID12, menuToolbarOption);
             cmdIndex12 = cmdGroup.AddCommandItem2("Analyze Open Faces", -1, "Analyzing open faces", "Analyze Open Faces", 2, "AnalyzeOpenFace", "", mainItemID13, menuToolbarOption);
+            cmdIndex13 = cmdGroup.AddCommandItem2("Cost Analysis", -1, "Analyzing the cost", "Analyze Cost", 2, "CostAnalysis", "", mainItemID14, menuToolbarOption);
             
 
             cmdGroup.HasToolbar = true;
@@ -439,7 +442,19 @@ namespace cs_ppx
                     
                     bResult = cmdBox3.AddCommands(cmdIDs, TextType);
                     cmdTab.AddSeparator(cmdBox3, cmdGroup.ToolbarId);
-                    
+
+                    //add another group
+                    CommandTabBox cmdBox4 = cmdTab.AddCommandTabBox();
+                    cmdIDs = new int[1];
+                    TextType = new int[1];
+
+                    //Cost analysis
+                    cmdIDs[0] = cmdGroup.get_CommandID(cmdIndex13);
+                    TextType[0] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+
+                    bResult = cmdBox4.AddCommands(cmdIDs, TextType);
+                    cmdTab.AddSeparator(cmdBox4, cmdGroup.ToolbarId);
+
                     /*
                     CommandTabBox cmdBox1 = cmdTab.AddCommandTabBox();
                     cmdIDs = new int[1];
@@ -840,7 +855,7 @@ namespace cs_ppx
 
                     ModelDoc2 ModDoc2 = (ModelDoc2)compName[0].GetModelDoc2();
                     markBBfaces(compName[0], ref BBDef);
-
+                    
                     assyModel = (AssemblyDoc) Doc;
 
                     assyModel.EditPart();
@@ -927,7 +942,7 @@ namespace cs_ppx
                 i++;
             }
 
-            if (Components[0].Name2.Contains("rm"))
+            if (Components[0].Name2.Contains("rawm_"))
             {
                 compName[0] = Components[0];
                 compName[1] = Components[1];
@@ -1115,6 +1130,8 @@ namespace cs_ppx
                     int countFace = 0;
                     RefPlane swRefPlane = null;
                     Entity swEnt = null;
+                    Object TessFaceArray = null;
+                    Double[] TessVerticesArray = null;
 
                     AddedReferencePlane tmpInitPlane = null;
                     InitialRefPlanes = new List<AddedReferencePlane>(); //set the instance for the first time for sacing all the reference planes
@@ -1135,11 +1152,23 @@ namespace cs_ppx
                             //select the face without name
                             if (entName == "")
                             {
-                                swEnt = (Entity)tmpFace;
-                                swEnt.Select2(true, 0);
+                                TessFaceArray = (Object)tmpFace.GetTessTriangles(true);
+                                TessVerticesArray = GetMaxMin(TessFaceArray);
 
-                                //create coincide reference plane to it
-                                swRefPlane = (RefPlane)Doc.FeatureManager.InsertRefPlane(4, 0, 0, 0, 0, 0);
+                                if (IsPlanar(tmpFace))
+                                {
+                                    swEnt = (Entity)tmpFace;
+                                    swEnt.Select2(true, 0);
+
+                                    //create coincide reference plane to it
+                                    swRefPlane = (RefPlane)Doc.FeatureManager.InsertRefPlane(4, 0, 0, 0, 0, 0);
+                                    
+                                }
+                                else
+                                {
+                                    swRefPlane = SetupRefPlane(tmpFace, Doc, TessVerticesArray[5]);
+                                }
+
                                 countFace += 1;
 
                                 //set reference name
@@ -1151,9 +1180,13 @@ namespace cs_ppx
                                 tmpInitPlane.name = refName;
                                 tmpInitPlane.AttachedFace = tmpFace;
                                 tmpInitPlane.ReferencePlane = swRefPlane;
+                                tmpInitPlane.MaxMinValue = TessVerticesArray;
 
                                 //add the reference plane
                                 InitialRefPlanes.Add(tmpInitPlane);
+
+                                //set the MaxMinValue
+                                SetMaxMin(TessVerticesArray, ref MaxMinValue);
 
                             }
                         }
@@ -1184,6 +1217,220 @@ namespace cs_ppx
 
         //save all generate reference plane
         public List<AddedReferencePlane> InitialRefPlanes;
+
+        //get the normal array of doubles
+        public Object _GetNormalArray(Face2 ThisFace)
+        {
+            if (ThisFace.Normal != null)
+            {
+                return (Object)ThisFace.Normal;
+            }
+
+            return null;
+        }
+
+        //check whether if its a planar or non-planar face
+        public bool IsPlanar(Face2 ThisFace)
+        {
+            Double[] ThisFaceNormal = (Double[]) _GetNormalArray(ThisFace);
+
+            //this face is non-planar if only if all normal equal to 0
+            if (isEqual(ThisFaceNormal[0], 0) && isEqual(ThisFaceNormal[1], 0) && isEqual(ThisFaceNormal[2], 0))
+            {
+                return false;
+            }
+                        
+            return true;
+        }
+
+        //check whether if its a flat or inclined face
+        public bool IsFlat(Face2 ThisFace)
+        { 
+            if (IsPlanar(ThisFace))
+            {
+                Double[] ThisFaceNormal = (Double[])_GetNormalArray(ThisFace);
+
+                //this face is flat if only if the z normal equal to 1
+                if (isEqual(ThisFaceNormal[2], 1))
+                {
+                    return true;
+                }
+            
+            }
+
+            return false;
+        }
+
+        //set the reference plane for non-planar and inclined surface
+        public RefPlane SetupRefPlane(Face2 ThisFace, ModelDoc2 ThisModelDoc, Double DepthZ)
+        {
+            Object BoxFaceArray = null;
+            Object TessFaceArray = null;
+            Double[] BoxVerticesArray = null;
+            Double[] TessVerticesArray = null;
+            //Double DepthZ;
+            Double[] TmpPoint;
+            ModelDocExtension SwExt = null;
+            FeatureManager SwFM = null;
+            Boolean SelectionStatus = false;
+            RefPlane RefPlaneInstance = null;
+            SketchPoint SkPoint = null;
+
+            SwExt = ThisModelDoc.Extension;
+            SwFM = ThisModelDoc.FeatureManager;
+
+            BoxFaceArray = (Object)ThisFace.GetBox();
+            BoxVerticesArray = (Double[])BoxFaceArray;
+
+            //TessFaceArray = (Object)ThisFace.GetTessTriangles(true);
+            //TessVerticesArray = GetMaxMin(TessFaceArray);
+
+            ////get the lowest Z level
+            //if (BoxVerticesArray[2] < BoxVerticesArray[5]) { DepthZ = BoxVerticesArray[2]; }
+            //else { DepthZ = BoxVerticesArray[5]; }
+
+            //DepthZ = TessVerticesArray[5];
+                       
+            
+            //draw the 1st corner points
+            ThisModelDoc.SketchManager.Insert3DSketch(true);
+            TmpPoint = new Double[] {BoxVerticesArray[0], BoxVerticesArray[1], DepthZ};
+            SkPoint = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
+            ThisModelDoc.SketchManager.Insert3DSketch(true);
+
+            //draw the 2nd corner points
+            ThisModelDoc.SketchManager.Insert3DSketch(true);
+            TmpPoint = new Double[] { BoxVerticesArray[1], BoxVerticesArray[3], DepthZ };
+            SkPoint = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
+            ThisModelDoc.SketchManager.Insert3DSketch(true);
+
+            //draw the 3rd corner points
+            ThisModelDoc.SketchManager.Insert3DSketch(true);
+            TmpPoint = new Double[] { BoxVerticesArray[3], BoxVerticesArray[4], DepthZ };
+            SkPoint = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
+            ThisModelDoc.SketchManager.Insert3DSketch(true);
+
+            //select the constraint and insert the reference plane
+            SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[0], BoxVerticesArray[1], DepthZ, true, 0, null, 0);
+            SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[1], BoxVerticesArray[3], DepthZ, true, 1, null, 0);
+            SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[3], BoxVerticesArray[4], DepthZ, true, 2, null, 0);
+
+            RefPlaneInstance = (RefPlane)SwFM.InsertRefPlane(4, 0, 4, 0, 4, 0);
+
+            if (RefPlaneInstance != null) { return RefPlaneInstance; }
+ 
+            return null;
+ 
+        }
+
+        //get the maximum value of four values
+        public Single GetMax(Single Val1, Single Val2, Single Val3, Single Val4)
+        { 
+            Single MaxValue = Val1;
+            
+            if (Val2 > MaxValue) { MaxValue = Val2; }
+
+            if (Val3 > MaxValue) { MaxValue = Val3; }
+
+            if (Val4 > MaxValue) { MaxValue = Val4; }
+
+            return MaxValue;
+        }
+
+        //get the minimum value of four values
+        public Single GetMin(Single Val1, Single Val2, Single Val3, Single Val4)
+        { 
+            Single MinValue = Val1;
+
+            if (Val2 < MinValue) { MinValue = Val2; }
+
+            if (Val3 < MinValue) { MinValue = Val3; }
+
+            if (Val4 < MinValue) { MinValue = Val4; }
+
+            return MinValue;
+        }
+
+        //get the maximum and minimum from a tesselation data
+        public Double[] GetMaxMin(Object TessData)
+        {   
+            Single[] TessArray;
+            Single X_Max, X_Min, Y_Max, Y_Min, Z_Max, Z_Min;
+                        
+            X_Max = Single.MinValue;
+            Y_Max = Single.MinValue;
+            Z_Max = Single.MinValue;
+            X_Min = Single.MaxValue;
+            Y_Min = Single.MaxValue;
+            Z_Min = Single.MaxValue;
+                        
+            //get the tesselation data and compare them with the current MaxMin value
+            TessArray = (Single[])TessData;
+
+            for(int i = 0; i < (TessArray.Count()/9); i++)
+            {
+                X_Max = GetMax(X_Max, TessArray[9 * i + 0], TessArray[9 * i + 3], TessArray[9 * i + 6]);
+                X_Min = GetMin(X_Min, TessArray[9 * i + 0], TessArray[9 * i + 3], TessArray[9 * i + 6]);
+
+                Y_Max = GetMax(Y_Max, TessArray[9 * i + 1], TessArray[9 * i + 4], TessArray[9 * i + 7]);
+                Y_Min = GetMin(Y_Min, TessArray[9 * i + 1], TessArray[9 * i + 4], TessArray[9 * i + 7]);
+
+                Z_Max = GetMax(Z_Max, TessArray[9 * i + 2], TessArray[9 * i + 5], TessArray[9 * i + 8]);
+                Z_Min = GetMin(Z_Min, TessArray[9 * i + 2], TessArray[9 * i + 5], TessArray[9 * i + 8]);
+
+            }
+            
+            return new Double[6] {
+                Convert.ToDouble(X_Max), 
+                Convert.ToDouble(Y_Max), 
+                Convert.ToDouble(Z_Max), 
+                Convert.ToDouble(X_Min), 
+                Convert.ToDouble(Y_Min), 
+                Convert.ToDouble(Z_Min) };
+
+        }
+
+        //update the MaxMin value by comparing tesselated face data
+        public bool SetMaxMin(Double[] TessVertices, ref Double[] ThisCurrentMaxMin)
+        {
+            Double[] TmpValue;
+            Double X_Max, X_Min, Y_Max, Y_Min, Z_Max, Z_Min;
+
+            if (ThisCurrentMaxMin == null)
+            {
+                ThisCurrentMaxMin = new Double[6];
+                X_Max = Double.MinValue;
+                Y_Max = Double.MinValue;
+                Z_Max = Double.MinValue;
+                X_Min = Double.MaxValue;
+                Y_Min = Double.MaxValue;
+                Z_Min = Double.MaxValue;
+            }
+            else
+            {   
+                X_Max = ThisCurrentMaxMin[0];
+                Y_Max = ThisCurrentMaxMin[1];
+                Z_Max = ThisCurrentMaxMin[2];
+                X_Min = ThisCurrentMaxMin[3];
+                Y_Min = ThisCurrentMaxMin[4];
+                Z_Min = ThisCurrentMaxMin[5];
+            }
+
+            if (TessVertices[0] > X_Max) { X_Max = TessVertices[0]; }
+            if (TessVertices[1] > Y_Max) { Y_Max = TessVertices[1]; }
+            if (TessVertices[2] > Z_Max) { Z_Max = TessVertices[2]; }
+            if (TessVertices[3] < X_Min) { X_Min = TessVertices[3]; }
+            if (TessVertices[4] < Y_Min) { Y_Min = TessVertices[4]; }
+            if (TessVertices[5] < Z_Min) { Z_Min = TessVertices[5]; }
+
+            TmpValue = new Double[] { X_Max, Y_Max, Z_Max, X_Min, Y_Min, Z_Min };
+            ThisCurrentMaxMin = TmpValue;
+            
+            return true;
+        }
+
+        public Double[] MaxMinValue;
+
 
         #endregion 
 
@@ -1221,7 +1468,7 @@ namespace cs_ppx
 
                         //get the virtual centroid
                         object boxVertices = compName[0].GetBox(false, false);
-                        virtualCentroid = getMidPoint(boxVertices);
+                        virtualCentroid = getMidPoint(MaxMinValue);
                         
                         //get the real centroid
                         Body2 mainBody = compName[0].GetBody();
@@ -2557,7 +2804,7 @@ namespace cs_ppx
                     //check the generated MP
                     if (MPGenerator(Doc, assyModel, compName[0], PlaneFeatures, MachiningPlanList[MPIndex], MPIndex, PlanDirectory, out PathList) == true)
                     {   
-                        ModelDoc2 NewDoc = (ModelDoc2)SwApp.NewDocument("G:\\Program Files\\SolidWorks Corp\\SolidWorks\\lang\\english\\Tutorial\\assem.asmdot", 0, 0, 0);
+                        ModelDoc2 NewDoc = (ModelDoc2)SwApp.NewDocument("D:\\Program Files\\SolidWorks Corp\\SolidWorks\\lang\\english\\tutorial\\assem.asmdot", 0, 0, 0);
                         
                         string[] StringNames = new string[PathList.Count + 1];
                         string[] CoordinateName = new string[PathList.Count + 1];
@@ -2713,13 +2960,13 @@ namespace cs_ppx
 
                                         SelectData TmpSelectData = null;
                                         bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
-                                        string SavePath = ThisMPDir + "\\Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
+                                        string SavePath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
                                         //Insert the Body into new part document
                                         bool SaveStatus = ((PartDoc) CompDocumentModel).SaveToFile3(SavePath, 1, 1, false, "", out Errors, out Warnings);
 
                                         if (SaveStatus == true)
                                         {
-                                            ThisPathList.Add(SavePath);
+                                            ThisPathList.Add(SavePath); 
                                             SequenceNUM++;
                                         }
 
@@ -4030,6 +4277,60 @@ namespace cs_ppx
 
         //tools for machinable space calculation
         #region MachinableSpace
+        
+        //create VC requirement
+        public void VirtualConeAnalysis()
+        { 
+            ModelDoc2 Doc = (ModelDoc2) SwApp.ActiveDoc;
+            
+            int docType = (int)Doc.GetType();
+
+            if (Doc.GetType() == 2)
+            {
+                AssemblyDoc ThisAssyDoc = (AssemblyDoc)Doc;
+
+                if (ThisAssyDoc.GetComponentCount(true) == 0) { return; }
+                else
+                {
+                    ProcessLog_TaskPaneHost.LogProcess("Analysing open faces of current assembly model");
+                    PPDetails_TaskPaneHost.LogProcess("Analysing open faces of current assembly model");
+
+                    //get the components
+                    ConfigurationManager configDocManager = (ConfigurationManager)Doc.ConfigurationManager;
+                    Configuration configDoc = (Configuration)configDocManager.ActiveConfiguration;
+                    Component2 compInAssembly = (Component2)configDoc.GetRootComponent3(true);
+                    Object[] childComp = (Object[])compInAssembly.GetChildren();
+
+                    //classify between the workpiece and trvs
+                    List<Component2> ThisComponents = new List<Component2>();
+                    Component2 RootComponent = null;
+                    for (int i = 0; i < ThisAssyDoc.GetComponentCount(true); i++)
+                    {
+                        Component2 TmpComponent = (Component2)childComp[i];
+                        if (TmpComponent.Name.Contains("workpiece"))
+                        {
+                            RootComponent = TmpComponent;
+                            RootComponent.Select2(true, 0);
+                            ThisAssyDoc.SetComponentTransparent(true);
+                        }
+                        else
+                        {
+                            ThisComponents.Add(TmpComponent);
+                        }
+                    }
+
+                    //order it by its name (may be triggering problem if the components more than 10)
+                    List<Component2> ThisComponentsSorted = ThisComponents.OrderBy(c => c.Name2).ToList();
+
+                    //get the product/workpiece (main component) faces
+                    Array CompBodyArray = (Array)RootComponent.GetBodies2((int)swBodyType_e.swSolidBody);
+                    Body2 MainCompBody = (Body2)CompBodyArray.GetValue(0);
+                    Object[] MainCompFaces = (Object[])MainCompBody.GetFaces();
+                }
+
+
+            }
+        }
 
         //create the table region for several B-axis magnitude
         public void TableRegion()
@@ -4144,6 +4445,175 @@ namespace cs_ppx
 
             }
 
+        }
+
+        //cost analysis
+        public void CostAnalysis()
+        {            
+            ModelDoc2 SwDoc = null;
+
+            SwDoc = (ModelDoc2)SwApp.ActiveDoc;
+            ModelDocExtension SwDocExt = (ModelDocExtension)SwDoc.Extension;
+
+            // Get Costing templates names
+            Debug.Print("Costing template folders:");
+            String machiningCostingTemplatePathName = SwApp.GetUserPreferenceStringValue((int)swUserPreferenceStringValue_e.swFileLocationsCostingTemplates);
+            Debug.Print("    Name of Costing template folder: " + machiningCostingTemplatePathName);
+            String machiningCostingReportTemplateFolderName = SwApp.GetUserPreferenceStringValue((int)swUserPreferenceStringValue_e.swFileLocationsCostingReportTemplateFolder);
+            Debug.Print("    Name of Costing report template folder: " + machiningCostingReportTemplateFolderName);
+            Debug.Print("");
+                        
+            CostManager swCosting = (CostManager)SwDocExt.GetCostingManager();
+            swCosting.WaitForUIUpdate();
+
+            // Get the number of templates
+            int nbrMachiningCostingTemplate = swCosting.GetTemplateCount((int)swcCostingType_e.swcCostingType_Machining);
+            int nbrCommonCostingTemplate = swCosting.GetTemplateCount((int)swcCostingType_e.swcCostingType_Common);
+
+            // Get names of templates
+            Object[] machiningCostingTemplates = (Object[])swCosting.GetTemplatePathnames((int)swcCostingType_e.swcCostingType_Machining);
+            Object[] commonCostingTemplates = (Object[])swCosting.GetTemplatePathnames((int)swcCostingType_e.swcCostingType_Common);
+
+            Array.Resize(ref machiningCostingTemplates, nbrMachiningCostingTemplate + 1);
+            Array.Resize(ref commonCostingTemplates, nbrCommonCostingTemplate + 1);
+
+            Debug.Print("Costing templates:");
+
+            // Print names of templates to Immediate window
+            for (int i = 0; i <= (nbrMachiningCostingTemplate - 1); i++)
+            {
+                Debug.Print("    Name of machining Costing template: " + machiningCostingTemplates[i]);
+            }
+
+            Debug.Print("");
+
+            for (int i = 0; i <= (nbrCommonCostingTemplate - 1); i++)
+            {
+                Debug.Print("    Name of common Costing template: " + commonCostingTemplates[i]);
+            }
+
+            Debug.Print("");
+
+            // Get Costing part
+            Object swCostingModel = (Object)swCosting.CostingModel;
+            CostPart swCostingPart = (CostPart)swCostingModel;
+
+            // Create common Costing analysis
+            CostAnalysis swCostingAnalysis = (CostAnalysis)swCostingPart.CreateCostAnalysis("c:\\program files\\solidworks corp\\solidworks\\lang\\english\\costing templates\\multibodytemplate_default(englishstandard).sldctc");
+
+            // Get common Costing analysis data
+            Debug.Print("Common Costing analysis data:");
+            Debug.Print("    Template name:  " + swCostingAnalysis.CostingTemplateName);
+            Debug.Print("    Currency code: " + swCostingAnalysis.CurrencyCode);
+            Debug.Print("    Currency name: " + swCostingAnalysis.CurrencyName);
+            Debug.Print("    Currency separator: " + swCostingAnalysis.CurrencySeparator);
+            Debug.Print("    Total manufacturing cost: " + swCostingAnalysis.GetManufacturingCost());
+            Debug.Print("    Material costs: " + swCostingAnalysis.GetMaterialCost());
+            Debug.Print("    Setup cost: " + swCostingAnalysis.GetSetupCost());
+            Debug.Print("    Total cost to charge: " + swCostingAnalysis.GetTotalCostToCharge());
+            Debug.Print("    Total cost to manufacture: " + swCostingAnalysis.GetTotalCostToManufacture());
+            Debug.Print("    Lot size: " + swCostingAnalysis.LotSize);
+            Debug.Print("    Total quantity: " + swCostingAnalysis.TotalQuantity);
+            Debug.Print("");
+
+            Boolean isBody = false;
+
+            // Get Costing bodies
+            int nbrCostingBodies = swCostingPart.GetBodyCount();
+            if ((nbrCostingBodies > 0))
+            {
+                Debug.Print("Costing bodies:");
+                Debug.Print("    Number of Costing bodies: " + nbrCostingBodies);
+                Object[] costingBodies = (Object[])swCostingPart.GetBodies();
+                for (int i = 0; i <= (nbrCostingBodies - 1); i++)
+                {
+                    CostBody swCostingBody = (CostBody)costingBodies[i];
+                    String costingBodyName = swCostingBody.GetName();
+                    Debug.Print("    Name of Costing body: " + costingBodyName);
+                    // Make sure body is machining body
+                    if ((swCostingBody.GetBodyType() == (int)swcBodyType_e.swcBodyType_Machined))
+                    {
+                        isBody = true;
+                        // Determine analysis status of Costing body
+                        switch ((int)swCostingBody.BodyStatus)
+                        {
+                            case (int)swcBodyStatus_e.swcBodyStatus_NotAnalysed:
+                                // Create Costing analysis
+                                swCostingAnalysis = (CostAnalysis)swCostingBody.CreateCostAnalysis("c:\\program files\\solidworks corp\\solidworks\\lang\\english\\costing templates\\machiningtemplate_default(englishstandard).sldcts");
+                                Debug.Print("    Creating machining Costing analysis for: " + swCostingBody.GetName());
+                                break;
+                            case (int)swcBodyStatus_e.swcBodyStatus_Analysed:
+                                // Get Costing analysis
+                                swCostingAnalysis = (CostAnalysis)swCostingBody.GetCostAnalysis();
+                                Debug.Print("    Getting machining Costing analysis for: " + swCostingBody.GetName());
+                                break;
+                            case (int)swcBodyStatus_e.swcBodyStatus_Excluded:
+                                // Body excluded from Costing analysis
+                                Debug.Print("    Excluded from machining Costing analysis: " + swCostingBody.GetName());
+                                break;
+                            case (int)swcBodyStatus_e.swcBodyStatus_AssignedCustomCost:
+                                // Body has an assigned custom Cost
+                                Debug.Print("    Custom cost assigned: " + swCostingBody.GetName());
+                                break;
+                        }
+
+                        Debug.Print("");
+
+                    }
+                }
+            }
+
+            if (!isBody)
+            {
+                Debug.Print("");
+                Debug.Print("No bodies in part! Exiting macro.");
+                return;
+            }
+
+            // Get machining Costing Analysis data
+            CostAnalysisMachining swCostingMachining = (CostAnalysisMachining)swCostingAnalysis.GetSpecificAnalysis();
+            Debug.Print("Machining Costing analysis: ");
+            Debug.Print("    Current material: " + swCostingMachining.CurrentMaterial);
+            Debug.Print("    Current material class: " + swCostingMachining.CurrentMaterialClass);
+            Debug.Print("    Current plate thickness: " + swCostingMachining.CurrentPlateThickness);
+
+            Debug.Print("");
+
+            // Get Costing features
+            Debug.Print("Costing features:");
+            CostFeature swCostingFeat = (CostFeature)swCostingAnalysis.GetFirstCostFeature();
+            while ((swCostingFeat != null))
+            {
+                Debug.Print("    Feature: " + swCostingFeat.Name);
+                Debug.Print("      Type: " + swCostingFeat.GetType());
+                Debug.Print("        Setup related: " + swCostingFeat.IsSetup);
+                Debug.Print("        Overridden: " + swCostingFeat.IsOverridden);
+                Debug.Print("        Combined cost: " + swCostingFeat.CombinedCost);
+                Debug.Print("        Combined time: " + swCostingFeat.CombinedTime);
+
+                CostFeature swCostingSubFeat = swCostingFeat.GetFirstSubFeature();
+                while ((swCostingSubFeat != null))
+                {
+                    Debug.Print("      Subfeature: " + swCostingSubFeat.Name);
+                    Debug.Print("        Type: " + swCostingSubFeat.GetType());
+                    Debug.Print("          Setup related: " + swCostingSubFeat.IsSetup);
+                    Debug.Print("          Overridden: " + swCostingSubFeat.IsOverridden);
+                    Debug.Print("          Combined cost: " + swCostingSubFeat.CombinedCost);
+                    Debug.Print("          Combined time: " + swCostingSubFeat.CombinedTime);
+                    CostFeature swCostingNextSubFeat = (CostFeature)swCostingSubFeat.GetNextFeature();
+                    swCostingSubFeat = null;
+                    swCostingSubFeat = (CostFeature)swCostingNextSubFeat;
+                    swCostingNextSubFeat = null;
+                }
+                CostFeature swCostingNextFeat = swCostingFeat.GetNextFeature();
+                swCostingFeat = null;
+                swCostingFeat = (CostFeature)swCostingNextFeat;
+                swCostingNextFeat = null;
+            }
+
+
+            if (swCosting == null) { iSwApp.SendMsgToUser("CostManager is NULL"); }
+            else { iSwApp.SendMsgToUser("CostManager is not NULL"); }
         }
 
         public int OpenFaceCounter;
@@ -4442,6 +4912,8 @@ namespace cs_ppx
         public int Remark { get; set; } //keep additional remark for the plane
 
         public Boolean Possibility { get; set; } //keep the status for possibility to add as a plane candidate
+
+        public Object MaxMinValue { get; set; } //keep the MaxMin value that has been define by tesselating corresponding face
 
     }
 
