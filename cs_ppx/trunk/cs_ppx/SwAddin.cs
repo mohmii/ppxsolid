@@ -1154,6 +1154,9 @@ namespace cs_ppx
                             {
                                 TessFaceArray = (Object)tmpFace.GetTessTriangles(true);
                                 TessVerticesArray = GetMaxMin(TessFaceArray);
+                                
+                                //set the reference plane instance
+                                tmpInitPlane = new AddedReferencePlane();
 
                                 if (IsPlanar(tmpFace))
                                 {
@@ -1162,11 +1165,13 @@ namespace cs_ppx
 
                                     //create coincide reference plane to it
                                     swRefPlane = (RefPlane)Doc.FeatureManager.InsertRefPlane(4, 0, 0, 0, 0, 0);
+                                    tmpInitPlane.IsPlanar = true;
                                     
                                 }
                                 else
                                 {
                                     swRefPlane = SetupRefPlane(tmpFace, Doc, TessVerticesArray[5]);
+                                    tmpInitPlane.IsPlanar = false;
                                 }
 
                                 countFace += 1;
@@ -1176,7 +1181,6 @@ namespace cs_ppx
                                 swPartDoc.SetEntityName(swRefPlane, refName);
 
                                 //set the reference plane, included with name, coincided face, and its pointer
-                                tmpInitPlane = new AddedReferencePlane();
                                 tmpInitPlane.name = refName;
                                 tmpInitPlane.AttachedFace = tmpFace;
                                 tmpInitPlane.ReferencePlane = swRefPlane;
@@ -1219,7 +1223,7 @@ namespace cs_ppx
         public List<AddedReferencePlane> InitialRefPlanes;
 
         //get the normal array of doubles
-        public Object _GetNormalArray(Face2 ThisFace)
+        public static Object _GetNormalArray(Face2 ThisFace)
         {
             if (ThisFace.Normal != null)
             {
@@ -1230,7 +1234,7 @@ namespace cs_ppx
         }
 
         //check whether if its a planar or non-planar face
-        public bool IsPlanar(Face2 ThisFace)
+        public static bool IsPlanar(Face2 ThisFace)
         {
             Double[] ThisFaceNormal = (Double[]) _GetNormalArray(ThisFace);
 
@@ -1465,10 +1469,6 @@ namespace cs_ppx
                             GetCompName(compInAssembly, ref compName);
                             PPDetails_TaskPaneHost.getCompName(ref compName);
                         }
-
-                        //get the virtual centroid
-                        object boxVertices = compName[0].GetBox(false, false);
-                        virtualCentroid = getMidPoint(MaxMinValue);
                         
                         //get the real centroid
                         Body2 mainBody = compName[0].GetBody();
@@ -1476,6 +1476,10 @@ namespace cs_ppx
                         bodyProperties.AddBodies(mainBody);
                         bodyProperties.UseSystemUnits = false;
                         centroid = (double[]) bodyProperties.CenterOfMass;
+
+                        //get the virtual centroid
+                        //object boxVertices = compName[0].GetBox(false, false);
+                        virtualCentroid = getMidPoint(MaxMinValue);
                         
                         //draw the virtual centroid
                         Doc.SketchManager.Insert3DSketch(true);
@@ -1794,10 +1798,19 @@ namespace cs_ppx
                     Object TmpNormal = RefPlanes[i].PlaneNormal;
 
                     TmpDistance = checkDistance(Doc, TmpRefPlane, TmpNormal, centroid, swMathUtils);
-                    RefPlanes[i].DistanceFromCentroid = TmpDistance * 1000;
+                    RefPlanes[i].DistanceFromCentroid = SetZeroTolerance(TmpDistance * 1000);
                     
                 }
             }
+
+        }
+
+        //remove the trailing zeros
+        public Double SetZeroTolerance(Double ThisValue)
+        { 
+            if (isEqual(ThisValue, 0.000)) { return 0.000; }
+
+            return Math.Round(ThisValue, 3);
 
         }
 
@@ -2187,7 +2200,7 @@ namespace cs_ppx
         //checking the double is zero to avoid trailing zeros
         static bool isEqual(double value1, double value2)
         {
-            return (Math.Abs(Math.Round((value1 - value2), 4)) < 0.0000001);
+            return (Math.Abs(Math.Round((value1 - value2), 3)) < 0.001);
             
         }
 
@@ -2312,7 +2325,7 @@ namespace cs_ppx
                     Configuration configDoc = (Configuration)configDocManager.ActiveConfiguration;
                     Component2 compInAssembly = (Component2)configDoc.GetRootComponent3(true);
 
-                    if (compName == null)
+                    if (compName == null) 
                     {
                         //define the raw material and product
                         compName = new Component2[2];
@@ -2414,6 +2427,8 @@ namespace cs_ppx
                 TargetItem.MarkingOpt = Source.MarkingOpt;
                 TargetItem.Remark = Source.Remark;
                 TargetItem.Possibility = Source.Possibility;
+                TargetItem.MaxMinValue = Source.MaxMinValue;
+                TargetItem.IsPlanar = Source.IsPlanar;
                 TargetList.Add(TargetItem);
             }
         }
@@ -2960,7 +2975,7 @@ namespace cs_ppx
 
                                         SelectData TmpSelectData = null;
                                         bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
-                                        string SavePath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
+                                        string SavePath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "TRUETRV_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
                                         //Insert the Body into new part document
                                         bool SaveStatus = ((PartDoc) CompDocumentModel).SaveToFile3(SavePath, 1, 1, false, "", out Errors, out Warnings);
 
@@ -3989,6 +4004,8 @@ namespace cs_ppx
             Object[] objLoops = null;
             objLoops = (Object[])face2Check.GetLoops();
 
+            if (IsPlanar(face2Check) == false) { return true; } //it meant for non planar face
+
             foreach (Loop2 tmpLoop in objLoops)
             {
                 if (tmpLoop.IsOuter() == true)
@@ -4010,6 +4027,8 @@ namespace cs_ppx
             double[] zCrossProduct = null;
             
             objVertices = (Object[])loop2Check.GetVertices();
+
+            
 
             foreach (Vertex tmpVertex in objVertices)
             {
@@ -4914,6 +4933,8 @@ namespace cs_ppx
         public Boolean Possibility { get; set; } //keep the status for possibility to add as a plane candidate
 
         public Object MaxMinValue { get; set; } //keep the MaxMin value that has been define by tesselating corresponding face
+
+        public Boolean IsPlanar { get; set; } //keep the type of the reference plane (true: planar, false: non planar)
 
     }
 
