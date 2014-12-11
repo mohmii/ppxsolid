@@ -2147,7 +2147,7 @@ namespace cs_ppx
         }
 
         //check normal direction similarity
-        public bool checkNormalSim(object firstN, object secondN, MathUtility mathUtils)
+        public static bool checkNormalSim(object firstN, object secondN, MathUtility mathUtils)
         {
             double[] firstDouble = null;
             double[] secondDouble = null;
@@ -2164,7 +2164,9 @@ namespace cs_ppx
 
             //check the dotproduct, if equal to 1, means two vectors are in the same direction.
 
-            if (isEqual(dotProduct, 1) == true | isEqual(dotProduct, -1) == true) { return true; }
+            //if (isEqual(dotProduct, 1) == true | isEqual(dotProduct, -1) == true) { return true; }
+
+            if (isEqual(Math.Abs(dotProduct), 1) == true) { return true; }
 
             return false;
 
@@ -3263,8 +3265,11 @@ namespace cs_ppx
 
                 //classify between the workpiece and trvs
                 List<Component2> ThisComponents = new List<Component2>();
+                List<Component2> ThisComponentsSorted = new List<Component2>();
                 List<Component2> TRVComponents = new List<Component2>();
+                List<Component2> TRVComponentsSorted = new List<Component2>();
                 Component2 RootComponent = null;
+
                 for (int i = 0; i < ThisAssyDoc.GetComponentCount(true); i++)
                 {
                     Component2 TmpComponent = (Component2)childComp[i];
@@ -3288,7 +3293,7 @@ namespace cs_ppx
                 }
 
                 //order it by its name (may be triggering problem if the components more than 10)
-                List<Component2> ThisComponentsSorted = ThisComponents.OrderBy(c => c.Name2).ToList();
+                ThisComponentsSorted = ThisComponents.OrderBy(c => c.Name2).ToList();
 
                 //get the product/workpiece (main component) faces
                 Array CompBodyArray = (Array)RootComponent.GetBodies2((int)swBodyType_e.swSolidBody);
@@ -3401,10 +3406,65 @@ namespace cs_ppx
 
                     ThisAssyDoc.EditAssembly();
                 }
+
+                //set the color of TRV based on TRUE TRV faces
+                //order it by its name (may be triggering problem if the components more than 10)
+                TRVComponentsSorted = TRVComponents.OrderBy(c => c.Name2).ToList();
+
+                MathUtility MathUtils = SwApp.GetMathUtility();
+
+                for (int i = 0; i < TRVComponents.Count(); i++)
+                {
+                    //select and open the component for editing
+                    TRVComponentsSorted[i].Select2(true, 0);
+                    ThisAssyDoc.EditPart();
+
+                    //ModelDoc2 RefModel = ThisComponents[i].GetModelDoc2();
+                    //Double[] PropValues = RefModel.MaterialPropertyValues;
+
+                    //Compare with product's faces
+                    CompBodyArray = (Array)TRVComponentsSorted[i].GetBodies2((int)swBodyType_e.swSolidBody);
+                    Body2 CompBody = (Body2)CompBodyArray.GetValue(0);
+                    Object[] CompFaces = (Object[])CompBody.GetFaces();
+
+                    //get the product/workpiece (main component) faces
+                    CompBodyArray = (Array)ThisComponentsSorted[i].GetBodies2((int)swBodyType_e.swSolidBody);
+                    Body2 TrueTRVBody = (Body2)CompBodyArray.GetValue(0);
+                    Object[] TrueTRVFaces = (Object[])TrueTRVBody.GetFaces();
+
+                    foreach (Face2 CheckThisFace in CompFaces)
+                    {
+                        foreach (Face2 WithThisFace in TrueTRVFaces)
+                        { 
+                            if (IsSameDirection(CheckThisFace.Normal, WithThisFace.Normal) == true)
+                            {
+                                //change the face color to red and mark it with "90"
+                                CheckThisFace.MaterialPropertyValues = WithThisFace.MaterialPropertyValues;
+                                
+                                break;
+                            }
+                        }
+                    }
+
+                    ThisAssyDoc.EditAssembly();
+
+                }
+
                     
             }
 
             return true;
+        }
+
+        //check vector sign
+        public static Boolean IsSameDirection(Object FirstN, Object SecondN)
+        {
+            Double[] N1 = (Double[])FirstN;
+            Double[] N2 = (Double[])SecondN;
+
+            if (N1[0] == N2[0] && N1[1] == N2[1] && N1[2] == N2[2]) { return true; }
+            
+            return false;
         }
 
         //check overlapping faces
