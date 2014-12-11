@@ -1304,7 +1304,7 @@ namespace cs_ppx
 
             //draw the 2nd corner points
             ThisModelDoc.SketchManager.Insert3DSketch(true);
-            TmpPoint = new Double[] { BoxVerticesArray[1], BoxVerticesArray[3], DepthZ };
+            TmpPoint = new Double[] { BoxVerticesArray[0], BoxVerticesArray[4], DepthZ };
             SkPoint = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
             ThisModelDoc.SketchManager.Insert3DSketch(true);
 
@@ -1316,7 +1316,7 @@ namespace cs_ppx
 
             //select the constraint and insert the reference plane
             SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[0], BoxVerticesArray[1], DepthZ, true, 0, null, 0);
-            SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[1], BoxVerticesArray[3], DepthZ, true, 1, null, 0);
+            SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[0], BoxVerticesArray[4], DepthZ, true, 1, null, 0);
             SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[3], BoxVerticesArray[4], DepthZ, true, 2, null, 0);
 
             RefPlaneInstance = (RefPlane)SwFM.InsertRefPlane(4, 0, 4, 0, 4, 0);
@@ -1328,7 +1328,7 @@ namespace cs_ppx
         }
 
         //get the maximum value of four values
-        public Single GetMax(Single Val1, Single Val2, Single Val3, Single Val4)
+        public static Single GetMax(Single Val1, Single Val2, Single Val3, Single Val4)
         { 
             Single MaxValue = Val1;
             
@@ -1342,7 +1342,7 @@ namespace cs_ppx
         }
 
         //get the minimum value of four values
-        public Single GetMin(Single Val1, Single Val2, Single Val3, Single Val4)
+        public static Single GetMin(Single Val1, Single Val2, Single Val3, Single Val4)
         { 
             Single MinValue = Val1;
 
@@ -1356,7 +1356,7 @@ namespace cs_ppx
         }
 
         //get the maximum and minimum from a tesselation data
-        public Double[] GetMaxMin(Object TessData)
+        public static Double[] GetMaxMin(Object TessData)
         {   
             Single[] TessArray;
             Single X_Max, X_Min, Y_Max, Y_Min, Z_Max, Z_Min;
@@ -1395,7 +1395,7 @@ namespace cs_ppx
         }
 
         //update the MaxMin value by comparing tesselated face data
-        public bool SetMaxMin(Double[] TessVertices, ref Double[] ThisCurrentMaxMin)
+        public static bool SetMaxMin(Double[] TessVertices, ref Double[] ThisCurrentMaxMin)
         {
             Double[] TmpValue;
             Double X_Max, X_Min, Y_Max, Y_Min, Z_Max, Z_Min;
@@ -1430,6 +1430,45 @@ namespace cs_ppx
             TmpValue = new Double[] { X_Max, Y_Max, Z_Max, X_Min, Y_Min, Z_Min };
             ThisCurrentMaxMin = TmpValue;
             
+            return true;
+        }
+
+        //OVERLOAD update the MaxMin value by comparing tesselated face data
+        public static bool SetMaxMin(Double[] TessVertices, Double[] ThisCurrentMaxMin)
+        {
+            Double[] TmpValue;
+            Double X_Max, X_Min, Y_Max, Y_Min, Z_Max, Z_Min;
+
+            if (ThisCurrentMaxMin == null)
+            {
+                ThisCurrentMaxMin = new Double[6];
+                X_Max = Double.MinValue;
+                Y_Max = Double.MinValue;
+                Z_Max = Double.MinValue;
+                X_Min = Double.MaxValue;
+                Y_Min = Double.MaxValue;
+                Z_Min = Double.MaxValue;
+            }
+            else
+            {
+                X_Max = ThisCurrentMaxMin[0];
+                Y_Max = ThisCurrentMaxMin[1];
+                Z_Max = ThisCurrentMaxMin[2];
+                X_Min = ThisCurrentMaxMin[3];
+                Y_Min = ThisCurrentMaxMin[4];
+                Z_Min = ThisCurrentMaxMin[5];
+            }
+
+            if (TessVertices[0] > X_Max) { X_Max = TessVertices[0]; }
+            if (TessVertices[1] > Y_Max) { Y_Max = TessVertices[1]; }
+            if (TessVertices[2] > Z_Max) { Z_Max = TessVertices[2]; }
+            if (TessVertices[3] < X_Min) { X_Min = TessVertices[3]; }
+            if (TessVertices[4] < Y_Min) { Y_Min = TessVertices[4]; }
+            if (TessVertices[5] < Z_Min) { Z_Min = TessVertices[5]; }
+
+            TmpValue = new Double[] { X_Max, Y_Max, Z_Max, X_Min, Y_Min, Z_Min };
+            ThisCurrentMaxMin = TmpValue;
+
             return true;
         }
 
@@ -2200,7 +2239,7 @@ namespace cs_ppx
         //checking the double is zero to avoid trailing zeros
         static bool isEqual(double value1, double value2)
         {
-            return (Math.Abs(Math.Round((value1 - value2), 3)) < 0.001);
+            return (Math.Abs(Math.Round((value1 - value2), 4)) <= 0.001);
             
         }
 
@@ -2211,13 +2250,13 @@ namespace cs_ppx
             
             foreach (AddedReferencePlane TmpReferencePlane in AllReferencePlanes)
             {
-                Location = checkCentroidLocation(centroid, TmpReferencePlane.ReferencePlane, TmpReferencePlane.PlaneNormal);
+                Location = checkCentroidLocation(centroid, TmpReferencePlane, TmpReferencePlane.PlaneNormal);
                 TmpReferencePlane.CPost = Location;
             }
         }
 
         //Check centroid location
-        public bool checkCentroidLocation(Double[] Centroid, RefPlane ReferencePlane, object objPlaneNormal)
+        public bool checkCentroidLocation(Double[] Centroid, AddedReferencePlane ThisRefPlane, object objPlaneNormal)
         {
             MathVector planeNormal, tmpMathVector = null;
             MathPoint pointOnPlane, pointOnBox = null;
@@ -2225,7 +2264,7 @@ namespace cs_ppx
             MathUtility swMath = (MathUtility)SwApp.GetMathUtility();// = new MathUtility();
 
             //get random point on the plane
-            pointOnPlane = getPointOnPlane(ReferencePlane);
+            pointOnPlane = getPointOnPlane(ThisRefPlane);
             double[] TmpPointOnBox = (double[])pointOnPlane.ArrayData;
 
             //get the centroid of the body box
@@ -2252,7 +2291,7 @@ namespace cs_ppx
         }
 
         //check if point location is on a plane or not
-        public static bool CheckPointLocation(Vertex ThisPoint, RefPlane ReferencePlane, object objPlaneNormal)
+        public static bool CheckPointLocation(Vertex ThisPoint, RefPlane ThisRefPlane, object objPlaneNormal)
         {
             MathVector planeNormal, tmpMathVector = null;
             MathPoint pointOnPlane, pointOnBox = null;
@@ -2260,7 +2299,7 @@ namespace cs_ppx
             MathUtility swMath = (MathUtility)SwApp.GetMathUtility();// = new MathUtility();
 
             //get random point on the plane
-            pointOnPlane = getPointOnPlane(ReferencePlane);
+            pointOnPlane = getPointOnPlane(ThisRefPlane);
             double[] TmpPointOnBox = (double[])pointOnPlane.ArrayData;
 
             //get the centroid of the body box
@@ -2856,6 +2895,7 @@ namespace cs_ppx
                         ProcessLog_TaskPaneHost.LogProcess("Generating Machining Plan " + (MPIndex+1).ToString());
                         PPDetails_TaskPaneHost.LogProcess("Generating Machining Plan " + (MPIndex + 1).ToString());
 
+                        NewDoc = SwApp.ActivateDoc(Path.GetFileNameWithoutExtension(MPPath));
                         NewDoc.ViewZoomtofit2();
 
                     }
@@ -2975,18 +3015,26 @@ namespace cs_ppx
 
                                         SelectData TmpSelectData = null;
                                         bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
-                                        string SavePath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "TRUETRV_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
-                                        //Insert the Body into new part document
-                                        bool SaveStatus = ((PartDoc) CompDocumentModel).SaveToFile3(SavePath, 1, 1, false, "", out Errors, out Warnings);
+                                        string ActualTRVPath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "_TRUETRV_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
+                                        //Insert the Body into new part document (this is the TRUE TRV
+                                        bool SaveStatus = ((PartDoc) CompDocumentModel).SaveToFile3(ActualTRVPath, 1, 1, false, "", out Errors, out Warnings);
+
+                                        //create TRV from TRUE TRV by tesselating all faces in the TRUE TRV body
+                                        string TRVPath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "_TRV_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
+                                        bool CreationStatus = CreateTRV(TRVPath, TmpBody);
 
                                         if (SaveStatus == true)
                                         {
-                                            ThisPathList.Add(SavePath); 
+                                            ThisPathList.Add(ActualTRVPath); 
                                             SequenceNUM++;
+                                            if (CreationStatus == true)
+                                            {
+                                                ThisPathList.Add(TRVPath);
+                                            }
                                         }
 
                                         //break the reference
-                                        ModelDoc2 TmpDoc = (ModelDoc2)SwApp.ActivateDoc2(Path.GetFileNameWithoutExtension(SavePath), true, 0);
+                                        ModelDoc2 TmpDoc = (ModelDoc2)SwApp.ActivateDoc2(Path.GetFileNameWithoutExtension(ActualTRVPath), true, 0);
                                         ModelDocExtension TmpDocEx = (ModelDocExtension) TmpDoc.Extension;
                                         TmpDocEx.BreakAllExternalFileReferences2(false);
                                         TmpDoc.Save2(true);
@@ -3096,6 +3144,91 @@ namespace cs_ppx
             return true;
         }
 
+        //Create TRV from ActualTRV body
+        public static Boolean CreateTRV(String ThisPath, Body2 ThisBody)
+        {
+            Object[] ThisBodyFaces = (Object[])ThisBody.GetFaces();
+            Object TessFaceArray = null;
+            Double[] TessVerticesArray = null;
+            Double[] ThisBodyMaxMin = null;
+            Object SketchObj = null;
+            int Errors = 0;
+            int Warnings = 0;
+            Boolean SelectionStatus;
+            RefPlane ThisRefPlane = null;            
+            MathTransform RefPlaneTransform;
+            MathPoint ThisVertex = null;
+            MathUtility MathUtils = SwApp.GetMathUtility();
+            
+            List<Double> NewPoint= new List<Double>();
+
+
+            //get the maxmin vertices of the body by tesselation
+            foreach (Face2 ThisFace in ThisBodyFaces)
+            {
+                TessFaceArray = (Object)ThisFace.GetTessTriangles(true);
+                TessVerticesArray = GetMaxMin(TessFaceArray);
+                
+                Boolean UpdateStatus = SetMaxMin(TessVerticesArray, ref ThisBodyMaxMin);
+                
+            }
+
+            ModelDoc2 ThisDoc = (ModelDoc2)SwApp.NewDocument("D:\\Program Files\\SolidWorks Corp\\SolidWorks\\lang\\english\\tutorial\\part.prtdot", 0, 0, 0);            
+            bool SaveStatus = ThisDoc.Extension.SaveAs(ThisPath, (int)swSaveAsVersion_e.swSaveAsCurrentVersion, (int)swSaveAsOptions_e.swSaveAsOptions_Silent, null, 0, 0);
+
+            ThisDoc = SwApp.ActivateDoc3(Path.GetFileNameWithoutExtension(ThisPath), false, 2, ref Errors);
+            
+            //ThisDoc.ActiveView();
+
+            SketchManager ThisSkManager = (SketchManager) ThisDoc.SketchManager;
+            
+            ThisSkManager.Insert3DSketch(true);
+            SketchObj = ThisSkManager.CreatePoint(ThisBodyMaxMin[0], ThisBodyMaxMin[1], ThisBodyMaxMin[5]);
+            SketchObj = ThisSkManager.CreatePoint(ThisBodyMaxMin[0], ThisBodyMaxMin[4], ThisBodyMaxMin[5]);
+            SketchObj = ThisSkManager.CreatePoint(ThisBodyMaxMin[3], ThisBodyMaxMin[4], ThisBodyMaxMin[5]);
+            ThisSkManager.Insert3DSketch(true);
+
+            //select the constraint and insert the reference plane
+            SelectionStatus = ThisDoc.Extension.SelectByID2("", "EXTSKETCHPOINT", ThisBodyMaxMin[0], ThisBodyMaxMin[1], ThisBodyMaxMin[5], true, 0, null, 0);
+            SelectionStatus = ThisDoc.Extension.SelectByID2("", "EXTSKETCHPOINT", ThisBodyMaxMin[0], ThisBodyMaxMin[4], ThisBodyMaxMin[5], true, 1, null, 0);
+            SelectionStatus = ThisDoc.Extension.SelectByID2("", "EXTSKETCHPOINT", ThisBodyMaxMin[3], ThisBodyMaxMin[4], ThisBodyMaxMin[5], true, 2, null, 0);
+
+            ThisRefPlane = (RefPlane)ThisDoc.FeatureManager.InsertRefPlane(4, 0, 4, 0, 4, 0);
+            
+            //set reference name
+            PartDoc ThisPartDoc = (PartDoc)ThisDoc;
+            ThisPartDoc.SetEntityName(ThisRefPlane, "REF_PLANE");
+
+            ThisDoc.Extension.SelectByID2("REF_PLANE", "PLANE", 0, 0, 0, false, 0, null, 0);
+
+            //get the inverse of reference plane transform
+            RefPlaneTransform = ThisRefPlane.Transform.Inverse();
+                        
+            ThisVertex = MathUtils.CreatePoint(new Double[] {ThisBodyMaxMin[0], ThisBodyMaxMin[1], ThisBodyMaxMin[5]});
+            ThisVertex = ThisVertex.MultiplyTransform(RefPlaneTransform);
+            Double[] FirstCorner = (Double[])ThisVertex.ArrayData;
+
+            ThisVertex = MathUtils.CreatePoint(new Double[] { ThisBodyMaxMin[0], ThisBodyMaxMin[4], ThisBodyMaxMin[5] });
+            ThisVertex = ThisVertex.MultiplyTransform(RefPlaneTransform);
+            Double[] SecondCorner = (Double[])ThisVertex.ArrayData;
+
+            ThisVertex = MathUtils.CreatePoint(new Double[] { ThisBodyMaxMin[3], ThisBodyMaxMin[4], ThisBodyMaxMin[5] });
+            ThisVertex = ThisVertex.MultiplyTransform(RefPlaneTransform);
+            Double[] ThirdCorner = (Double[])ThisVertex.ArrayData;
+
+            ThisSkManager.InsertSketch(true);
+            SketchObj = ThisSkManager.Create3PointCornerRectangle(FirstCorner[0], FirstCorner[1], FirstCorner[2],
+                SecondCorner[0], SecondCorner[1], SecondCorner[2],
+                ThirdCorner[0], ThirdCorner[1], ThirdCorner[2]);
+            
+            Feature TRVFeature = ThisDoc.FeatureManager.FeatureExtrusion3(true, false, true, 0, 0, Math.Round(ThisBodyMaxMin[2] - ThisBodyMaxMin[5], 3) , 0.01,
+                false, false, false, false, 0, 0, false, false, false, false, true, false, false, 0, 0, false);
+
+            SaveStatus = ThisDoc.Save3(1, ref Errors, ref Warnings);
+
+            return true;
+        }
+
         //analyze open faces in the active assembly document
         public void AnalyzeOpenFace()
         {
@@ -3130,19 +3263,27 @@ namespace cs_ppx
 
                 //classify between the workpiece and trvs
                 List<Component2> ThisComponents = new List<Component2>();
+                List<Component2> TRVComponents = new List<Component2>();
                 Component2 RootComponent = null;
                 for (int i = 0; i < ThisAssyDoc.GetComponentCount(true); i++)
                 {
                     Component2 TmpComponent = (Component2)childComp[i];
-                    if(TmpComponent.Name.Contains("workpiece")) 
+
+                    if (i == 0)
                     {
                         RootComponent = TmpComponent;
                         RootComponent.Select2(true, 0);
                         ThisAssyDoc.SetComponentTransparent(true);
                     }
-                    else
+                    else if (TmpComponent.Name.Contains("TRUETRV"))
                     {
                         ThisComponents.Add(TmpComponent);
+                    }
+                    else
+                    {
+                        TRVComponents.Add(TmpComponent);
+                        TmpComponent.Select2(true, 0);
+                        ThisAssyDoc.SetComponentTransparent(true);
                     }
                 }
 
@@ -3178,59 +3319,82 @@ namespace cs_ppx
                     Body2 CompBody = (Body2)CompBodyArray.GetValue(0);
                     Object[] CompFaces = (Object[])CompBody.GetFaces();
 
-                    //check the face first with the main product
+                    //First, check the face with the main product's faces
                     foreach (Face2 CheckThisFace in CompFaces)
                     {
-                        foreach (Face2 FaceReference in MainCompFaces)
+
+                        //only planar plane will proceed, non-planar will be colored red directly
+                        if (IsPlanar(CheckThisFace) == true)
                         {
-                            if (IsOverlapped(CheckThisFace, FaceReference, ThisComponentsSorted[i], RootComponent) == true)
+                            foreach (Face2 FaceReference in MainCompFaces)
                             {
-                                
-                                //change the face color to red and mark it with "90"
-                                CheckThisFace.MaterialPropertyValues = PropValues;
-                                ThisSelectData.Mark = 90;
-                                
+                                //check only with planar face
+                                if (IsPlanar(FaceReference) == true)
+                                {
+                                    if (IsOverlapped(CheckThisFace, FaceReference, ThisComponentsSorted[i], RootComponent) == true)
+                                    {
+
+                                        //change the face color to red and mark it with "90"
+                                        CheckThisFace.MaterialPropertyValues = PropValues;
+                                        ThisSelectData.Mark = 90;
+
+                                    }
+                                    else
+                                    {
+
+                                        //change the face color to green and mark it with "91"
+                                        ThisSelectData.Mark = 91;
+
+                                    }
+                                    
+                                    Entity ThisEntity = (Entity)CheckThisFace;
+                                    Boolean MarkingStatus = ThisEntity.Select4(true, ThisSelectData);
+                                }
+
                             }
-                            else
+
+                            //Second, check the face againts another TRV's faces
+                            for (int j = i + 1; j < ThisComponentsSorted.Count(); j++)
                             {
-                                
-                                //change the face color to green and mark it with "91"
-                                ThisSelectData.Mark = 91;
-                                
+                                CompBodyArray = (Array)ThisComponentsSorted[j].GetBodies2((int)swBodyType_e.swSolidBody);
+                                Body2 OtherCompBody = (Body2)CompBodyArray.GetValue(0);
+                                Object[] OtherCompFaces = (Object[])OtherCompBody.GetFaces();
+
+                                foreach (Face2 OtherFaceReference in OtherCompFaces)
+                                {
+                                    //check only with planar face
+                                    if (IsPlanar(OtherFaceReference) == true)
+                                    {
+                                        if (IsOverlapped(CheckThisFace, OtherFaceReference, ThisComponentsSorted[i], ThisComponentsSorted[j]) == true)
+                                        {
+
+                                            //change the face color to red and mark it with "90"
+                                            CheckThisFace.MaterialPropertyValues = PropValues;
+                                            ThisSelectData.Mark = 90;
+
+                                        }
+                                        else
+                                        {
+
+                                            //change the face color to green and mark it with "91"
+                                            ThisSelectData.Mark = 91;
+
+                                        }
+
+                                        Entity ThisEntity = (Entity)CheckThisFace;
+                                        Boolean MarkingStatus = ThisEntity.Select4(true, ThisSelectData);
+                                    }
+                                }
                             }
+                        }
+                        else
+                        {
+                            //change the face color to red and mark it with "90"
+                            CheckThisFace.MaterialPropertyValues = PropValues;
+                            ThisSelectData.Mark = 90;
 
                             Entity ThisEntity = (Entity)CheckThisFace;
                             Boolean MarkingStatus = ThisEntity.Select4(true, ThisSelectData);
-
-                        }
-
-                        for (int j = i + 1; j < ThisComponentsSorted.Count(); j++)
-                        {
-                            CompBodyArray = (Array)ThisComponentsSorted[j].GetBodies2((int)swBodyType_e.swSolidBody);
-                            Body2 OtherCompBody = (Body2)CompBodyArray.GetValue(0);
-                            Object[] OtherCompFaces = (Object[])OtherCompBody.GetFaces();
-
-                            foreach (Face2 OtherFaceReference in OtherCompFaces)
-                            {
-                                if (IsOverlapped(CheckThisFace, OtherFaceReference, ThisComponentsSorted[i], ThisComponentsSorted[j]) == true)
-                                {
-
-                                    //change the face color to red and mark it with "90"
-                                    CheckThisFace.MaterialPropertyValues = PropValues;
-                                    ThisSelectData.Mark = 90;
-
-                                }
-                                else
-                                {
-
-                                    //change the face color to green and mark it with "91"
-                                    ThisSelectData.Mark = 91;
-
-                                }
-
-                                Entity ThisEntity = (Entity)CheckThisFace;
-                                Boolean MarkingStatus = ThisEntity.Select4(true, ThisSelectData);
-                            }
                         }
 
                     }
@@ -3246,6 +3410,7 @@ namespace cs_ppx
         //check overlapping faces
         public static Boolean IsOverlapped(Face2 FaceA, Face2 FaceB, Component2 CompA, Component2 CompB)
         {
+            
             ModelDoc2 RefModelA = CompA.GetModelDoc2();
             Face2 CorrespondFaceA = RefModelA.Extension.GetCorresponding(FaceA);
             Body2 BodyA = CorrespondFaceA.CreateSheetBody();
@@ -4277,7 +4442,29 @@ namespace cs_ppx
 
             return tmpPoint;
         }
+
+        //OVERLOAD getPointOnPlane
+        public static MathPoint getPointOnPlane(AddedReferencePlane ThisRefPlane)
+        {
+            Double[] MaxMinValue = null;
+            Random rnd = new Random();
+
+            MathUtility MathUtils;
+
+            MathUtils = SwApp.GetMathUtility();
+            MaxMinValue = (Double[])ThisRefPlane.MaxMinValue;           
+            
+            return MathUtils.CreatePoint(new Double[] {MaxMinValue[0], MaxMinValue[1], MaxMinValue[2]});
+        }
         
+        //set the machining attribute
+        public static bool MachiningAttribute()
+        {
+
+
+            return true;
+        }
+
         #endregion
 
         //Machinable Space
