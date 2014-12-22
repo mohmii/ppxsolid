@@ -3219,8 +3219,13 @@ namespace cs_ppx
             Double[] ThirdCorner = (Double[])ThisVertex.ArrayData;
 
             ThisSkManager.InsertSketch(true);
+            /*
             SketchObj = ThisSkManager.Create3PointCornerRectangle(FirstCorner[0], FirstCorner[1], FirstCorner[2],
                 SecondCorner[0], SecondCorner[1], SecondCorner[2],
+                ThirdCorner[0], ThirdCorner[1], ThirdCorner[2]);
+             * */
+
+            SketchObj = ThisSkManager.CreateCornerRectangle(FirstCorner[0], FirstCorner[1], FirstCorner[2],
                 ThirdCorner[0], ThirdCorner[1], ThirdCorner[2]);
             
             Feature TRVFeature = ThisDoc.FeatureManager.FeatureExtrusion3(true, false, true, 0, 0, Math.Round(ThisBodyMaxMin[2] - ThisBodyMaxMin[5], 3) , 0.01,
