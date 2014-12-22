@@ -2860,7 +2860,7 @@ namespace cs_ppx
                     //check the generated MP
                     if (MPGenerator(Doc, assyModel, compName[0], PlaneFeatures, MachiningPlanList[MPIndex], MPIndex, PlanDirectory, out PathList) == true)
                     {   
-                        ModelDoc2 NewDoc = (ModelDoc2)SwApp.NewDocument("D:\\Program Files\\SolidWorks Corp\\SolidWorks\\lang\\english\\tutorial\\assem.asmdot", 0, 0, 0);
+                        ModelDoc2 NewDoc = (ModelDoc2)SwApp.NewDocument("C:\\Program Files\\SolidWorks Corp2015\\SOLIDWORKS\\lang\\english\\Tutorial\\assem.asmdot", 0, 0, 0);
                         
                         string[] StringNames = new string[PathList.Count + 1];
                         string[] CoordinateName = new string[PathList.Count + 1];
@@ -3175,7 +3175,7 @@ namespace cs_ppx
                 
             }
 
-            ModelDoc2 ThisDoc = (ModelDoc2)SwApp.NewDocument("D:\\Program Files\\SolidWorks Corp\\SolidWorks\\lang\\english\\tutorial\\part.prtdot", 0, 0, 0);            
+            ModelDoc2 ThisDoc = (ModelDoc2)SwApp.NewDocument("C:\\Program Files\\SolidWorks Corp2015\\SOLIDWORKS\\lang\\english\\Tutorial\\part.prtdot", 0, 0, 0);            
             bool SaveStatus = ThisDoc.Extension.SaveAs(ThisPath, (int)swSaveAsVersion_e.swSaveAsCurrentVersion, (int)swSaveAsOptions_e.swSaveAsOptions_Silent, null, 0, 0);
 
             ThisDoc = SwApp.ActivateDoc3(Path.GetFileNameWithoutExtension(ThisPath), false, 2, ref Errors);
