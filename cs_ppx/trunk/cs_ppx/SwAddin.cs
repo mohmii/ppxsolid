@@ -23,7 +23,7 @@ namespace cs_ppx
     /// </summary>
     [Guid("8c7d635f-735d-49a0-9259-08b4a9d926f3"), ComVisible(true)]
     [SwAddin(
-        Description = "cs_ppx description",
+        Description = "this is a thesis project",
         Title = "cs_ppx",
         LoadAtStartup = true
         )]
@@ -202,6 +202,8 @@ namespace cs_ppx
             AddTaskPane_PPDetails();
             AddTaskPane_ProcessLog();
 
+            iSwApp.SendMsgToUser("ppxsolid is loaded");
+
             return true;
         }
 
@@ -223,6 +225,8 @@ namespace cs_ppx
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
+
+            iSwApp.SendMsgToUser("ppxsolid is unloaded");
 
             return true;
         }
@@ -1166,6 +1170,8 @@ namespace cs_ppx
                                     //create coincide reference plane to it
                                     swRefPlane = (RefPlane)Doc.FeatureManager.InsertRefPlane(4, 0, 0, 0, 0, 0);
                                     tmpInitPlane.IsPlanar = true;
+
+                                    
                                     
                                 }
                                 else
@@ -1221,6 +1227,12 @@ namespace cs_ppx
 
         //save all generate reference plane
         public List<AddedReferencePlane> InitialRefPlanes;
+
+        //save all circle pattern
+        public List<CircularPattern> InitialCirclePattern;
+
+        //save all noncircle pattern
+        public List<NonCircularPattern> InitialNonCirclePattern;
 
         //get the normal array of doubles
         public static Object _GetNormalArray(Face2 ThisFace)
@@ -1470,6 +1482,26 @@ namespace cs_ppx
             ThisCurrentMaxMin = TmpValue;
 
             return true;
+        }
+
+        //collect circular and non circular patterns
+        public static bool CollectPatterns(Face2 ThisFace, Boolean IsPlanar)
+        {
+            Object[] objLoops = null;
+            objLoops = (Object[])ThisFace.GetLoops();
+
+            foreach (Loop2 tmpLoop in objLoops)
+            {
+
+
+                if (tmpLoop.IsOuter() == true)
+                {
+                    //process this loop
+                    //return isLoopOnThePlane(tmpLoop, SelectedPlane);
+                }
+            }
+
+            return false;
         }
 
         public Double[] MaxMinValue;
@@ -3441,7 +3473,9 @@ namespace cs_ppx
                     {
                         foreach (Face2 WithThisFace in TrueTRVFaces)
                         { 
-                            if (IsSameDirection(CheckThisFace.Normal, WithThisFace.Normal) == true)
+                            //if (IsSameDirection(CheckThisFace.Normal, WithThisFace.Normal) == true)
+                            //{
+                            if (CheckThisFace.IsCoincident(WithThisFace, 0.001) == 0)
                             {
                                 //change the face color to red and mark it with "90"
                                 CheckThisFace.MaterialPropertyValues = WithThisFace.MaterialPropertyValues;
@@ -4186,7 +4220,7 @@ namespace cs_ppx
             List<bool> CollinearFace = FacesLocation.Where(value => value.Equals(true)).ToList();
 
             if (CollinearFace.Count == 1) { return true; }
-            if (CollinearFace.Count > 1) { iSwApp.SendMsgToUser("More than two faces are collinear with this reference plane"); }
+            //if (CollinearFace.Count > 1) { iSwApp.SendMsgToUser("More than two faces are collinear with this reference plane"); }
 
             return false;
         }
@@ -5233,6 +5267,28 @@ namespace cs_ppx
         public int NumberOfTool { get; set; } //keep the number of needed tools
 
         public int NumberOfSetups { get; set; } //keep the number of setups
+    }
+
+    //class for keeping the circle pattern
+    public class CircularPattern
+    {
+        public Entity CircleEntity { get; set; } //keep the circle entity
+
+        public Face2 AttachedFace { get; set; } //keep the face that owns the circle entity
+
+        public AddedReferencePlane AttachedRefPlane { get; set; } //keep the reference plane that owns the circle entity
+
+    }
+
+    //class for keeping the ellips (non circle) pattern
+    public class NonCircularPattern
+    {
+        public Entity NonCircleEntity { get; set; } //keep the non circle entity
+
+        public Face2 AttachedFace { get; set; } //keep the face that owns the non circle entity
+
+        public AddedReferencePlane AttachedRefPlane { get; set; } //keep the reference plane that owns the circle entity
+
     }
 
 }
