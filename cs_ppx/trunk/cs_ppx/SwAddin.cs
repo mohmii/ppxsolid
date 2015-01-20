@@ -202,7 +202,7 @@ namespace cs_ppx
             AddTaskPane_PPDetails();
             AddTaskPane_ProcessLog();
 
-            iSwApp.SendMsgToUser("ppxsolid is loaded");
+            //iSwApp.SendMsgToUser("ppxsolid is loaded");
 
             return true;
         }
@@ -226,7 +226,7 @@ namespace cs_ppx
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            iSwApp.SendMsgToUser("ppxsolid is unloaded");
+            //iSwApp.SendMsgToUser("ppxsolid is unloaded");
 
             return true;
         }
@@ -1136,6 +1136,8 @@ namespace cs_ppx
                     Entity swEnt = null;
                     Object TessFaceArray = null;
                     Double[] TessVerticesArray = null;
+                    PatternConfig PatternState = null;
+                    
 
                     AddedReferencePlane tmpInitPlane = null;
                     InitialRefPlanes = new List<AddedReferencePlane>(); //set the instance for the first time for sacing all the reference planes
@@ -1152,13 +1154,14 @@ namespace cs_ppx
                         foreach (Face2 tmpFace in swFaces)
                         {
                             entName = swPartDoc.GetEntityName(tmpFace);
+                            PatternState = new PatternConfig();
                             
                             //select the face without name
                             if (entName == "")
                             {
                                 TessFaceArray = (Object)tmpFace.GetTessTriangles(true);
                                 TessVerticesArray = GetMaxMin(TessFaceArray);
-                                
+
                                 //set the reference plane instance
                                 tmpInitPlane = new AddedReferencePlane();
 
@@ -1171,32 +1174,37 @@ namespace cs_ppx
                                     swRefPlane = (RefPlane)Doc.FeatureManager.InsertRefPlane(4, 0, 0, 0, 0, 0);
                                     tmpInitPlane.IsPlanar = true;
 
-                                    
-                                    
                                 }
                                 else
                                 {
+
                                     swRefPlane = SetupRefPlane(tmpFace, Doc, TessVerticesArray[5]);
                                     tmpInitPlane.IsPlanar = false;
                                 }
 
-                                countFace += 1;
+                                if (swRefPlane != null)
+                                {
+                                    countFace += 1;
 
-                                //set reference name
-                                refName = "REF_PLANE" + countFace.ToString();
-                                swPartDoc.SetEntityName(swRefPlane, refName);
+                                    //set reference name
+                                    refName = "REF_PLANE" + countFace.ToString();
+                                    swPartDoc.SetEntityName(swRefPlane, refName);
 
-                                //set the reference plane, included with name, coincided face, and its pointer
-                                tmpInitPlane.name = refName;
-                                tmpInitPlane.AttachedFace = tmpFace;
-                                tmpInitPlane.ReferencePlane = swRefPlane;
-                                tmpInitPlane.MaxMinValue = TessVerticesArray;
+                                    //set the reference plane, included with name, coincided face, and its pointer
+                                    tmpInitPlane.name = refName;
+                                    tmpInitPlane.AttachedFace = tmpFace;
+                                    tmpInitPlane.ReferencePlane = swRefPlane;
+                                    tmpInitPlane.MaxMinValue = TessVerticesArray;
 
-                                //add the reference plane
-                                InitialRefPlanes.Add(tmpInitPlane);
+                                    //Check the face configurations
+                                    tmpInitPlane.Patterns = CollectPatterns(tmpFace, IsPlanar(tmpFace));
 
-                                //set the MaxMinValue
-                                SetMaxMin(TessVerticesArray, ref MaxMinValue);
+                                    //add the reference plane
+                                    InitialRefPlanes.Add(tmpInitPlane);
+
+                                    //set the MaxMinValue
+                                    SetMaxMin(TessVerticesArray, ref MaxMinValue);
+                                }
 
                             }
                         }
@@ -1292,48 +1300,57 @@ namespace cs_ppx
             RefPlane RefPlaneInstance = null;
             SketchPoint SkPoint = null;
 
-            SwExt = ThisModelDoc.Extension;
-            SwFM = ThisModelDoc.FeatureManager;
+            try
+            {
+                SwExt = ThisModelDoc.Extension;
+                SwFM = ThisModelDoc.FeatureManager;
 
-            BoxFaceArray = (Object)ThisFace.GetBox();
-            BoxVerticesArray = (Double[])BoxFaceArray;
+                BoxFaceArray = (Object)ThisFace.GetBox();
+                BoxVerticesArray = (Double[])BoxFaceArray;
 
-            //TessFaceArray = (Object)ThisFace.GetTessTriangles(true);
-            //TessVerticesArray = GetMaxMin(TessFaceArray);
+                //TessFaceArray = (Object)ThisFace.GetTessTriangles(true);
+                //TessVerticesArray = GetMaxMin(TessFaceArray);
 
-            ////get the lowest Z level
-            //if (BoxVerticesArray[2] < BoxVerticesArray[5]) { DepthZ = BoxVerticesArray[2]; }
-            //else { DepthZ = BoxVerticesArray[5]; }
+                ////get the lowest Z level
+                //if (BoxVerticesArray[2] < BoxVerticesArray[5]) { DepthZ = BoxVerticesArray[2]; }
+                //else { DepthZ = BoxVerticesArray[5]; }
 
-            //DepthZ = TessVerticesArray[5];
-                       
-            
-            //draw the 1st corner points
-            ThisModelDoc.SketchManager.Insert3DSketch(true);
-            TmpPoint = new Double[] {BoxVerticesArray[0], BoxVerticesArray[1], DepthZ};
-            SkPoint = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
-            ThisModelDoc.SketchManager.Insert3DSketch(true);
+                //DepthZ = TessVerticesArray[5];
 
-            //draw the 2nd corner points
-            ThisModelDoc.SketchManager.Insert3DSketch(true);
-            TmpPoint = new Double[] { BoxVerticesArray[0], BoxVerticesArray[4], DepthZ };
-            SkPoint = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
-            ThisModelDoc.SketchManager.Insert3DSketch(true);
 
-            //draw the 3rd corner points
-            ThisModelDoc.SketchManager.Insert3DSketch(true);
-            TmpPoint = new Double[] { BoxVerticesArray[3], BoxVerticesArray[4], DepthZ };
-            SkPoint = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
-            ThisModelDoc.SketchManager.Insert3DSketch(true);
+                //draw the 1st corner points
+                ThisModelDoc.SketchManager.Insert3DSketch(true);
+                TmpPoint = new Double[] { BoxVerticesArray[0], BoxVerticesArray[1], DepthZ };
+                SkPoint = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
+                ThisModelDoc.SketchManager.Insert3DSketch(true);
 
-            //select the constraint and insert the reference plane
-            SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[0], BoxVerticesArray[1], DepthZ, true, 0, null, 0);
-            SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[0], BoxVerticesArray[4], DepthZ, true, 1, null, 0);
-            SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[3], BoxVerticesArray[4], DepthZ, true, 2, null, 0);
+                //draw the 2nd corner points
+                ThisModelDoc.SketchManager.Insert3DSketch(true);
+                TmpPoint = new Double[] { BoxVerticesArray[0], BoxVerticesArray[4], DepthZ };
+                SkPoint = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
+                ThisModelDoc.SketchManager.Insert3DSketch(true);
 
-            RefPlaneInstance = (RefPlane)SwFM.InsertRefPlane(4, 0, 4, 0, 4, 0);
+                //draw the 3rd corner points
+                ThisModelDoc.SketchManager.Insert3DSketch(true);
+                TmpPoint = new Double[] { BoxVerticesArray[3], BoxVerticesArray[4], DepthZ };
+                SkPoint = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
+                ThisModelDoc.SketchManager.Insert3DSketch(true);
 
-            if (RefPlaneInstance != null) { return RefPlaneInstance; }
+                //select the constraint and insert the reference plane
+                SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[0], BoxVerticesArray[1], DepthZ, true, 0, null, 0);
+                SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[0], BoxVerticesArray[4], DepthZ, true, 1, null, 0);
+                SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[3], BoxVerticesArray[4], DepthZ, true, 2, null, 0);
+
+                RefPlaneInstance = (RefPlane)SwFM.InsertRefPlane(4, 0, 4, 0, 4, 0);
+
+                if (RefPlaneInstance != null) { return RefPlaneInstance; }
+
+            }
+
+            catch (Exception Ex)
+            {
+                iSwApp.SendMsgToUser(Ex.Message);
+            }
  
             return null;
  
@@ -1485,23 +1502,58 @@ namespace cs_ppx
         }
 
         //collect circular and non circular patterns
-        public static bool CollectPatterns(Face2 ThisFace, Boolean IsPlanar)
+        public static PatternConfig CollectPatterns(Face2 ThisFace, Boolean IsPlanar)
         {
+
+            PatternConfig ThisFacePattern = new PatternConfig();
             Object[] objLoops = null;
+            Object[] vEdgeArr = null;
             objLoops = (Object[])ThisFace.GetLoops();
+            Curve ThisCurce = null;
 
             foreach (Loop2 tmpLoop in objLoops)
             {
-
-
                 if (tmpLoop.IsOuter() == true)
-                {
+                {                    
+                    if (tmpLoop.GetEdgeCount() != 0)
+                    {
+                        vEdgeArr = (Object[])tmpLoop.GetEdges();
+
+                        foreach (Edge tmpEdge in vEdgeArr)
+                        {
+                            ThisCurce = tmpEdge.GetCurve();
+
+                            if (ThisCurce.IsLine()) { ThisFacePattern.Line++; }
+                            else if (ThisCurce.IsCircle()) { ThisFacePattern.Circle++; }
+                            else { ThisFacePattern.Curve++; }
+
+                        }
+
+                        break;
+                    }
+                    
                     //process this loop
                     //return isLoopOnThePlane(tmpLoop, SelectedPlane);
                 }
             }
 
-            return false;
+
+            //set the pattern composition
+            if (ThisFacePattern.Line > 0 && ThisFacePattern.Circle == 0 && ThisFacePattern.Curve == 0) { ThisFacePattern.Type = "LINE"; }
+            else if (ThisFacePattern.Line == 0 && ThisFacePattern.Circle > 0 && ThisFacePattern.Curve == 0) { ThisFacePattern.Type = "CIRCLE"; }
+            else if (ThisFacePattern.Line == 0 && ThisFacePattern.Circle == 0 && ThisFacePattern.Curve > 0) { ThisFacePattern.Type = "CURVE"; }
+            else { ThisFacePattern.Type = "MIX"; }
+
+            return ThisFacePattern;
+        }
+
+        //get the pattern type based on the edge configuration
+        public static String GetPatternType(PatternConfig ThisPatternConfig)
+        {
+            if (ThisPatternConfig.Line > 0 && ThisPatternConfig.Circle == 0 && ThisPatternConfig.Curve == 0) { return "LINE"; }
+            else if (ThisPatternConfig.Line == 0 && ThisPatternConfig.Circle > 0 && ThisPatternConfig.Curve == 0) { return "CIRCLE"; }
+            else if (ThisPatternConfig.Line == 0 && ThisPatternConfig.Circle == 0 && ThisPatternConfig.Curve > 0) { return "CURVE"; }
+            else { return "MIX"; }
         }
 
         public Double[] MaxMinValue;
@@ -2062,6 +2114,15 @@ namespace cs_ppx
                             }
                             else
                             {
+                                if (tmpSetPlane.Patterns.Type == "MIX")
+                                {
+                                    if (tmpSetPlane.Patterns.Line <= 2)
+                                    {
+                                        SelectedRefPlanes.Add(tmpSetPlane);
+                                    }
+                                
+                                }
+
                                 removeId.Add(i); //add the plane that need to be removed
                             }
                         }
@@ -2139,7 +2200,7 @@ namespace cs_ppx
             return similarity;
         }
 
-        //OVERLOAD plane similarity
+        //OVERLOAD plane similarity to avoid deletion because of CPPost true
         public bool checkPlaneSim(List<AddedReferencePlane> ListOfPlanes, List<int> RemoveList, AddedReferencePlane plane2Check, MathUtility mathUtils)
         {
             bool normalSim = false;
@@ -2585,10 +2646,13 @@ namespace cs_ppx
                     if (SplitFeature != null)
                     {
                         try
-                        {   
-                            List<double> Volume = new List<double>();
+                        {
                             Object BodiesInfo = null;
-                            List<string> BodyToDelete = null;
+                            
+                            //List<double> Volume = new List<double>();
+                            //List<string> BodyToDelete = null;
+
+                            List<RemovalBody> RemoveThisBody = null;
 
                             DeleteThisBody = new List<int>();
                             SplitCounter++; //add the split counter after successful splitting process
@@ -2597,7 +2661,9 @@ namespace cs_ppx
                             bodyArray = (Array) swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
 
                             //select body that needs to be deleted from the model
-                            bool Status = SelectBodyToDelete(CompDocumentModel, bodyArray, ref BodyToDelete, index, ref Volume);
+                            //bool Status = SelectBodyToDelete(CompDocumentModel, bodyArray, ref BodyToDelete, index, ref Volume);
+
+                            bool Status = SelectBodyToDelete(CompDocumentModel, bodyArray, index, ref RemoveThisBody);
 
                             if (Status == true)
                             {
@@ -2607,7 +2673,8 @@ namespace cs_ppx
                                 {
                                     ChildStatus = false;
 
-                                    if (BodyToDelete.Count == 1)
+                                    //if (BodyToDelete.Count == 1)
+                                    if (RemoveThisBody.Count == 1)
                                     {
                                         //prepare the deletion of the splitted body
                                         BodiesInfo = null;
@@ -2621,7 +2688,8 @@ namespace cs_ppx
                                         {
                                             TmpBody = (Body2)bodyArray.GetValue(j);
 
-                                            if (TmpBody.Name.Equals(BodyToDelete[0]))
+                                            //if (TmpBody.Name.Equals(BodyToDelete[0]))
+                                            if (TmpBody.Name.Equals(RemoveThisBody[0].Name))
                                             {
                                                 DeleteIndex = j;
                                                 break;
@@ -2647,35 +2715,44 @@ namespace cs_ppx
                                     }
                                     else
                                     {
-                                        iSwApp.SendMsgToUser("Body > 1 section still underdevelopment");
+                                        //iSwApp.SendMsgToUser("Body > 1 section still underdevelopment");
 
-                                        //foreach (String BodyName in BodyToDelete)
-                                        //{
-                                        //    BodiesInfo = null;
-                                        //    Body2 TmpBody = null;
-                                        //    int DeleteIndex = 0;
-                                        //    bodyArray = null;
+                                        List<RemovalBody> SortedRemovalBody = RemoveThisBody.OrderByDescending(plane => plane.Volume).ToList();
 
-                                        //    bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
+                                        BodiesInfo = null;
+                                        Body2 TmpBody = null;
+                                        int DeleteIndex = 0;
+                                        bodyArray = null;
+                                                                               
+                                        bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
 
-                                        //    for (int j = 0; j < bodyArray.Length; j++)
-                                        //    {
-                                        //        TmpBody = (Body2)bodyArray.GetValue(j);
+                                        for (int j = 0; j < bodyArray.Length; j++)
+                                        {
+                                            TmpBody = (Body2)bodyArray.GetValue(j);
 
-                                        //        if (TmpBody.Name.Equals(BodyName))
-                                        //        {
-                                        //            DeleteIndex = j;
-                                        //            break;
-                                        //        }
-                                        //    }
+                                            if (TmpBody.Name.Equals(SortedRemovalBody[0].Name))
+                                            {
+                                                DeleteIndex = j;
+                                                break;
+                                            }
+                                        }
 
-                                        //    SelectData TmpSelectData = null;
-                                        //    bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
-                                        //    SwApp.SendMsgToUser("Removed shape by " + SelectedFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
-                                        //    DeleteFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
+                                        SelectData TmpSelectData = null;
+                                        bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
+                                        //SwApp.SendMsgToUser("Removed shape by " + SelectedFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
+                                        DeleteFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
 
+                                        ListOfParentPlanes.Add(ParentPlane);
+                                        ListOfParentFeature.Add(SplitFeature);
+                                        ListOfParentFeature.Add(DeleteFeature);
 
-                                        //}
+                                        //register the split action
+                                        RemovedBody Removal = new RemovedBody();
+                                        Removal.ParentPlane = ParentPlane;
+                                        Removal.Removal = ListOfParentFeature;
+
+                                        if (PreviousRemoval != null) { PreviousRemoval.Add(Removal); }
+                                        
                                     }
 
                                 }
@@ -2892,7 +2969,7 @@ namespace cs_ppx
                     //check the generated MP
                     if (MPGenerator(Doc, assyModel, compName[0], PlaneFeatures, MachiningPlanList[MPIndex], MPIndex, PlanDirectory, out PathList) == true)
                     {   
-                        ModelDoc2 NewDoc = (ModelDoc2)SwApp.NewDocument("C:\\Program Files\\SolidWorks Corp2015\\SOLIDWORKS\\lang\\english\\Tutorial\\assem.asmdot", 0, 0, 0);
+                        ModelDoc2 NewDoc = (ModelDoc2)SwApp.NewDocument("D:\\Program Files\\SolidWorks Corp\\SOLIDWORKS\\lang\\english\\Tutorial\\assem.asmdot", 0, 0, 0);
                         
                         string[] StringNames = new string[PathList.Count + 1];
                         string[] CoordinateName = new string[PathList.Count + 1];
@@ -3011,6 +3088,8 @@ namespace cs_ppx
                             Object BodiesInfo = null;
                             List<string> BodyToDelete = null;
 
+                            List<RemovalBody> RemoveThisBody = null;
+
                             DeleteThisBody = new List<int>();
                             SplitCounter++; //add the split counter after successful splitting process
 
@@ -3018,13 +3097,15 @@ namespace cs_ppx
                             bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
 
                             //select body that needs to be deleted from the model
-                            bool Status = SelectBodyToDelete(CompDocumentModel, bodyArray, ref BodyToDelete, index, ref Volume);
+                            //bool Status = SelectBodyToDelete(CompDocumentModel, bodyArray, ref BodyToDelete, index, ref Volume, ref RemoveThisBody);
+                            bool Status = SelectBodyToDelete(CompDocumentModel, bodyArray, index, ref RemoveThisBody);
 
                             if (Status == true)
                             {
                                 //iSwApp.SendMsgToUser("Feasible body exist, ready to be registered in the removal sequence");
 
-                                    if (BodyToDelete.Count == 1)
+                                    //if (BodyToDelete.Count == 1)
+                                    if (RemoveThisBody.Count == 1)
                                     {
                                         //prepare the deletion of the splitted body
                                         BodiesInfo = null;
@@ -3040,7 +3121,8 @@ namespace cs_ppx
                                         {
                                             TmpBody = (Body2)bodyArray.GetValue(j);
 
-                                            if (TmpBody.Name.Equals(BodyToDelete[0]))
+                                            //if (TmpBody.Name.Equals(BodyToDelete[0]))
+                                            if (TmpBody.Name.Equals(RemoveThisBody[0].Name))
                                             {
                                                 DeleteIndex = j;
                                                 break;
@@ -3094,35 +3176,77 @@ namespace cs_ppx
                                     }
                                     else
                                     {
-                                        iSwApp.SendMsgToUser("Body > 1 section still underdevelopment");
+                                        //iSwApp.SendMsgToUser("Body > 1 section still underdevelopment");
 
-                                        //foreach (String BodyName in BodyToDelete)
-                                        //{
-                                        //    BodiesInfo = null;
-                                        //    Body2 TmpBody = null;
-                                        //    int DeleteIndex = 0;
-                                        //    bodyArray = null;
+                                        List<RemovalBody> SortedRemovalBody = RemoveThisBody.OrderByDescending(plane => plane.Volume).ToList();
 
-                                        //    bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
+                                        BodiesInfo = null;
+                                        Body2 TmpBody = null;
+                                        int DeleteIndex = 0;
+                                        bodyArray = null;
 
-                                        //    for (int j = 0; j < bodyArray.Length; j++)
-                                        //    {
-                                        //        TmpBody = (Body2)bodyArray.GetValue(j);
+                                        PartDoc TmpPartDoc = (PartDoc)CompDocumentModel;
+    
+                                        bodyArray = (Array)TmpPartDoc.GetBodies2((int)swBodyType_e.swSolidBody, true);
+                                        //bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
 
-                                        //        if (TmpBody.Name.Equals(BodyName))
-                                        //        {
-                                        //            DeleteIndex = j;
-                                        //            break;
-                                        //        }
-                                        //    }
+                                        for (int j = 0; j < bodyArray.Length; j++)
+                                        {
+                                            TmpBody = (Body2)bodyArray.GetValue(j);
 
-                                        //    SelectData TmpSelectData = null;
-                                        //    bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
-                                        //    SwApp.SendMsgToUser("Removed shape by " + SelectedFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
-                                        //    DeleteFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
+                                            //if (TmpBody.Name.Equals(BodyToDelete[0]))
+                                            if (TmpBody.Name.Equals(SortedRemovalBody[0].Name))
+                                            {
+                                                DeleteIndex = j;
+                                                break;
+                                            }
+                                        }
 
+                                        SelectData TmpSelectData = null;
+                                        bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
+                                        string ActualTRVPath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "_TRUETRV_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
+                                        //Insert the Body into new part document (this is the TRUE TRV
+                                        bool SaveStatus = ((PartDoc)CompDocumentModel).SaveToFile3(ActualTRVPath, 1, 1, false, "", out Errors, out Warnings);
 
-                                        //}
+                                        //create TRV from TRUE TRV by tesselating all faces in the TRUE TRV body
+                                        string TRVPath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "_TRV_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
+                                        bool CreationStatus = CreateTRV(TRVPath, TmpBody);
+
+                                        if (SaveStatus == true)
+                                        {
+                                            ThisPathList.Add(ActualTRVPath);
+                                            SequenceNUM++;
+                                            if (CreationStatus == true)
+                                            {
+                                                ThisPathList.Add(TRVPath);
+                                            }
+                                        }
+
+                                        //break the reference
+                                        ModelDoc2 TmpDoc = (ModelDoc2)SwApp.ActivateDoc2(Path.GetFileNameWithoutExtension(ActualTRVPath), true, 0);
+                                        ModelDocExtension TmpDocEx = (ModelDocExtension)TmpDoc.Extension;
+                                        TmpDocEx.BreakAllExternalFileReferences2(false);
+                                        TmpDoc.Save2(true);
+
+                                        //activate the assembly file
+                                        iSwApp.ActivateDoc(Path.GetFileNameWithoutExtension(Doc.GetPathName()));
+
+                                        //SwApp.SendMsgToUser("Removed shape by " + SelectedFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
+                                        DeleteFeature = (Feature)CompDocumentModel.FeatureManager.InsertDeleteBody();
+                                        ListOfRemovalPlanes.Add(SelectedProcess.MachiningReference);
+
+                                        ListOfRemovalFeature = new List<Feature>();
+                                        ListOfRemovalFeature.Add(SplitFeature);
+                                        ListOfRemovalFeature.Add(DeleteFeature);
+
+                                        //register the split action
+                                        RemovedBody Removal = new RemovedBody();
+                                        Removal.ParentPlane = SelectedProcess.MachiningReference;
+                                        Removal.Removal = ListOfRemovalFeature;
+
+                                        if (PreviousRemoval != null) { PreviousRemoval.Add(Removal); }
+
+                                        
                                     }
                             }
                             else
@@ -3207,7 +3331,7 @@ namespace cs_ppx
                 
             }
 
-            ModelDoc2 ThisDoc = (ModelDoc2)SwApp.NewDocument("C:\\Program Files\\SolidWorks Corp2015\\SOLIDWORKS\\lang\\english\\Tutorial\\part.prtdot", 0, 0, 0);            
+            ModelDoc2 ThisDoc = (ModelDoc2)SwApp.NewDocument("D:\\Program Files\\SolidWorks Corp\\SOLIDWORKS\\lang\\english\\Tutorial\\part.prtdot", 0, 0, 0);            
             bool SaveStatus = ThisDoc.Extension.SaveAs(ThisPath, (int)swSaveAsVersion_e.swSaveAsCurrentVersion, (int)swSaveAsOptions_e.swSaveAsOptions_Silent, null, 0, 0);
 
             ThisDoc = SwApp.ActivateDoc3(Path.GetFileNameWithoutExtension(ThisPath), false, 2, ref Errors);
@@ -3632,11 +3756,17 @@ namespace cs_ppx
         }
 
         //OVERLOAD selectbodytodelete
-        public static bool SelectBodyToDelete(ModelDoc2 CompDocumentModel, Array BodyArray, ref List<string> BodyToDelete, int index, ref List<double> VolumeSize)
+        //public static bool SelectBodyToDelete(ModelDoc2 CompDocumentModel, Array BodyArray, ref List<string> BodyToDelete, int index, ref List<double> VolumeSize, ref List<RemovalBody> RemoveThisBodies)
+        public static bool SelectBodyToDelete(ModelDoc2 CompDocumentModel, Array BodyArray, int index, ref List<RemovalBody> RemoveThisBodies)
         {
             
-            BodyToDelete = new List<string>();
+            List<string> BodyToDelete = new List<string>();
+            List<double> VolumeSize = new List<double>();
 
+            RemovalBody TmpRemovalBody = null;
+
+            RemoveThisBodies = new List<RemovalBody>();
+            
             if (BodyArray.Length == 0)
             {
                 return false;
@@ -3701,7 +3831,19 @@ namespace cs_ppx
             }
 
             if (BodyToDelete.Count == 0) { return false; }
-            else { return true; }
+            else 
+            {
+                for (int i = 0; i < BodyToDelete.Count(); i++)
+                {
+                    TmpRemovalBody = new RemovalBody();
+                    TmpRemovalBody.Name = BodyToDelete[i];
+                    TmpRemovalBody.Volume = VolumeSize[i];
+
+                    RemoveThisBodies.Add(TmpRemovalBody);
+                }
+
+                return true; 
+            }
 
         }
         
@@ -4289,10 +4431,39 @@ namespace cs_ppx
             List<Vertex> verticesList = new List<Vertex>();
             Vertex[] verticesArray = null;
             double[] zCrossProduct = null;
-            
-            objVertices = (Object[])loop2Check.GetVertices();
+            Object[] vEdgeArr = null;
+            PatternConfig ThisFacePattern = new PatternConfig();
+            Curve ThisCurve = null;
 
-            
+            vEdgeArr = (Object[])loop2Check.GetEdges();
+
+            foreach (Edge tmpEdge in vEdgeArr)
+            {
+                ThisCurve = tmpEdge.GetCurve();
+
+                if (ThisCurve.IsLine()) { ThisFacePattern.Line++; }
+                else if (ThisCurve.IsCircle()) { ThisFacePattern.Circle++; }
+                else { ThisFacePattern.Curve++; }
+
+            }
+
+            if (GetPatternType(ThisFacePattern) == "MIX")
+            {
+                if (ThisFacePattern.Line != 0 && ThisFacePattern.Line > 4) { return false; }
+                else { return true; }
+            }
+
+            if (GetPatternType(ThisFacePattern) == "CURVE") 
+            { 
+                return true; 
+            }
+
+            if (GetPatternType(ThisFacePattern) == "CIRCLE")
+            {
+                return true;
+            }
+                        
+            objVertices = (Object[])loop2Check.GetVertices();
 
             foreach (Vertex tmpVertex in objVertices)
             {
@@ -5173,7 +5344,9 @@ namespace cs_ppx
 
         public List<TAD> ListOfTAD { get; set; } //keep all the candidate of TAD
 
-        public double[] Volume { get; set; } //keep the volume of the body
+        public double Volume { get; set; } //keep the volume of the body
+
+        public string Name { get; set; } //keep the split name
     }
 
     //class for plane and removal volume body relation
@@ -5221,6 +5394,8 @@ namespace cs_ppx
         public Object MaxMinValue { get; set; } //keep the MaxMin value that has been define by tesselating corresponding face
 
         public Boolean IsPlanar { get; set; } //keep the type of the reference plane (true: planar, false: non planar)
+
+        public PatternConfig Patterns { get; set; } //keep the pattern (line, circle, arc) configuration
 
     }
 
@@ -5290,5 +5465,18 @@ namespace cs_ppx
         public AddedReferencePlane AttachedRefPlane { get; set; } //keep the reference plane that owns the circle entity
 
     }
+
+    //class for pattern configuration
+    public class PatternConfig
+    {
+        public string Type { get; set; } //mix, line, circle, or curve only.
+
+        public int Line { get; set; }
+
+        public int Circle { get; set; }
+
+        public int Curve { get; set; }
+    }
+
 
 }
