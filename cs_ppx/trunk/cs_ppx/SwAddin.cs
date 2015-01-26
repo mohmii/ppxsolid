@@ -1178,7 +1178,7 @@ namespace cs_ppx
                                 else
                                 {
 
-                                    swRefPlane = SetupRefPlane(tmpFace, Doc, TessVerticesArray[5]);
+                                    swRefPlane = SetupRefPlane(tmpFace, Doc, TessVerticesArray);
                                     tmpInitPlane.IsPlanar = false;
                                 }
 
@@ -1286,7 +1286,7 @@ namespace cs_ppx
         }
 
         //set the reference plane for non-planar and inclined surface
-        public RefPlane SetupRefPlane(Face2 ThisFace, ModelDoc2 ThisModelDoc, Double DepthZ)
+        public RefPlane SetupRefPlane(Face2 ThisFace, ModelDoc2 ThisModelDoc, Double[] ThisTessArray)
         {
             Object BoxFaceArray = null;
             Object TessFaceArray = null;
@@ -1298,7 +1298,7 @@ namespace cs_ppx
             FeatureManager SwFM = null;
             Boolean SelectionStatus = false;
             RefPlane RefPlaneInstance = null;
-            SketchPoint SkPoint = null;
+            SketchPoint SkPoint1, SkPoint2, SkPoint3 = null;
 
             try
             {
@@ -1320,26 +1320,30 @@ namespace cs_ppx
 
                 //draw the 1st corner points
                 ThisModelDoc.SketchManager.Insert3DSketch(true);
-                TmpPoint = new Double[] { BoxVerticesArray[0], BoxVerticesArray[1], DepthZ };
-                SkPoint = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
-                ThisModelDoc.SketchManager.Insert3DSketch(true);
+                TmpPoint = new Double[] { ThisTessArray[0], ThisTessArray[1], ThisTessArray[5] };
+                SkPoint1 = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
+                //ThisModelDoc.SketchManager.Insert3DSketch(true);
 
                 //draw the 2nd corner points
-                ThisModelDoc.SketchManager.Insert3DSketch(true);
-                TmpPoint = new Double[] { BoxVerticesArray[0], BoxVerticesArray[4], DepthZ };
-                SkPoint = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
-                ThisModelDoc.SketchManager.Insert3DSketch(true);
+                //ThisModelDoc.SketchManager.Insert3DSketch(true);
+                TmpPoint = new Double[] { ThisTessArray[0], ThisTessArray[4], ThisTessArray[5] };
+                SkPoint2 = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
+                //ThisModelDoc.SketchManager.Insert3DSketch(true);
 
                 //draw the 3rd corner points
-                ThisModelDoc.SketchManager.Insert3DSketch(true);
-                TmpPoint = new Double[] { BoxVerticesArray[3], BoxVerticesArray[4], DepthZ };
-                SkPoint = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
+                //ThisModelDoc.SketchManager.Insert3DSketch(true);
+                TmpPoint = new Double[] { ThisTessArray[3], ThisTessArray[4], ThisTessArray[5] };
+                SkPoint3 = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
                 ThisModelDoc.SketchManager.Insert3DSketch(true);
 
                 //select the constraint and insert the reference plane
-                SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[0], BoxVerticesArray[1], DepthZ, true, 0, null, 0);
-                SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[0], BoxVerticesArray[4], DepthZ, true, 1, null, 0);
-                SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", BoxVerticesArray[3], BoxVerticesArray[4], DepthZ, true, 2, null, 0);
+                SkPoint1.Select2(true, 0);
+                SkPoint2.Select2(true, 1);
+                SkPoint3.Select2(true, 2);
+                
+                //SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", ThisTessArray[0], ThisTessArray[1], ThisTessArray[5], true, 0, null, 1);
+                //SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", ThisTessArray[0], ThisTessArray[4], ThisTessArray[5], true, 1, null, 1);
+                //SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", ThisTessArray[3], ThisTessArray[4], ThisTessArray[5], true, 2, null, 1);
 
                 RefPlaneInstance = (RefPlane)SwFM.InsertRefPlane(4, 0, 4, 0, 4, 0);
 
@@ -2120,10 +2124,12 @@ namespace cs_ppx
                                     {
                                         SelectedRefPlanes.Add(tmpSetPlane);
                                     }
-                                
                                 }
 
-                                removeId.Add(i); //add the plane that need to be removed
+                                else
+                                {
+                                    removeId.Add(i); //add the plane that need to be removed
+                                }
                             }
                         }
                     }
@@ -2334,7 +2340,7 @@ namespace cs_ppx
         //checking the double is zero to avoid trailing zeros
         static bool isEqual(double value1, double value2)
         {
-            return (Math.Abs(Math.Round((value1 - value2), 4)) <= 0.001);
+            return (Math.Abs(Math.Round((value1 - value2), 4)) <= 0.0000001);
             
         }
 
@@ -3309,10 +3315,11 @@ namespace cs_ppx
             Object TessFaceArray = null;
             Double[] TessVerticesArray = null;
             Double[] ThisBodyMaxMin = null;
-            Object SketchObj = null;
+            SketchPoint SketchObj1, SketchObj2, SketchObj3 = null;
+            Object CornerPoints = null;
             int Errors = 0;
             int Warnings = 0;
-            Boolean SelectionStatus;
+            //Boolean SelectionStatus;
             RefPlane ThisRefPlane = null;            
             MathTransform RefPlaneTransform;
             MathPoint ThisVertex = null;
@@ -3341,15 +3348,19 @@ namespace cs_ppx
             SketchManager ThisSkManager = (SketchManager) ThisDoc.SketchManager;
             
             ThisSkManager.Insert3DSketch(true);
-            SketchObj = ThisSkManager.CreatePoint(ThisBodyMaxMin[0], ThisBodyMaxMin[1], ThisBodyMaxMin[5]);
-            SketchObj = ThisSkManager.CreatePoint(ThisBodyMaxMin[0], ThisBodyMaxMin[4], ThisBodyMaxMin[5]);
-            SketchObj = ThisSkManager.CreatePoint(ThisBodyMaxMin[3], ThisBodyMaxMin[4], ThisBodyMaxMin[5]);
+            SketchObj1 = ThisSkManager.CreatePoint(ThisBodyMaxMin[0], ThisBodyMaxMin[1], ThisBodyMaxMin[5]);
+            SketchObj2 = ThisSkManager.CreatePoint(ThisBodyMaxMin[0], ThisBodyMaxMin[4], ThisBodyMaxMin[5]);
+            SketchObj3 = ThisSkManager.CreatePoint(ThisBodyMaxMin[3], ThisBodyMaxMin[4], ThisBodyMaxMin[5]);
             ThisSkManager.Insert3DSketch(true);
 
             //select the constraint and insert the reference plane
-            SelectionStatus = ThisDoc.Extension.SelectByID2("", "EXTSKETCHPOINT", ThisBodyMaxMin[0], ThisBodyMaxMin[1], ThisBodyMaxMin[5], true, 0, null, 0);
-            SelectionStatus = ThisDoc.Extension.SelectByID2("", "EXTSKETCHPOINT", ThisBodyMaxMin[0], ThisBodyMaxMin[4], ThisBodyMaxMin[5], true, 1, null, 0);
-            SelectionStatus = ThisDoc.Extension.SelectByID2("", "EXTSKETCHPOINT", ThisBodyMaxMin[3], ThisBodyMaxMin[4], ThisBodyMaxMin[5], true, 2, null, 0);
+            //SelectionStatus = ThisDoc.Extension.SelectByID2("", "EXTSKETCHPOINT", ThisBodyMaxMin[0], ThisBodyMaxMin[1], ThisBodyMaxMin[5], true, 0, null, 0);
+            //SelectionStatus = ThisDoc.Extension.SelectByID2("", "EXTSKETCHPOINT", ThisBodyMaxMin[0], ThisBodyMaxMin[4], ThisBodyMaxMin[5], true, 1, null, 0);
+            //SelectionStatus = ThisDoc.Extension.SelectByID2("", "EXTSKETCHPOINT", ThisBodyMaxMin[3], ThisBodyMaxMin[4], ThisBodyMaxMin[5], true, 2, null, 0);
+
+            SketchObj1.Select2(true, 0);
+            SketchObj2.Select2(true, 1);
+            SketchObj3.Select2(true, 2);
 
             ThisRefPlane = (RefPlane)ThisDoc.FeatureManager.InsertRefPlane(4, 0, 4, 0, 4, 0);
             
@@ -3381,7 +3392,7 @@ namespace cs_ppx
                 ThirdCorner[0], ThirdCorner[1], ThirdCorner[2]);
              * */
 
-            SketchObj = ThisSkManager.CreateCornerRectangle(FirstCorner[0], FirstCorner[1], FirstCorner[2],
+            CornerPoints = ThisSkManager.CreateCornerRectangle(FirstCorner[0], FirstCorner[1], FirstCorner[2],
                 ThirdCorner[0], ThirdCorner[1], ThirdCorner[2]);
             
             Feature TRVFeature = ThisDoc.FeatureManager.FeatureExtrusion3(true, false, true, 0, 0, Math.Round(ThisBodyMaxMin[2] - ThisBodyMaxMin[5], 3) , 0.01,
@@ -3409,7 +3420,7 @@ namespace cs_ppx
         }
 
         //find the open faces in each component
-        public static bool FindOpenFaces(ModelDoc2 ThisModelDoc ,AssemblyDoc ThisAssyDoc)
+        public static bool FindOpenFaces(ModelDoc2 ThisModelDoc, AssemblyDoc ThisAssyDoc)
         {
 
             if (ThisAssyDoc.GetComponentCount(true) == 0) { return false; }
@@ -3461,6 +3472,10 @@ namespace cs_ppx
                 Body2 MainCompBody = (Body2)CompBodyArray.GetValue(0);
                 Object[] MainCompFaces = (Object[])MainCompBody.GetFaces();
 
+                //Object[] TrueTRVFaces = null;
+
+                List<Object[]> TrueTRVFaces = new List<object[]>();
+
                 //set the open face mark as "90"
                 SelectionMgr ThisSelMgr = (SelectionMgr)ThisModelDoc.SelectionManager;
                 SelectData ThisSelectData = ThisSelMgr.CreateSelectData();
@@ -3484,6 +3499,7 @@ namespace cs_ppx
                     CompBodyArray = (Array)ThisComponentsSorted[i].GetBodies2((int)swBodyType_e.swSolidBody);
                     Body2 CompBody = (Body2)CompBodyArray.GetValue(0);
                     Object[] CompFaces = (Object[])CompBody.GetFaces();
+                    TrueTRVFaces.Add(CompFaces);
 
                     //First, check the face with the main product's faces
                     foreach (Face2 CheckThisFace in CompFaces)
@@ -3589,22 +3605,25 @@ namespace cs_ppx
                     Object[] CompFaces = (Object[])CompBody.GetFaces();
 
                     //get the product/workpiece (main component) faces
-                    CompBodyArray = (Array)ThisComponentsSorted[i].GetBodies2((int)swBodyType_e.swSolidBody);
-                    Body2 TrueTRVBody = (Body2)CompBodyArray.GetValue(0);
-                    Object[] TrueTRVFaces = (Object[])TrueTRVBody.GetFaces();
+                    //CompBodyArray = (Array)ThisComponentsSorted[i].GetBodies2((int)swBodyType_e.swSolidBody);
+                    //Body2 TrueTRVBody = (Body2)CompBodyArray.GetValue(0);
+                    //Object[] TrueTRVFaces = (Object[])TrueTRVBody.GetFaces();
 
                     foreach (Face2 CheckThisFace in CompFaces)
                     {
-                        foreach (Face2 WithThisFace in TrueTRVFaces)
+                        foreach (Face2 WithThisFace in TrueTRVFaces[i])
                         { 
                             //if (IsSameDirection(CheckThisFace.Normal, WithThisFace.Normal) == true)
                             //{
-                            if (CheckThisFace.IsCoincident(WithThisFace, 0.001) == 0)
+                            if (IsPlanar(WithThisFace) == true)
                             {
-                                //change the face color to red and mark it with "90"
-                                CheckThisFace.MaterialPropertyValues = WithThisFace.MaterialPropertyValues;
-                                
-                                break;
+                                if (CheckThisFace.IsCoincident(WithThisFace, 0.001) == 0)
+                                {
+                                    //change the face color to red and mark it with "90"
+                                    CheckThisFace.MaterialPropertyValues = WithThisFace.MaterialPropertyValues;
+
+                                    break;
+                                }
                             }
                         }
                     }
