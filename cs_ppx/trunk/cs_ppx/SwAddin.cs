@@ -2688,22 +2688,23 @@ namespace cs_ppx
                                         int DeleteIndex = 0;
                                         bodyArray = null;
 
-                                        bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
+                                        //bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
 
-                                        for (int j = 0; j < bodyArray.Length; j++)
-                                        {
-                                            TmpBody = (Body2)bodyArray.GetValue(j);
+                                        //for (int j = 0; j < bodyArray.Length; j++)
+                                        //{
+                                        //    TmpBody = (Body2)bodyArray.GetValue(j);
 
-                                            //if (TmpBody.Name.Equals(BodyToDelete[0]))
-                                            if (TmpBody.Name.Equals(RemoveThisBody[0].Name))
-                                            {
-                                                DeleteIndex = j;
-                                                break;
-                                            }
-                                        }
+                                        //    //if (TmpBody.Name.Equals(BodyToDelete[0]))
+                                        //    if (TmpBody.Name.Equals(RemoveThisBody[0].Name))
+                                        //    {
+                                        //        DeleteIndex = j;
+                                        //        break;
+                                        //    }
+                                        //}
 
                                         SelectData TmpSelectData = null;
-                                        bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
+                                        //bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
+                                        bool SelectionStatus = RemoveThisBody[0].BodyObj.Select2(true, TmpSelectData);
                                         //SwApp.SendMsgToUser("Removed shape by " + SelectedFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
                                         DeleteFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
 
@@ -2715,6 +2716,8 @@ namespace cs_ppx
                                         RemovedBody Removal = new RemovedBody();
                                         Removal.ParentPlane = ParentPlane;
                                         Removal.Removal = ListOfParentFeature;
+                                        Removal.TRV = RemoveThisBody[0];
+                                        
 
                                         if (PreviousRemoval != null) { PreviousRemoval.Add(Removal); }
 
@@ -2730,21 +2733,22 @@ namespace cs_ppx
                                         int DeleteIndex = 0;
                                         bodyArray = null;
                                                                                
-                                        bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
+                                        //bodyArray = (Array)swComp.GetBodies3((int)swBodyType_e.swSolidBody, out BodiesInfo);
 
-                                        for (int j = 0; j < bodyArray.Length; j++)
-                                        {
-                                            TmpBody = (Body2)bodyArray.GetValue(j);
+                                        //for (int j = 0; j < bodyArray.Length; j++)
+                                        //{
+                                        //    TmpBody = (Body2)bodyArray.GetValue(j);
 
-                                            if (TmpBody.Name.Equals(SortedRemovalBody[0].Name))
-                                            {
-                                                DeleteIndex = j;
-                                                break;
-                                            }
-                                        }
+                                        //    if (TmpBody.Name.Equals(SortedRemovalBody[0].Name))
+                                        //    {
+                                        //        DeleteIndex = j;
+                                        //        break;
+                                        //    }
+                                        //}
 
                                         SelectData TmpSelectData = null;
-                                        bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
+                                        //bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
+                                        bool SelectionStatus = SortedRemovalBody[0].BodyObj.Select2(true, TmpSelectData);
                                         //SwApp.SendMsgToUser("Removed shape by " + SelectedFeature.Name.ToString() + "\r\" Volume:  " + Volume[DeleteIndex].ToString());
                                         DeleteFeature = (Feature)Doc.FeatureManager.InsertDeleteBody();
 
@@ -2756,6 +2760,7 @@ namespace cs_ppx
                                         RemovedBody Removal = new RemovedBody();
                                         Removal.ParentPlane = ParentPlane;
                                         Removal.Removal = ListOfParentFeature;
+                                        Removal.TRV = SortedRemovalBody[0];
 
                                         if (PreviousRemoval != null) { PreviousRemoval.Add(Removal); }
                                         
@@ -2920,6 +2925,8 @@ namespace cs_ppx
                 iSwApp.ActivateDoc(MachiningPlanList[MPIndex].ViewName);
             }
         }
+
+        
 
         //Generate button click
         public static bool GenerateMP(int MPIndex)
@@ -3137,12 +3144,12 @@ namespace cs_ppx
 
                                         SelectData TmpSelectData = null;
                                         bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
-                                        string ActualTRVPath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "_TRUETRV_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
+                                        string ActualTRVPath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "_ARV_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
                                         //Insert the Body into new part document (this is the TRUE TRV
                                         bool SaveStatus = ((PartDoc) CompDocumentModel).SaveToFile3(ActualTRVPath, 1, 1, false, "", out Errors, out Warnings);
 
                                         //create TRV from TRUE TRV by tesselating all faces in the TRUE TRV body
-                                        string TRVPath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "_TRV_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
+                                        string TRVPath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "_PRV_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
                                         bool CreationStatus = CreateTRV(TRVPath, TmpBody);
 
                                         if (SaveStatus == true)
@@ -3210,12 +3217,12 @@ namespace cs_ppx
 
                                         SelectData TmpSelectData = null;
                                         bool SelectionStatus = TmpBody.Select2(true, TmpSelectData);
-                                        string ActualTRVPath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "_TRUETRV_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
+                                        string ActualTRVPath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "_ARV_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
                                         //Insert the Body into new part document (this is the TRUE TRV
                                         bool SaveStatus = ((PartDoc)CompDocumentModel).SaveToFile3(ActualTRVPath, 1, 1, false, "", out Errors, out Warnings);
 
                                         //create TRV from TRUE TRV by tesselating all faces in the TRUE TRV body
-                                        string TRVPath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "_TRV_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
+                                        string TRVPath = ThisMPDir + "\\0" + SequenceNUM.ToString() + "_PRV_Plan" + (ThisMPIndex + 1).ToString() + "_SEQ" + SequenceNUM.ToString() + "_" + SelectedFeature.Name + ".sldprt";
                                         bool CreationStatus = CreateTRV(TRVPath, TmpBody);
 
                                         if (SaveStatus == true)
@@ -3452,7 +3459,7 @@ namespace cs_ppx
                         RootComponent.Select2(true, 0);
                         ThisAssyDoc.SetComponentTransparent(true);
                     }
-                    else if (TmpComponent.Name.Contains("TRUETRV"))
+                    else if (TmpComponent.Name.Contains("_ARV"))
                     {
                         ThisComponents.Add(TmpComponent);
                     }
@@ -3673,25 +3680,106 @@ namespace cs_ppx
             return true;
         }
 
+        public static int ToolD = 10;
+        public static int tDC = 5;
+
         //set the machining plan
         public Boolean SetAsMachiningPlan(List<RemovedBody> RemovalSequence)
         {
             if (MachiningPlanList == null) { MachiningPlanList = new List<MachiningPlan>(); }
             List<MachiningProcess> MachiningSequences = new List<MachiningProcess>();
+            Double MachiningTime = 0;
+            List<Object> Normals = new List<Object>();
 
             foreach (RemovedBody Sequence in RemovalSequence)
             {
                 MachiningProcess ThisProcess = new MachiningProcess();
                 ThisProcess.MachiningReference = Sequence.ParentPlane;
+                ThisProcess.TRV = Sequence.TRV;
+                ThisProcess.cuttingTool = ToolD.ToString();
+                ThisProcess.SelectedTAD = GetTAD(Sequence.ParentPlane.PlaneNormal);
+                ThisProcess.MachiningTime = Math.Round(CalMT(Sequence.TRV.Volume),2);
+                                
                 MachiningSequences.Add(ThisProcess);
+                MachiningTime = MachiningTime + ThisProcess.MachiningTime;
+                Normals.Add(Sequence.ParentPlane.PlaneNormal);
             }
 
             MachiningPlan ThisMachiningPlan = new MachiningPlan();
             ThisMachiningPlan.MachiningProceses = MachiningSequences;
+            
+            ThisMachiningPlan.NumberOfSetups = 1;
+            ThisMachiningPlan.SetupNormal = "+Z";
+            ThisMachiningPlan.NumberOfTADchanges = CalChange(Normals);
+            ThisMachiningPlan.MachiningTime = MachiningTime + (ThisMachiningPlan.NumberOfTADchanges * tDC);
             MachiningPlanList.Add(ThisMachiningPlan);
             
             return true;
 
+        }
+
+        public Double GetCEdge(int ThisTool)
+        { 
+            switch (ThisTool)
+            {
+                case 4:
+                    return 2;
+                    
+                case 8:
+                    return 2;
+                    
+                case 10:
+                    return 4;
+            }
+
+            return 0;
+        }
+
+        public Double CalMT(Double ThisVolume)
+        {
+            Double FeedSpeed = (1000 * 1) / (3.14 * ToolD * GetCEdge(ToolD));
+            Double AxialD = 0.25 * ToolD;
+            Double RadialD = 0.1 * ToolD;
+
+            return (ThisVolume * 1000000000) / (AxialD * RadialD * FeedSpeed);
+
+        }
+
+        public TAD GetTAD(Object ThisNormal)
+        {
+            Double[] Normal = (Double[])ThisNormal;
+
+            TAD SelectedTAD = new TAD();
+
+            SelectedTAD.X = Normal[0];
+            SelectedTAD.Y = Normal[1];
+            SelectedTAD.Z = Normal[2];
+
+            return SelectedTAD;
+
+        }
+
+        public int CalChange(List<Object> ThisNormals)
+        {
+            Double[] FirstNormal = null;
+            Double[] SecondNormal = null;
+            int[] AddNormal = new int[3];
+            
+            int Changes = 0;
+
+            for (int i = 1; i < ThisNormals.Count(); i++)
+            {                
+                FirstNormal = (Double[])ThisNormals[i - 1];
+                SecondNormal = (Double[])ThisNormals[i];
+                AddNormal[0] = (int) (FirstNormal[0] - SecondNormal[0]); 
+                AddNormal[1] = (int) (FirstNormal[1] - SecondNormal[1]);
+                AddNormal[2] = (int) (FirstNormal[2] - SecondNormal[2]);
+                
+                if ((AddNormal[0] != 0) | (AddNormal[1] != 0) | (AddNormal[2] != 0)) { Changes++; }
+
+            }
+
+            return Changes;
         }
 
         //select body to delete after splitting *wby opening the document first
@@ -3795,6 +3883,8 @@ namespace cs_ppx
             {   
                 for (int i = 0; i < BodyArray.Length; i++)
                 {
+                    TmpRemovalBody = null;
+
                     bool bodyStatus = false;
 
                     Body2 BodyToCheck = (Body2)BodyArray.GetValue(i);
@@ -3833,7 +3923,13 @@ namespace cs_ppx
                             //bool SelectionStatus = TmpBodyToCheck.Select2(true, TmpSelectData);
 
                             //check this body in the document tree and add collect the body pointer to the FeasibleBodies
-                            BodyToDelete.Add(BodyToCheck.Name);
+                            
+                            //BodyToDelete.Add(BodyToCheck.Name);
+
+                            TmpRemovalBody = new RemovalBody();
+                            TmpRemovalBody.Name = BodyToCheck.Name;
+                            TmpRemovalBody.Volume = VolumeSize[i];
+                            TmpRemovalBody.BodyObj = BodyToCheck;
 
                             //set this body to the current plane
                         }
@@ -3846,23 +3942,33 @@ namespace cs_ppx
 
                         }
                     }
-                }
-            }
 
-            if (BodyToDelete.Count == 0) { return false; }
-            else 
-            {
-                for (int i = 0; i < BodyToDelete.Count(); i++)
-                {
-                    TmpRemovalBody = new RemovalBody();
-                    TmpRemovalBody.Name = BodyToDelete[i];
-                    TmpRemovalBody.Volume = VolumeSize[i];
+                    if (TmpRemovalBody != null) { RemoveThisBodies.Add(TmpRemovalBody); }
 
-                    RemoveThisBodies.Add(TmpRemovalBody);
                 }
 
-                return true; 
+
             }
+
+            if (RemoveThisBodies.Count == 0) { return false; }
+
+            return true;
+
+            //if (BodyToDelete.Count == 0) { return false; }
+            //else 
+            //{
+            //    for (int i = 0; i < BodyToDelete.Count(); i++)
+            //    {
+            //        TmpRemovalBody = new RemovalBody();
+            //        TmpRemovalBody.Name = BodyToDelete[i];
+            //        TmpRemovalBody.Volume = VolumeSize[i];
+            //        TmpRemovalBody.BodyObj = (Body2)BodyArray.GetValue(i);
+
+            //        RemoveThisBodies.Add(TmpRemovalBody);
+            //    }
+
+            //    return true; 
+            //}
 
         }
         
@@ -5352,6 +5458,7 @@ namespace cs_ppx
     {
         public AddedReferencePlane ParentPlane { get; set; }
         public List<Feature> Removal { get; set; }
+        public RemovalBody TRV { get; set; }
     }
 
     //class for removal body
@@ -5433,6 +5540,8 @@ namespace cs_ppx
 
         public double[] VisibilityCone { get; set; } //keep the visibility cone information
 
+        public Double MachiningTime { get; set; } //keep the machining time for TRV
+
     }
 
     //class for TAD
@@ -5461,6 +5570,8 @@ namespace cs_ppx
         public int NumberOfTool { get; set; } //keep the number of needed tools
 
         public int NumberOfSetups { get; set; } //keep the number of setups
+
+        public string SetupNormal { get; set; } //keep the normal of setup
     }
 
     //class for keeping the circle pattern

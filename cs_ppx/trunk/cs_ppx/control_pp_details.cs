@@ -61,20 +61,20 @@ namespace cs_ppx
 
                 TreeNode PlanDetails = new TreeNode(index.ToString());
 
-                HiddenCheckBoxTreeNode Time = new HiddenCheckBoxTreeNode("Time: " + Plan.MachiningTime.ToString());
+                HiddenCheckBoxTreeNode Time = new HiddenCheckBoxTreeNode("Process Time: " + Plan.MachiningTime.ToString() + " s");
                 PlanDetails.Nodes.Add(Time);
-
-                HiddenCheckBoxTreeNode Cost = new HiddenCheckBoxTreeNode("Cost: " + Plan.MachiningCost.ToString());
-                PlanDetails.Nodes.Add(Cost);
-
-                HiddenCheckBoxTreeNode Setups = new HiddenCheckBoxTreeNode("Setups: " + Plan.NumberOfSetups.ToString());
+                
+                HiddenCheckBoxTreeNode Setups = new HiddenCheckBoxTreeNode("#Setup: " + Plan.NumberOfSetups.ToString());
                 PlanDetails.Nodes.Add(Setups);
+
+                HiddenCheckBoxTreeNode Cost = new HiddenCheckBoxTreeNode("Setup Normal: " + Plan.SetupNormal);
+                PlanDetails.Nodes.Add(Cost);
 
                 HiddenCheckBoxTreeNode TAD = new HiddenCheckBoxTreeNode("TADs: " + Plan.NumberOfTADchanges.ToString());
                 PlanDetails.Nodes.Add(TAD);
 
-                HiddenCheckBoxTreeNode Tool = new HiddenCheckBoxTreeNode("Tools: " + Plan.NumberOfTool.ToString());
-                PlanDetails.Nodes.Add(Tool);
+                //HiddenCheckBoxTreeNode Tool = new HiddenCheckBoxTreeNode("Tools: " + Plan.NumberOfTool.ToString());
+                //PlanDetails.Nodes.Add(Tool);
 
                 HiddenCheckBoxTreeNode ProcessPlan = new HiddenCheckBoxTreeNode("Sequence");
 
@@ -83,18 +83,29 @@ namespace cs_ppx
                     
                     HiddenCheckBoxTreeNode ProcessDetails = new HiddenCheckBoxTreeNode(MP.MachiningReference.name);
 
-                    HiddenCheckBoxTreeNode CuttingTool = new HiddenCheckBoxTreeNode(MP.cuttingTool);
+                    HiddenCheckBoxTreeNode CuttingTool = new HiddenCheckBoxTreeNode("Tool Diameter: " + MP.cuttingTool);
                     ProcessDetails.Nodes.Add(CuttingTool);
 
-                    HiddenCheckBoxTreeNode ToolPath = new HiddenCheckBoxTreeNode(MP.toolPath);
-                    ProcessDetails.Nodes.Add(ToolPath);
+                    //HiddenCheckBoxTreeNode ToolPath = new HiddenCheckBoxTreeNode(MP.toolPath);
+                    //ProcessDetails.Nodes.Add(ToolPath);
 
-                    //TreeNode TAD = new TreeNode();
-                    //TAD.Nodes.Add(MP.SelectedTAD.X.ToString());
-                    //TAD.Nodes.Add(MP.SelectedTAD.Y.ToString());
-                    //TAD.Nodes.Add(MP.SelectedTAD.Z.ToString());
+                    HiddenCheckBoxTreeNode Volume = new HiddenCheckBoxTreeNode("Volume: " + (Math.Round(MP.TRV.Volume * 1000000000, 2)).ToString() + " mm3");
+                    ProcessDetails.Nodes.Add(Volume);
 
-                    //ProcessDetails.Nodes.Add(TAD);
+                    HiddenCheckBoxTreeNode MT = new HiddenCheckBoxTreeNode("Machining Time: " + MP.MachiningTime + " s");
+                    ProcessDetails.Nodes.Add(MT);
+
+                    HiddenCheckBoxTreeNode InitialTAD = new HiddenCheckBoxTreeNode("InitialTAD [" + MP.SelectedTAD.X.ToString() + " " + MP.SelectedTAD.Y.ToString() + " " + MP.SelectedTAD.Z.ToString() + "]");
+
+                    //HiddenCheckBoxTreeNode TADX = new HiddenCheckBoxTreeNode("X: " + MP.SelectedTAD.X.ToString());
+                    //HiddenCheckBoxTreeNode TADY = new HiddenCheckBoxTreeNode("Y: " + MP.SelectedTAD.Y.ToString());
+                    //HiddenCheckBoxTreeNode TADZ = new HiddenCheckBoxTreeNode("Z: " + MP.SelectedTAD.Z.ToString());
+                                        
+                    //InitialTAD.Nodes.Add(TADX);
+                    //InitialTAD.Nodes.Add(TADY);
+                    //InitialTAD.Nodes.Add(TADZ);
+
+                    ProcessDetails.Nodes.Add(InitialTAD);
                     //ProcessDetails.Nodes.Add(MP.TRV.Volume.ToString());
                     //ProcessDetails.Nodes.Add(MP.VisibilityCone.ToString());
 
@@ -128,25 +139,25 @@ namespace cs_ppx
 
             TmpPlane = (AddedReferencePlane)value;
 
-            ShowThePlane(TmpPlane);
+            ShowThePlane(TmpPlane.name);
 
         }
 
-        private void ShowThePlane(AddedReferencePlane RefPlane)
+        private void ShowThePlane(String ThisPlaneName)
         {
-            String Name = RefPlane.name;
+            //String Name = RefPlane.name;
             
             ModelDoc2 Doc = (ModelDoc2)SwApp.ActiveDoc;
             AssemblyDoc AssyDoc = (AssemblyDoc)Doc;
 
             if (CompName == null) { return; }
 
-            Name = Name + "@" + CompName[0].Name2 + "@" + Path.GetFileNameWithoutExtension(Doc.GetPathName());
+            ThisPlaneName = ThisPlaneName + "@" + CompName[0].Name2 + "@" + Path.GetFileNameWithoutExtension(Doc.GetPathName());
 
-            Doc.Extension.SelectByID2(Name, "PLANE", 0, 0, 0, false, 0, null, 0);
+            Doc.Extension.SelectByID2(ThisPlaneName, "PLANE", 0, 0, 0, false, 0, null, 0);
 
         }
-
+               
         List<String> CheckedNodes = new List<String>();
 
         private void treeView1_AfterCheck(object sender, TreeViewEventArgs e)
@@ -176,9 +187,21 @@ namespace cs_ppx
         {
             //SwApp.SendMsgToUser("I got this when the node is click and the value is " + e.Node.FullPath.ToString());
 
-            if (e.Node.FullPath.ToString().Count() == 1)
+            String EvaluateThisString  = e.Node.FullPath.ToString();
+
+            if (EvaluateThisString.Count() == 1)
             {
                 SwAddin.ShowTheMP(Convert.ToInt32(e.Node.FullPath.ToString()) - 1);
+            }
+
+            else
+            {
+                if (EvaluateThisString.ToLower().Contains("plane"))
+                {
+                    var full_path = EvaluateThisString.Split('\\').ToList();
+
+                    ShowThePlane(full_path[2]);
+                }
             }
         }
 
