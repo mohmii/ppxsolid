@@ -626,8 +626,6 @@ namespace cs_ppx
             iSwApp.OpenDoc6("D:\\iis documents\\Research\\cad_solidworks\\illustrations\\sample 0\\prod_roof.sldprt",
                 (int)swDocumentTypes_e.swDocPART, (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", (int)swFileLoadError_e.swGenericError,
                 (int)swFileLoadWarning_e.swFileLoadWarning_AlreadyOpen);
-            
-
                                
         }
         
@@ -1091,7 +1089,26 @@ namespace cs_ppx
            
         }
 
+        //check number of Main TRV
+        public static int GetNumberOfBodies()
+        {
+
+
+
+            return 0;
+        }
+
+        //analyzes the body's LWD (get the largest LW area and lowest D)
+        public static int CheckSimpleLWD(Tessellation TessData)
+        {
+            
+            return 0;
+        }
+
+
         #endregion
+
+        
 
         //generate the plane needed for TRV generation
         public void PlaneGenerator()
@@ -1225,6 +1242,12 @@ namespace cs_ppx
 
             ProcessLog_TaskPaneHost.LogProcess("Generate all coincident planes");
             PPDetails_TaskPaneHost.LogProcess("Generate all coincident planes");
+        }
+
+        //function for generating plane on TRV's chunk
+        public bool PlaneGeneratorOnChunk()
+        {
+            return false;
         }
 
         //tools for plane generator
@@ -1388,7 +1411,7 @@ namespace cs_ppx
             return MinValue;
         }
 
-        //get the maximum and minimum from a tesselation data
+        //get the maximum and minimum from a tesselation data (bounding box)
         public static Double[] GetMaxMin(Object TessData)
         {   
             Single[] TessArray;
@@ -1602,16 +1625,21 @@ namespace cs_ppx
                         MassProperty bodyProperties = Doc.Extension.CreateMassProperty();
                         bodyProperties.AddBodies(mainBody);
                         bodyProperties.UseSystemUnits = false;
+
+                        //draw the real centroid
+                        //Doc.SketchManager.Insert3DSketch(true);
                         centroid = (double[]) bodyProperties.CenterOfMass;
+                        SketchPoint skPoint1 = (SketchPoint)Doc.SketchManager.CreatePoint(centroid[0], centroid[1], centroid[2]);
+                        Doc.SketchManager.Insert3DSketch(true);
 
                         //get the virtual centroid
                         //object boxVertices = compName[0].GetBox(false, false);
                         virtualCentroid = getMidPoint(MaxMinValue);
-                        
+                                                
                         //draw the virtual centroid
-                        Doc.SketchManager.Insert3DSketch(true);
+                        //Doc.SketchManager.Insert3DSketch(true);
                         double[] tmpPoint = (double[])virtualCentroid;
-                        SketchPoint skPoint = (SketchPoint)Doc.SketchManager.CreatePoint(tmpPoint[0], tmpPoint[1], tmpPoint[2]);
+                        SketchPoint skPoint2 = (SketchPoint)Doc.SketchManager.CreatePoint(tmpPoint[0], tmpPoint[1], tmpPoint[2]);
                         Doc.SketchManager.Insert3DSketch(true);
 
                         //get the part document of the raw material
@@ -1679,6 +1707,8 @@ namespace cs_ppx
             }
 
         }
+
+        
 
         //tools for plane calculator
         #region PlaneCalculator
@@ -2491,7 +2521,12 @@ namespace cs_ppx
                     AddedReferencePlane ParentPlane = null;
                     List<AddedReferencePlane> ParentList = null;
                     List<RemovedBody> RemovalList = null;
-                                       
+
+                    /*//check multi TRV
+                    Array InitialBodyList = null;
+                    Object InitialBodyInfo = null;
+                    InitialBodyList = (Array) compName[0].GetBodies3((int)swBodyType_e.swSolidBody, out InitialBodyInfo);
+                     */
                                        
                     traversePlanes(Doc, assyModel, compName[0], PlaneFeatures, ParentPlane, ParentList, RemovalList);
 
@@ -2838,7 +2873,7 @@ namespace cs_ppx
 
             }
 
-            //Close the parallel opened document and make the document to be visble again
+            //Close the parallel opened document and make the document to be visible again
             iSwApp.CloseDoc(Path.GetFileNameWithoutExtension(CompPathName));
             iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART);
 
@@ -3819,7 +3854,7 @@ namespace cs_ppx
 
                             //check the feasibility of the splitted body (current)
                             bool bodyStatus = false;
-                            bodyStatus = setBodyToPlane(ModDoc, BodyToCheck, Centroid, PlaneListByScore[index]);
+                            //bodyStatus = setBodyToPlane(ModDoc, BodyToCheck, Centroid, PlaneListByScore[index]);
 
                             if (bodyStatus == true)
                             {
@@ -3871,8 +3906,13 @@ namespace cs_ppx
             List<double> VolumeSize = new List<double>();
 
             RemovalBody TmpRemovalBody = null;
+            Boolean IsConvex;
+            Boolean BodyLocation;
+            int CorrectBody = 0;
 
+            List<RemovalBody> TmpRemovalBodies = new List<RemovalBody>();
             RemoveThisBodies = new List<RemovalBody>();
+            
             
             if (BodyArray.Length == 0)
             {
@@ -3913,8 +3953,13 @@ namespace cs_ppx
                         }
                         
                         //check the feasibility of the splitted body (current)
+                        IsConvex = false;
+                        BodyLocation = false;
 
-                        bodyStatus = setBodyToPlane(CompDocumentModel, TmpBodyToCheck, Centroid, PlaneListByScore[index]);
+                        bodyStatus = setBodyToPlane(CompDocumentModel, TmpBodyToCheck, Centroid, PlaneListByScore[index], ref IsConvex, ref BodyLocation);
+
+                        //count the body which is located on the correct side
+                        if (BodyLocation == true) { CorrectBody++; }
 
                         if (bodyStatus == true)
                         {
@@ -3931,6 +3976,8 @@ namespace cs_ppx
                             TmpRemovalBody.Volume = VolumeSize[i];
                             TmpRemovalBody.BodyObj = BodyToCheck;
 
+                            TmpRemovalBodies.Add(TmpRemovalBody);
+
                             //set this body to the current plane
                         }
 
@@ -3943,10 +3990,21 @@ namespace cs_ppx
                         }
                     }
 
-                    if (TmpRemovalBody != null) { RemoveThisBodies.Add(TmpRemovalBody); }
+                    //if (TmpRemovalBody != null) { RemoveThisBodies.Add(TmpRemovalBody); }
 
                 }
 
+                if (TmpRemovalBodies.Count() == CorrectBody)
+                {
+                    foreach (RemovalBody ThisBody in TmpRemovalBodies)
+                    {
+                        RemoveThisBodies.Add(ThisBody);
+                    }
+                }
+                else
+                {
+                    TmpRemovalBodies.Clear();
+                }
 
             }
 
@@ -4432,18 +4490,23 @@ namespace cs_ppx
 
 
         //OVERLOAD setBodyToPlane
-        public static bool setBodyToPlane(ModelDoc2 DocumentModel, Body2 BodyToCheck, Double[] Centroid, AddedReferencePlane SelectedPlane)
+        public static bool setBodyToPlane(ModelDoc2 DocumentModel, Body2 BodyToCheck, Double[] Centroid, AddedReferencePlane SelectedPlane, 
+            ref Boolean Convexity, ref Boolean Location)
         {
 
             if (isBodyConvex(DocumentModel, BodyToCheck, SelectedPlane) == true)
             {
-                if (SelectedPlane.CPost == true) { return true; }
-                                
-                if (checkBodyLocation(BodyToCheck, Centroid, SelectedPlane.CorrespondFeature, SelectedPlane.PlaneNormal) == true)
-                {
-                    return true;
-                }
+                Convexity = true;
+            }
+            
+            if (checkBodyLocation(BodyToCheck, Centroid, SelectedPlane.CorrespondFeature, SelectedPlane.PlaneNormal) == true)
+            {
+                Location = true;
+            }
 
+            if ((Convexity == true) && (Location== true))
+            {
+                return true;
             }
 
             return false;
