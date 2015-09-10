@@ -2552,6 +2552,8 @@ namespace cs_ppx
 
         public static List<AddedReferencePlane> PlaneListByScore;
 
+        public static List<AddedReferencePlane> PlaneListByDistance;
+
         //initiate the traverse with the first feature
         public static void TraverseComponentFeatures(Component2 swComp, ref List<Feature> planeList)
         {
@@ -2622,17 +2624,24 @@ namespace cs_ppx
             List<Feature> ListOfParentFeature = null;
 
             //sort the selected Reference plane by its score
-            List<AddedReferencePlane> SortedList = 
+            List<AddedReferencePlane> SortedListA = 
                 SelectedRefPlanes.OrderByDescending(Plane => Plane.Score).ThenByDescending(Plane => Plane.DistanceFromCentroid).ToList();
 
             PlaneListByScore = new List<AddedReferencePlane>();
-            CopyReference(ref PlaneListByScore, SortedList);
+            CopyReference(ref PlaneListByScore, SortedListA);
+
+            //sort the selected Reference plane by its score
+            List<AddedReferencePlane> SortedListB =
+                SelectedRefPlanes.OrderByDescending(Plane => Plane.DistanceFromCentroid).ToList();
+
+            PlaneListByDistance = new List<AddedReferencePlane>();
+            CopyReference(ref PlaneListByDistance, SortedListB);
             
             //set parent and child status to manage the iteration
             Boolean ChildStatus;
             if (ParentPlane == null)
             {
-                SelectedFeature = getThePlane(ref PlaneListByScore, featureList, ref index, ListOfParentPlanes);
+                SelectedFeature = getThePlane(ref PlaneListByScore, PlaneListByDistance, featureList, ref index, ListOfParentPlanes);
                 ChildStatus = false;
             }
             else
@@ -2804,11 +2813,12 @@ namespace cs_ppx
                                 }
                                 else
                                 {
-                                    //set the status of possibiliity to be true
-                                    PlaneListByScore[index].Possibility = true;
+                                    
+                                        //set the status of possibiliity to be true
+                                        PlaneListByScore[index].Possibility = true;
 
-                                    //set 0 mark that indicates this plane can be set with removal volume
-                                    setMarkOnPlane(ref PlaneListByScore, index, "PROCESSOK");
+                                        //set 0 mark that indicates this plane can be set with removal volume
+                                        setMarkOnPlane(ref PlaneListByScore, index, "PROCESSOK");
 
                                     //delete the split feature
                                     ModelDoc2 DocumentModel = (ModelDoc2)swComp.GetModelDoc2();
@@ -2869,7 +2879,7 @@ namespace cs_ppx
                 Doc = ((ModelDoc2)(SwApp.ActiveDoc));
                 Doc.ClearSelection2(true);
 
-                SelectedFeature = getThePlane(ref PlaneListByScore, featureList, ref index, ListOfParentPlanes);
+                SelectedFeature = getThePlane(ref PlaneListByScore, PlaneListByDistance , featureList, ref index, ListOfParentPlanes);
 
             }
 
@@ -3721,33 +3731,36 @@ namespace cs_ppx
         //set the machining plan
         public Boolean SetAsMachiningPlan(List<RemovedBody> RemovalSequence)
         {
-            if (MachiningPlanList == null) { MachiningPlanList = new List<MachiningPlan>(); }
-            List<MachiningProcess> MachiningSequences = new List<MachiningProcess>();
-            Double MachiningTime = 0;
-            List<Object> Normals = new List<Object>();
-
-            foreach (RemovedBody Sequence in RemovalSequence)
+            if (RemovalSequence != null)
             {
-                MachiningProcess ThisProcess = new MachiningProcess();
-                ThisProcess.MachiningReference = Sequence.ParentPlane;
-                ThisProcess.TRV = Sequence.TRV;
-                ThisProcess.cuttingTool = ToolD.ToString();
-                ThisProcess.SelectedTAD = GetTAD(Sequence.ParentPlane.PlaneNormal);
-                ThisProcess.MachiningTime = Math.Round(CalMT(Sequence.TRV.Volume),2);
-                                
-                MachiningSequences.Add(ThisProcess);
-                MachiningTime = MachiningTime + ThisProcess.MachiningTime;
-                Normals.Add(Sequence.ParentPlane.PlaneNormal);
-            }
+                if (MachiningPlanList == null) { MachiningPlanList = new List<MachiningPlan>(); }
+                List<MachiningProcess> MachiningSequences = new List<MachiningProcess>();
+                Double MachiningTime = 0;
+                List<Object> Normals = new List<Object>();
 
-            MachiningPlan ThisMachiningPlan = new MachiningPlan();
-            ThisMachiningPlan.MachiningProceses = MachiningSequences;
+                foreach (RemovedBody Sequence in RemovalSequence)
+                {
+                    MachiningProcess ThisProcess = new MachiningProcess();
+                    ThisProcess.MachiningReference = Sequence.ParentPlane;
+                    ThisProcess.TRV = Sequence.TRV;
+                    ThisProcess.cuttingTool = ToolD.ToString();
+                    ThisProcess.SelectedTAD = GetTAD(Sequence.ParentPlane.PlaneNormal);
+                    ThisProcess.MachiningTime = Math.Round(CalMT(Sequence.TRV.Volume),2);
+                                
+                    MachiningSequences.Add(ThisProcess);
+                    MachiningTime = MachiningTime + ThisProcess.MachiningTime;
+                    Normals.Add(Sequence.ParentPlane.PlaneNormal);
+                }
+
+                MachiningPlan ThisMachiningPlan = new MachiningPlan();
+                ThisMachiningPlan.MachiningProceses = MachiningSequences;
             
-            ThisMachiningPlan.NumberOfSetups = 1;
-            ThisMachiningPlan.SetupNormal = "+Z";
-            ThisMachiningPlan.NumberOfTADchanges = CalChange(Normals);
-            ThisMachiningPlan.MachiningTime = MachiningTime + (ThisMachiningPlan.NumberOfTADchanges * tDC);
-            MachiningPlanList.Add(ThisMachiningPlan);
+                ThisMachiningPlan.NumberOfSetups = 1;
+                ThisMachiningPlan.SetupNormal = "+Z";
+                ThisMachiningPlan.NumberOfTADchanges = CalChange(Normals);
+                ThisMachiningPlan.MachiningTime = MachiningTime + (ThisMachiningPlan.NumberOfTADchanges * tDC);
+                MachiningPlanList.Add(ThisMachiningPlan);
+            }
             
             return true;
 
@@ -4349,6 +4362,69 @@ namespace cs_ppx
             }
 
             return null;
+        }
+
+        //OVERLOAD get and return the plane
+        public Feature getThePlane(ref List<AddedReferencePlane> PlaneListIn, List<AddedReferencePlane> PlaneListDist, List<Feature> _featureList, ref int index, List<AddedReferencePlane> ParentList)
+        {
+            //select the index that has no marking option
+            index = 0;
+            while (index != -1)
+            {
+                if (PlaneListIn[index].MarkingOpt == 0)
+                {
+                    if (ParentList == null)
+                    {
+                        if (IsOuter(PlaneListIn[index], PlaneListDist) == true)
+                        {   
+                            break;
+                        }
+                    }
+                    else if (IsParent(PlaneListIn[index], ParentList) == false)
+                    {
+                        break;
+                    }
+                }
+
+                index++;
+                if (index == PlaneListIn.Count) { index = -1; }
+            }
+
+            if (index != -1)
+            {
+                PlaneListIn[index].MarkingOpt = -1;
+                return getSelectedPlane(PlaneListIn[index], _featureList);
+            }
+
+            return null;
+        }
+
+        //check the distance of reference plane
+        public Boolean IsOuter(AddedReferencePlane ThisRefPlane, List<AddedReferencePlane> ListOfRefPlane)
+        {
+            int ThisRefIndex;
+            int index = 0;
+
+            ThisRefIndex = ListOfRefPlane.IndexOf(ThisRefPlane);
+
+            foreach (AddedReferencePlane CheckThisRef in ListOfRefPlane)
+            {
+                if (CheckThisRef.name == ThisRefPlane.name)
+                {
+                    ThisRefIndex = index;
+
+                    break;
+                }
+
+                index++;
+            }
+
+            if (ListOfRefPlane[ThisRefIndex].DistanceFromCentroid == ListOfRefPlane[0].DistanceFromCentroid)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         //check if it is a parent or not
