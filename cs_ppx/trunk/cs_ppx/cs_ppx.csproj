@@ -173,6 +173,12 @@
     <Compile Include="control_process_log.Designer.cs">
       <DependentUpon>control_process_log.cs</DependentUpon>
     </Compile>
+    <Compile Include="control_ref_guide.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="control_ref_guide.Designer.cs">
+      <DependentUpon>control_ref_guide.cs</DependentUpon>
+    </Compile>
     <Compile Include="EventHandling.cs" />
     <Compile Include="MachinableSpacePMPage.cs" />
     <Compile Include="PMPHandler.cs" />
@@ -194,6 +200,9 @@
     <Compile Include="UserPMPage.cs" />
     <EmbeddedResource Include="control_process_log.resx">
       <DependentUpon>control_process_log.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="control_ref_guide.resx">
+      <DependentUpon>control_ref_guide.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ToolbarLarge.bmp" />
     <EmbeddedResource Include="ToolbarSmall.bmp" />

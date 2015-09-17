@@ -43,6 +43,10 @@ namespace cs_ppx
         TaskpaneView ProcessLog_TaskPaneView;
         static control_process_log ProcessLog_TaskPaneHost;
 
+        //variable for Reference Guide
+        TaskpaneView RefGuide_TaskPaneView;
+        static control_ref_guide RefGuide_TaskPaneHost;
+
         public const int mainCmdGroupID = 20;
         public const int mainItemID1 = 0;
         public const int mainItemID2 = 1;
@@ -201,6 +205,7 @@ namespace cs_ppx
 
             AddTaskPane_PPDetails();
             AddTaskPane_ProcessLog();
+            AddTaskPane_RefGuide();
 
             //iSwApp.SendMsgToUser("ppxsolid is loaded");
 
@@ -211,6 +216,7 @@ namespace cs_ppx
         {
             RemoveTaskPane_PPDetails();
             RemoveTaskPane_ProcessLog();
+            RemoveTaskPane_RefGuide();
             RemoveCommandMgr();
             RemovePMP();
             DetachEventHandlers();
@@ -238,7 +244,7 @@ namespace cs_ppx
         {
             PPDetails_TaskPaneView = SwApp.CreateTaskpaneView2("", "PP Details");
             PPDetails_TaskPaneHost = PPDetails_TaskPaneView.AddControl("TaskPane_PP_Details", "");
-            PPDetails_TaskPaneHost.getSwApp(ref iSwApp);
+            PPDetails_TaskPaneHost.getSwApp(iSwApp);
             //PPDetails_TaskPaneHost.getCompName(ref compName);
         }
 
@@ -276,6 +282,29 @@ namespace cs_ppx
             catch (Exception EX)
             {
                 iSwApp.SendMsgToUser("Can't remove process log task pane." + "\r\" Exception message :" + EX.Message);
+            }
+
+        }
+
+        public void AddTaskPane_RefGuide()
+        {
+            RefGuide_TaskPaneView = SwApp.CreateTaskpaneView2("", "Reference Information");
+            RefGuide_TaskPaneHost = RefGuide_TaskPaneView.AddControl("TaskPane_Ref_Guide", "");
+            RefGuide_TaskPaneHost.getSwApp(iSwApp);
+        }
+
+        public void RemoveTaskPane_RefGuide()
+        {
+            try
+            {
+                RefGuide_TaskPaneHost = null;
+                RefGuide_TaskPaneView.DeleteView();
+                Marshal.ReleaseComObject(RefGuide_TaskPaneView);
+                RefGuide_TaskPaneView = null;
+            }
+            catch (Exception EX)
+            {
+                iSwApp.SendMsgToUser("Can't remove reference information task pane." + "\r\" Exception message :" + EX.Message);
             }
 
         }
