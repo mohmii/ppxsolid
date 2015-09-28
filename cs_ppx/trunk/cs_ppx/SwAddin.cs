@@ -41,7 +41,7 @@ namespace cs_ppx
 
         //variable for Process Log taskpane
         TaskpaneView ProcessLog_TaskPaneView;
-        static control_process_log ProcessLog_TaskPaneHost;
+        private static control_process_log ProcessLog_TaskPaneHost;
 
         //variable for Reference Guide
         TaskpaneView RefGuide_TaskPaneView;
@@ -244,7 +244,7 @@ namespace cs_ppx
         {
             PPDetails_TaskPaneView = SwApp.CreateTaskpaneView2("", "PP Details");
             PPDetails_TaskPaneHost = PPDetails_TaskPaneView.AddControl("TaskPane_PP_Details", "");
-            PPDetails_TaskPaneHost.getSwApp(iSwApp);
+            PPDetails_TaskPaneHost.getSwApp(ref iSwApp);
             //PPDetails_TaskPaneHost.getCompName(ref compName);
         }
 
@@ -290,7 +290,7 @@ namespace cs_ppx
         {
             RefGuide_TaskPaneView = SwApp.CreateTaskpaneView2("", "Reference Information");
             RefGuide_TaskPaneHost = RefGuide_TaskPaneView.AddControl("TaskPane_Ref_Guide", "");
-            RefGuide_TaskPaneHost.getSwApp(iSwApp);
+            RefGuide_TaskPaneHost.getSwApp(ref iSwApp);
         }
 
         public void RemoveTaskPane_RefGuide()
@@ -1245,6 +1245,9 @@ namespace cs_ppx
                                     //Check the face configurations
                                     tmpInitPlane.Patterns = CollectPatterns(tmpFace, IsPlanar(tmpFace));
 
+                                    //Check the face location on bounding box
+                                    tmpInitPlane.isOnBB = CheckFaceOnBB(tmpFace);
+
                                     //add the reference plane
                                     InitialRefPlanes.Add(tmpInitPlane);
 
@@ -1612,6 +1615,25 @@ namespace cs_ppx
             else { return "MIX"; }
         }
 
+        //check the location of a face whether if it is located on bounding box or not
+        private Boolean CheckFaceOnBB(Face2 ThisFace)
+        {
+            SolidWorks.Interop.sldworks.Attribute swAtt = default(SolidWorks.Interop.sldworks.Attribute);
+            Entity TmpEntity = (Entity)ThisFace;
+
+            int i = 0;
+
+            while (swAtt == null && i < 300)
+            {
+                swAtt = TmpEntity.FindAttribute(BBDef, i);
+                i++;
+            }
+
+            if (swAtt != null) { return true; }
+
+            return false;
+        }
+
         public Double[] MaxMinValue;
 
 
@@ -1686,10 +1708,13 @@ namespace cs_ppx
                             if (boolStatus == true)
                             {
                                 //set the distance
-                                setDistance(Doc, swMathUtils, ref InitialRefPlanes, tmpPoint);
+                                boolStatus = setDistance(Doc, swMathUtils, ref InitialRefPlanes, tmpPoint);
 
                                 //find the centroid position refer to the normal direction
-                                findCPost(ref InitialRefPlanes, tmpPoint);
+                                boolStatus = findCPost(ref InitialRefPlanes, tmpPoint);
+
+                                //find the outer reference plane
+                                boolStatus = FindTheOuter(ref InitialRefPlanes);
 
                                 List<int> removeId = new List<int>();
 
@@ -1855,10 +1880,34 @@ namespace cs_ppx
                 swNormalPlane = swNormalPlane.Scale(-1);
 
                 refPlanes[i].PlaneNormal = swNormalPlane.ArrayData;
+                refPlanes[i].NormalOrientation = _getNormalOrientation(refPlanes[i].PlaneNormal);
             }
 
             return true;
 
+        }
+
+        //set the name for each normal axis orientation
+        private string _getNormalOrientation(Object ThisNormalObject)
+        {               
+            double[] TmpNormal = { };
+
+            if (ThisNormalObject != null)
+            {
+                TmpNormal = (double[])ThisNormalObject;
+
+                if (isEqual(TmpNormal[0], 1) && isEqual(TmpNormal[1], 0) && isEqual(TmpNormal[2], 0)) { return "x-plus"; }
+                if (isEqual(TmpNormal[0],-1) && isEqual(TmpNormal[1], 0) && isEqual(TmpNormal[2], 0)) { return "x-negative"; }
+                if (isEqual(TmpNormal[0], 0) && isEqual(TmpNormal[1], 1) && isEqual(TmpNormal[2], 0)) { return "y-plus"; }
+                if (isEqual(TmpNormal[0], 0) && isEqual(TmpNormal[1],-1) && isEqual(TmpNormal[2], 0)) { return "y-negative"; }
+                if (isEqual(TmpNormal[0], 0) && isEqual(TmpNormal[1], 0) && isEqual(TmpNormal[2], 1)) { return "z-plus"; }
+                if (isEqual(TmpNormal[0], 0) && isEqual(TmpNormal[1], 0) && isEqual(TmpNormal[2],-1)) { return "z-negative"; }
+
+                if (isEqual(TmpNormal[0], 0) && isEqual(TmpNormal[1], 0) && isEqual(TmpNormal[2], 0)) { return "inclined"; }
+
+            }
+            
+            return "";
         }
 
         //intersect all the plane using based on their normal
@@ -1971,7 +2020,7 @@ namespace cs_ppx
         }
 
         //OVERLOAD setDistance
-        public void setDistance(ModelDoc2 Doc, MathUtility swMathUtils, ref List<AddedReferencePlane> RefPlanes, Double[] centroid)
+        public Boolean setDistance(ModelDoc2 Doc, MathUtility swMathUtils, ref List<AddedReferencePlane> RefPlanes, Double[] centroid)
         {
             double TmpDistance;
 
@@ -1988,6 +2037,8 @@ namespace cs_ppx
                     
                 }
             }
+
+            return true;
 
         }
 
@@ -2404,7 +2455,7 @@ namespace cs_ppx
         }
 
         //find the centroid position for each reference planes
-        public void findCPost(ref List<AddedReferencePlane> AllReferencePlanes, Double[] centroid)
+        public Boolean findCPost(ref List<AddedReferencePlane> AllReferencePlanes, Double[] centroid)
         {
             Boolean Location = false;
             
@@ -2413,6 +2464,8 @@ namespace cs_ppx
                 Location = checkCentroidLocation(centroid, TmpReferencePlane, TmpReferencePlane.PlaneNormal);
                 TmpReferencePlane.CPost = Location;
             }
+
+            return true;
         }
 
         //Check centroid location
@@ -2483,6 +2536,52 @@ namespace cs_ppx
                 return false; //the centroid is not on the same side with with the plane normal direction
             }
 
+        }
+
+        public static Boolean FindTheOuter(ref List<AddedReferencePlane> ListOfReferencePlanes)
+        {
+            
+            //find from the x-plus
+            FindOrientation(ref ListOfReferencePlanes, "x-plus");
+            
+            //find from the x-negative
+            FindOrientation(ref ListOfReferencePlanes, "x-negative");           
+
+            //find from the y-plus
+            FindOrientation(ref ListOfReferencePlanes, "y-plus");
+
+            //find from the y-negative
+            FindOrientation(ref ListOfReferencePlanes, "y-negative");
+
+            //find from the z-plus
+            FindOrientation(ref ListOfReferencePlanes, "z-plus");
+
+            //find from the z-negative
+            FindOrientation(ref ListOfReferencePlanes, "z-negative");                        
+
+            return true;
+        }
+
+        //find similar reference plane on each axis orientation
+        private static void FindOrientation(ref List<AddedReferencePlane> ThisRefList, string ThisOrientation)
+        {
+            var PlaneQuery = from Plane in ThisRefList
+                             where Plane.NormalOrientation == ThisOrientation && Plane.isOnBB == false
+                             orderby Plane.DistanceFromCentroid descending
+                             select Plane.name;
+
+            if (PlaneQuery.Count() != 0)
+            {
+                for (int i = 0; i < ThisRefList.Count(); i++)
+                {
+                    if (ThisRefList[i].name.Equals(PlaneQuery.First()))
+                    {
+                        ThisRefList[i].isOuter = true;
+                        break;
+                    }
+
+                }
+            }
         }
             
         //storage for all generated planes *OLD ONE
@@ -2635,6 +2734,10 @@ namespace cs_ppx
                 TargetItem.Possibility = Source.Possibility;
                 TargetItem.MaxMinValue = Source.MaxMinValue;
                 TargetItem.IsPlanar = Source.IsPlanar;
+                TargetItem.isOuter = Source.isOuter;
+                TargetItem.isOnBB = Source.isOnBB;
+                TargetItem.NormalOrientation = Source.NormalOrientation;
+                
                 TargetList.Add(TargetItem);
             }
         }
@@ -2665,6 +2768,10 @@ namespace cs_ppx
 
             PlaneListByDistance = new List<AddedReferencePlane>();
             CopyReference(ref PlaneListByDistance, SortedListB);
+
+            //sort the selected Reference plane by its axis
+            List<AddedReferencePlane> SortedListC =
+                SelectedRefPlanes.OrderByDescending(Plane => Plane.DistanceFromCentroid).ToList();
             
             //set parent and child status to manage the iteration
             Boolean ChildStatus;
@@ -4404,7 +4511,8 @@ namespace cs_ppx
                 {
                     if (ParentList == null)
                     {
-                        if (IsOuter(PlaneListIn[index], PlaneListDist) == true)
+                        //if (IsOuter(PlaneListIn[index], PlaneListDist) == true)
+                        if(PlaneListIn[index].isOuter == true)
                         {   
                             break;
                         }
@@ -5676,6 +5784,12 @@ namespace cs_ppx
         public int Score { get; set; } //keep the score of intersection
 
         public object PlaneNormal { get; set; } //keep the plane normal
+
+        public string NormalOrientation { get; set; } //keep the plane normal orientation
+
+        public Boolean isOnBB { get; set; } //keep the information to indicate whether if the reference plane is located on the side of the bounding box or not
+
+        public Boolean isOuter { get; set; } //keep the information to indicate whether if the reference plane is located on the most outer surface or not
 
         public Boolean CPost { get; set; } //keep the centroid position refer to the normal direction
         

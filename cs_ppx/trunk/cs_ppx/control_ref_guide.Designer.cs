@@ -118,6 +118,13 @@
             // ListOfDTR
             // 
             this.ListOfDTR.FormattingEnabled = true;
+            this.ListOfDTR.Items.AddRange(new object[] {
+            "A",
+            "B",
+            "C",
+            "D",
+            "E",
+            "F"});
             this.ListOfDTR.Location = new System.Drawing.Point(192, 50);
             this.ListOfDTR.Name = "ListOfDTR";
             this.ListOfDTR.Size = new System.Drawing.Size(72, 21);

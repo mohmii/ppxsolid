@@ -33,7 +33,7 @@ namespace cs_ppx
             InitializeComponent();
         }
 
-        public void getSwApp(ISldWorks iSwApp)
+        public void getSwApp(ref ISldWorks iSwApp)
         {   
             SwApp = iSwApp;
         }
