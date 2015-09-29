@@ -874,6 +874,7 @@ namespace cs_ppx
                     Configuration configDoc = (Configuration)configDocManager.ActiveConfiguration;
                     Component2 compInAssembly = (Component2)configDoc.GetRootComponent3(true);
 
+                    //test was made
                     //check the initial existing component name
                     if (compName == null)
                     {
