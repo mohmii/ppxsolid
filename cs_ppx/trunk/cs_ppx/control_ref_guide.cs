@@ -38,56 +38,70 @@ namespace cs_ppx
 
         private void RefreshInfo_Click(object sender, EventArgs e)
         {
-            SwApp.SendMsgToUser("the reference info is successfully refreshed");
+            //SwApp.SendMsgToUser("the reference info is successfully refreshed");
 
             ModelDoc2 DocumentModel = SwApp.ActiveDoc;
             SelectionMgr SwSelMgr = DocumentModel.SelectionManager;
-            Object SelectedObject = SwSelMgr.GetSelectedObject5(1);
-            Entity SwEntity = (Entity)SelectedObject;
+            Object SwObj = (Object) SwSelMgr.GetSelectedObject6(1, -1);
+            Entity SwEntity = (Entity) SwObj;
+            Boolean RetVal = false;
 
-            //Create the definition
-            //AttributeDef SwAttDef = SwApp.DefineAttribute("open_face");
-            //Boolean RetVal = SwAttDef.AddParameter("status", (int)swParamType_e.swParamTypeDouble, 1, 0);
+            //Create the definition            
+            AttributeDef SwAttDef = SwApp.DefineAttribute("ppx_tolerance" + SwEntity.ModelName);
+            RetVal = SwAttDef.AddParameter("datum", (int)swParamType_e.swParamTypeString, 0.0, 0);
+            RetVal = SwAttDef.AddParameter("flatness", (int)swParamType_e.swParamTypeString, 0.0, 0);
+            RetVal = SwAttDef.AddParameter("parallelism", (int)swParamType_e.swParamTypeString, 0.0, 0);
+            RetVal = SwAttDef.AddParameter("angularity", (int)swParamType_e.swParamTypeString, 0.0, 0);
+            RetVal = SwAttDef.AddParameter("perpendicularity", (int)swParamType_e.swParamTypeString, 0.0, 0);
+            RetVal = SwAttDef.AddParameter("location", (int)swParamType_e.swParamTypeString, 0.0, 0);
 
-            AttributeDef SwAttDef = SwApp.DefineAttribute("added_ref_tol");
-            //Boolean RetVal = SwAttDef.AddParameter("bb", (int)swParamType_e.swParamTypeDouble, 1, 0);
-
-            Boolean RetVal = SwAttDef.Register();
-
+            Parameter TolParam = null;
+            string TolValue = "";
+            string[] RefInfo = new string[6]; 
+            
             SolidWorks.Interop.sldworks.Attribute SwAttribute = default(SolidWorks.Interop.sldworks.Attribute);
-
-            int i = 0;
-            while (SwAttribute == null && i < 300)
+                        
+            if (SwEntity != null)
             {
-                SwAttribute = SwEntity.FindAttribute(SwAttDef, i);
-                i++;
+                int i = 0;
+                while (SwAttribute == null && i < 3000)
+                {
+                    SwAttribute = SwEntity.FindAttribute(SwAttDef, i);
+                    i++;
+                }
             }
 
             if (SwAttribute == null)
             {
                 SwApp.SendMsgToUser("attribute was not found");
+
             }
             else
             {
-                //Parameter OpenParam = SwAttribute.GetParameter("status");
-                Parameter OpenParam = SwAttribute.GetParameter("bb");
+                TolParam = SwAttribute.GetParameter("datum");
+                if (TolParam != null) { TolValue = TolParam.GetStringValue(); this.RefInfo.AppendText("datum " + TolValue + System.Environment.NewLine); }
+                
+                TolParam = SwAttribute.GetParameter("flatness");
+                if (TolParam != null) { TolValue = TolParam.GetStringValue(); this.RefInfo.AppendText("flatness " + TolValue + System.Environment.NewLine); }
 
-                String Value = OpenParam.GetDoubleValue().ToString();
+                TolParam = SwAttribute.GetParameter("parallelism");
+                if (TolParam != null) { TolValue = TolParam.GetStringValue(); this.RefInfo.AppendText("parallelism " + TolValue + System.Environment.NewLine); }
 
-                if (Value.Equals("1"))
-                {
-                    SwApp.SendMsgToUser("this is a open face");
-                }
-                else
-                {
-                    SwApp.SendMsgToUser("this is not a open face");
-                }
+                TolParam = SwAttribute.GetParameter("angularity");
+                if (TolParam != null) { TolValue = TolParam.GetStringValue(); this.RefInfo.AppendText("angularity " + TolValue + System.Environment.NewLine); }
 
+                TolParam = SwAttribute.GetParameter("perpendicularity");
+                if (TolParam != null) { TolValue = TolParam.GetStringValue(); this.RefInfo.AppendText("perpendicularity " + TolValue + System.Environment.NewLine); }
+
+                TolParam = SwAttribute.GetParameter("location");
+                if (TolParam != null) { TolValue = TolParam.GetStringValue(); this.RefInfo.AppendText("location " + TolValue + System.Environment.NewLine); }
+                
             }
 
         }
 
         private int NewTolCounter;
+        private int AttDefCounter;
 
         //set the tolerance to the coressponding entity
         private void AddTol_Click(object sender, EventArgs e)
@@ -99,64 +113,124 @@ namespace cs_ppx
             Object SelectedObject = SwSelMgr.GetSelectedObject5(1);
             Entity SwEntity = (Entity)SelectedObject;
 
-            //create the definition
-            AttributeDef SwAttDef = SwApp.DefineAttribute("added_ref_tol");
-            string AddedParamType = GetParamType();
-            string AddedParamValue1 = GetParamValue1();
-            string AddedParamValue2 = GetParamValue2();
+            //SwApp.SendMsgToUser(SwEntity.ModelName);
+            List<string> TolName = new List<string>();
+            List<string> TolValue = new List<string>();
 
-            Boolean RetVal = SwAttDef.AddParameter(AddedParamType, (int)swParamType_e.swParamTypeString, 1, 0);
-            RetVal = SwAttDef.AddParameter(AddedParamValue1, (int)swParamType_e.swParamTypeString, 1, 0);
-            RetVal = SwAttDef.AddParameter(AddedParamValue2, (int)swParamType_e.swParamTypeString, 1, 0);
+            string[] ToleranceInput = this.RefInput.Lines;
+            
+            //filter the duplicate tolerance, if similar to the similar tolerance value's place
+            foreach (string ThisTol in ToleranceInput)
+            {
+                string[] ReadTolerance = ThisTol.Split(' ');
+
+                if (ReadTolerance.Count() == 2)
+                {
+                    Boolean SimilarTol = TolName.Contains(ReadTolerance.FirstOrDefault());
+
+                    if (SimilarTol == true)
+                    {
+                        int TolIndex = TolName.IndexOf(ReadTolerance.First());
+                        TolValue[TolIndex] = TolValue[TolIndex] + " " + ReadTolerance.Last();
+                    }
+                    else
+                    {
+                        TolName.Add(ReadTolerance.First());
+                        TolValue.Add(ReadTolerance.Last());
+                    }
+                }
+            
+            }
+
+            Boolean RetVal = false;
+            SolidWorks.Interop.sldworks.Attribute SwAttribute = default(SolidWorks.Interop.sldworks.Attribute);
+            
+            //create the definition
+            AttributeDef SwAttDef = SwApp.DefineAttribute("ppx_tolerance" + SwEntity.ModelName);
+            RetVal = SwAttDef.AddParameter("datum", (int)swParamType_e.swParamTypeString, 0.0, 0);
+            RetVal = SwAttDef.AddParameter("flatness", (int)swParamType_e.swParamTypeString, 0.0, 0);
+            RetVal = SwAttDef.AddParameter("parallelism", (int)swParamType_e.swParamTypeString, 0.0, 0);
+            RetVal = SwAttDef.AddParameter("angularity", (int)swParamType_e.swParamTypeString, 0.0, 0);
+            RetVal = SwAttDef.AddParameter("perpendicularity", (int)swParamType_e.swParamTypeString, 0.0, 0);
+            RetVal = SwAttDef.AddParameter("location", (int)swParamType_e.swParamTypeString, 0.0, 0);
 
             RetVal = SwAttDef.Register();
+            if (RetVal == true) { NewTolCounter++; }
 
-            SolidWorks.Interop.sldworks.Attribute SwAttribute = default(SolidWorks.Interop.sldworks.Attribute);
-            NewTolCounter++;
+            //SolidWorks.Interop.sldworks.Attribute SwAttribute = default(SolidWorks.Interop.sldworks.Attribute);
+            SwAttribute = SwAttDef.CreateInstance5(DocumentModel, SwEntity, "TolNumber" + NewTolCounter.ToString(), 0, (int)swInConfigurationOpts_e.swThisConfiguration);
 
-            SwAttribute = SwAttDef.CreateInstance5(DocumentModel, SwEntity, "TolNumber" + NewTolCounter.ToString(), 0, (int)swInConfigurationOpts_e.swAllConfiguration);
+            if (SwAttribute != null)
+            { 
+                SolidWorks.Interop.sldworks.Attribute SwAttributeCheck = default(SolidWorks.Interop.sldworks.Attribute);
+                
+                int i = 0;
+                while (SwAttributeCheck == null && i < 3000)
+                {
+                    SwAttributeCheck = SwEntity.FindAttribute(SwAttDef, i);
+                    i++;
+                }
+                
+                int IndexTol = 0;
+                foreach (string ThisTol in TolName)
+                {   
+                    Parameter ParamType = (Parameter)SwAttributeCheck.GetParameter(ThisTol);
+
+                    if (ParamType != null)
+                    {   
+                        RetVal = ParamType.SetStringValue2(TolValue[IndexTol], (int)swInConfigurationOpts_e.swAllConfiguration, "");
+                        string CurrentValue = ParamType.GetStringValue();
+                    }
+
+                    IndexTol++;
+                }
+
+            }
 
             if (SwAttribute != null)
             {
-                SwApp.SendMsgToUser("The attribute has been added to the selected entity");
+                SwAttribute = default(SolidWorks.Interop.sldworks.Attribute);
+
+                int i = 0;
+                while (SwAttribute == null && i < 3000)
+                {
+                    SwAttribute = SwEntity.FindAttribute(SwAttDef, i);
+                    i++;
+                }
+
+                if (SwAttribute != null)
+                {
+                    SwApp.SendMsgToUser("The attribute has been added to the selected entity");
+                }
             }
 
         }
 
-        private string GetParamType()
+        //get the tolerance name
+        private string _GetName(int OrderNum)
         {
-            if (this.IsDatum.Checked == true)
-            {
-                return "set_as_datum";
-            }
-
-            if (this.IsGT.Checked == true)
-            {
-                return "added_gt";
+            switch (OrderNum)
+            { 
+                case 0:
+                    return "datum";
+                case 1:    
+                    return "flatness";
+                case 2:
+                    return "parallelism";
+                case 3:
+                    return "angularity";
+                case 4:
+                    return "perpendicularity";
+                case 5:
+                    return "location";
+    
             }
 
             return "";
+
         }
 
-        private string GetParamValue1()
-        {
-            if (this.ListOfGT.SelectedItem != "")
-            {
-                return this.ListOfGT.SelectedItem.ToString();
-            }
-
-            return "";
-        }
-
-        private string GetParamValue2()
-        {
-            if (this.ListOfDTR.SelectedItem != "")
-            {
-                return (this.ListOfDTR.SelectedItem.ToString());
-            }
-
-            return "";
-        }
+        
 
     }
 }

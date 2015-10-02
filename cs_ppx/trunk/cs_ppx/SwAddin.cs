@@ -64,6 +64,7 @@ namespace cs_ppx
         public const int mainItemID12 = 11;
         public const int mainItemID13 = 12;
         public const int mainItemID14 = 13;
+        public const int mainItemID15 = 14;
         
         public const int flyoutGroupID = 91;
                 
@@ -317,7 +318,7 @@ namespace cs_ppx
             Assembly thisAssembly;
 
             //set the index for the button on the ribbon
-            int cmdIndex0, cmdIndex1, cmdIndex2, cmdIndex3, cmdIndex4, cmdIndex5, cmdIndex6, cmdIndex7, cmdIndex8, cmdIndex9, cmdIndex10, cmdIndex11, cmdIndex12, cmdIndex13;
+            int cmdIndex0, cmdIndex1, cmdIndex2, cmdIndex3, cmdIndex4, cmdIndex5, cmdIndex6, cmdIndex7, cmdIndex8, cmdIndex9, cmdIndex10, cmdIndex11, cmdIndex12, cmdIndex13, cmdIndex14;
             string Title = "ppx", ToolTip = "Flexible Process Planning";
 
 
@@ -335,8 +336,8 @@ namespace cs_ppx
             //get the ID information stored in the registry
             bool getDataResult = iCmdMgr.GetGroupDataFromRegistry(mainCmdGroupID, out registryIDs);
 
-            int[] knownIDs = new int[14] { mainItemID1, mainItemID2, mainItemID3, mainItemID4, mainItemID5, mainItemID6, mainItemID7, mainItemID8, mainItemID9, mainItemID10, 
-                mainItemID11, mainItemID12, mainItemID13, mainItemID14 };
+            int[] knownIDs = new int[15] { mainItemID1, mainItemID2, mainItemID3, mainItemID4, mainItemID5, mainItemID6, mainItemID7, mainItemID8, mainItemID9, mainItemID10, 
+                mainItemID11, mainItemID12, mainItemID13, mainItemID14, mainItemID15 };
 
             if (getDataResult)
             {
@@ -369,6 +370,7 @@ namespace cs_ppx
             cmdIndex11 = cmdGroup.AddCommandItem2("Read Open Face", -1, "Reading a open face", "Read Open Face", 2, "ReadOpenFace", "", mainItemID12, menuToolbarOption);
             cmdIndex12 = cmdGroup.AddCommandItem2("Analyze Open Faces", -1, "Analyzing open faces", "Analyze Open Faces", 2, "AnalyzeOpenFace", "", mainItemID13, menuToolbarOption);
             cmdIndex13 = cmdGroup.AddCommandItem2("Cost Analysis", -1, "Analyzing the cost", "Analyze Cost", 2, "CostAnalysis", "", mainItemID14, menuToolbarOption);
+            cmdIndex14 = cmdGroup.AddCommandItem2("Test Bar", -1, "Testing the ribbon toolbar", "Test Bar", 2, "TestBar", "", mainItemID15, menuToolbarOption);
             
 
             cmdGroup.HasToolbar = true;
@@ -377,13 +379,13 @@ namespace cs_ppx
             
             bool bResult;
             
-            FlyoutGroup flyGroup = iCmdMgr.CreateFlyoutGroup(flyoutGroupID, "Dynamic Flyout", "Flyout Tooltip", "Flyout Hint",
-              cmdGroup.SmallMainIcon, cmdGroup.LargeMainIcon, cmdGroup.SmallIconList, cmdGroup.LargeIconList, "FlyoutCallback", "FlyoutEnable");
+            //FlyoutGroup flyGroup = iCmdMgr.CreateFlyoutGroup(flyoutGroupID, "Dynamic Flyout", "Flyout Tooltip", "Flyout Hint",
+              //cmdGroup.SmallMainIcon, cmdGroup.LargeMainIcon, cmdGroup.SmallIconList, cmdGroup.LargeIconList, "FlyoutCallback", "FlyoutEnable");
 
 
-            flyGroup.AddCommandItem("FlyoutCommand 1", "test", 0, "FlyoutCommandItem1", "FlyoutEnableCommandItem1");
+            //flyGroup.AddCommandItem("FlyoutCommand 1", "test", 0, "FlyoutCommandItem1", "FlyoutEnableCommandItem1");
 
-            flyGroup.FlyoutType = (int)swCommandFlyoutStyle_e.swCommandFlyoutStyle_Simple;
+            //flyGroup.FlyoutType = (int)swCommandFlyoutStyle_e.swCommandFlyoutStyle_Simple;
 
 
             foreach (int type in docTypes)
@@ -478,12 +480,15 @@ namespace cs_ppx
 
                     //add another group
                     CommandTabBox cmdBox4 = cmdTab.AddCommandTabBox();
-                    cmdIDs = new int[1];
-                    TextType = new int[1];
+                    cmdIDs = new int[2];
+                    TextType = new int[2];
 
                     //Cost analysis
                     cmdIDs[0] = cmdGroup.get_CommandID(cmdIndex13);
                     TextType[0] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+
+                    cmdIDs[1] = cmdGroup.get_CommandID(cmdIndex14);
+                    TextType[1] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
 
                     bResult = cmdBox4.AddCommands(cmdIDs, TextType);
                     cmdTab.AddSeparator(cmdBox4, cmdGroup.ToolbarId);
@@ -779,10 +784,7 @@ namespace cs_ppx
             compNames[0] = models[1].GetPathName();
             vcompNames = compNames;
             vcomponents = assyModel.AddComponents3((vcompNames), (vcompXforms), (vcompCoordSysNames));
-             
             
-            
-          
         }
 
         //mark all the faces coincide with the bounding box
@@ -909,42 +911,42 @@ namespace cs_ppx
                     boolStatus = compName[1].Select2(true, 0);
                     boolStatus = assyModel.SetComponentTransparent(true);
                                         
-                    Doc.ClearSelection2(true);
+                    //Doc.ClearSelection2(true);
 
                     //change the material color to red
                     changeColor(ref compName[0]);
 
                     Doc.GraphicsRedraw2();
-                    Doc.ForceRebuild3(false);
+                    Doc.ForceRebuild3(true);
                                         
-                    Array BodyArray = (Array) compName[0].GetBodies2((int)swBodyType_e.swSolidBody);
+                    //Array BodyArray = (Array) compName[0].GetBodies2((int)swBodyType_e.swSolidBody);
 
-                    Body2 TmpBody = (Body2)BodyArray.GetValue(0);
+                    //Body2 TmpBody = (Body2)BodyArray.GetValue(0);
 
-                    Entity TmpEntity = null;
-                    Face2 TmpFace = (Face2)TmpBody.GetFirstFace();
+                    //Entity TmpEntity = null;
+                    //Face2 TmpFace = (Face2)TmpBody.GetFirstFace();
 
-                    SolidWorks.Interop.sldworks.Attribute swAtt = default(SolidWorks.Interop.sldworks.Attribute);
+                    //SolidWorks.Interop.sldworks.Attribute swAtt = default(SolidWorks.Interop.sldworks.Attribute);
                     
-                    int i = 0;
+                    //int i = 0;
 
-                    while (swAtt == null && TmpFace != null)
-                    {
-                       TmpEntity = (Entity)TmpFace;
+                    //while (swAtt == null && TmpFace != null)
+                    //{
+                    //   TmpEntity = (Entity)TmpFace;
 
-                        while (swAtt == null && i < 300)
-                        {
-                            swAtt = TmpEntity.FindAttribute(NFDef, i);
-                            i++;
-                        }
+                    //    while (swAtt == null && i < 300)
+                    //    {
+                    //        swAtt = TmpEntity.FindAttribute(NFDef, i);
+                    //        i++;
+                    //    }
 
-                        TmpFace = (Face2)TmpFace.GetNextFace();
-                        i = 0;
-                    }
-                    if (swAtt != null)
-                    {
-                        TmpEntity.Select(true);
-                    }
+                    //    TmpFace = (Face2)TmpFace.GetNextFace();
+                    //    i = 0;
+                    //}
+                    //if (swAtt != null)
+                    //{
+                    //    TmpEntity.Select(true);
+                    //}
                     
 
                 }
@@ -1015,6 +1017,14 @@ namespace cs_ppx
             }
         }
 
+        //get random string
+        public static string GetRandomString()
+        {
+            string path = Path.GetRandomFileName();
+            path = path.Replace(".", "");
+            return path;
+        }
+
         //set an attribute to the the new created faces
         public bool SetAttribute(Component2 SwComp, ref AttributeDef NewFace)
         {
@@ -1028,10 +1038,11 @@ namespace cs_ppx
             int faceIndex = 1;
 
             //create the BB attribute definition
-            AttributeDef attDef = SwApp.DefineAttribute("newface");
-            NewFace = attDef;
-            bRet = attDef.AddParameter("newface", (int)swParamType_e.swParamTypeDouble, 1, 0);
-            bRet = attDef.Register();
+            AttributeDef attDef = null;
+            //AttributeDef attDef = SwApp.DefineAttribute("newface");
+            //NewFace = attDef;
+            //bRet = attDef.AddParameter("newface", (int)swParamType_e.swParamTypeDouble, 1, 0);
+            //bRet = attDef.Register();
 
             String CompPathName = SwComp.GetPathName();
             iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be invisble
@@ -1055,18 +1066,17 @@ namespace cs_ppx
                 while (SwFace != null)
                 {
                     SwEntity = (Entity)SwFace;
+                    SwEntity = SwEntity.GetSafeEntity();
+
+                    //set the attribute definition
+                    attDef = SwApp.DefineAttribute("newface" + SwEntity.ModelName);
+                    NewFace = attDef;
+                    bRet = attDef.AddParameter("newface", (int)swParamType_e.swParamTypeDouble, 1, 0);
+                    bRet = attDef.Register();
 
                     SolidWorks.Interop.sldworks.Attribute swAtt = default(SolidWorks.Interop.sldworks.Attribute);
 
-                    int i = 0;
-
-                    while (swAtt == null && i < 300)
-                    {
-                        swAtt = SwEntity.FindAttribute(BBDef, i);
-                        i++;
-                    }
-
-                    if (swAtt == null)
+                    if (bRet == true)
                     {
                         swAtt = attDef.CreateInstance5(CompDocumentModel, SwFace, "new_face" + faceIndex.ToString(), 0, (int)swInConfigurationOpts_e.swAllConfiguration);
                         faceIndex++;
@@ -1084,29 +1094,32 @@ namespace cs_ppx
 
                     SwFace = null;
                     SwEntity = null;
+                    object[] AllFaces = (object[])TmpBody.GetFaces();
 
-                    SwFace = (Face2)TmpBody.GetFirstFace();
-                    while (SwFace != null)
+                    //SwFace = (Face2)TmpBody.GetFirstFace();
+                    //while (SwFace != null)
+                    foreach (Face2 ThisFace in AllFaces)
                     {
-                        SwEntity = (Entity)SwFace;
+
+                        //SwEntity = (Entity)SwFace;
+                        SwEntity = (Entity) ThisFace;
+                        SwEntity = SwEntity.GetSafeEntity();
+
+                        //set the attribute definition
+                        attDef = SwApp.DefineAttribute("newface" + SwEntity.ModelName);
+                        NewFace = attDef;
+                        bRet = attDef.AddParameter("newface", (int)swParamType_e.swParamTypeDouble, 1, 0);
+                        bRet = attDef.Register();
 
                         SolidWorks.Interop.sldworks.Attribute swAtt = default(SolidWorks.Interop.sldworks.Attribute);
 
-                        int n = 0; // arbitrary counter
-
-                        while (swAtt == null && n < 300)
+                        if (bRet == true)
                         {
-                            swAtt = SwEntity.FindAttribute(BBDef, n);
-                            n++;
-                        }
-
-                        if (swAtt == null)
-                        {
-                            swAtt = attDef.CreateInstance5(CompDocumentModel, SwFace, "new_face" + faceIndex.ToString(), 0, (int)swInConfigurationOpts_e.swAllConfiguration);
+                            swAtt = attDef.CreateInstance5(CompDocumentModel, ThisFace, "new_face" + faceIndex.ToString(), 0, (int)swInConfigurationOpts_e.swAllConfiguration);
                             faceIndex++;
                         }
 
-                        SwFace = (Face2)SwFace.GetNextFace();
+                        //SwFace = (Face2)SwFace.GetNextFace();
                     }
                 }
 
@@ -1144,13 +1157,14 @@ namespace cs_ppx
         public void PlaneGenerator()
         {            
             ModelDoc2 Doc = (ModelDoc2)SwApp.ActiveDoc;
+            
             int docType = (int)Doc.GetType();
             bool boolStatus;
 
             if (Doc.GetType() == 2)
             {
                 AssemblyDoc assyModel = (AssemblyDoc)Doc;
-
+                
                 if (assyModel.GetComponentCount(false) != 0)
                 {
                     //get the components
@@ -1169,11 +1183,14 @@ namespace cs_ppx
                     //get faces from raw material (at this stage is main trv)
                     object bodyEnts = (object) compName[0].GetBody();
                     Body2 swBody = (Body2)bodyEnts;
-                    object[] swFaces = (object[])swBody.GetFaces();
+                    //object[] swFaces = (object[])swBody.GetFaces();
 
                     //get the part document of the raw material
                     ModelDoc2 compModDoc = (ModelDoc2)compName[0].GetModelDoc2();
                     PartDoc swPartDoc = (PartDoc)compModDoc;
+
+                    SelectionMgr SwSelMgr = (SelectionMgr)compModDoc.SelectionManager;
+                    SelectData SwSelData = (SelectData)SwSelMgr.CreateSelectData();
 
                     //prepare for face traversal
                     string entName = null;
@@ -1184,94 +1201,133 @@ namespace cs_ppx
                     Object TessFaceArray = null;
                     Double[] TessVerticesArray = null;
                     PatternConfig PatternState = null;
+                    AttributeDef attDef = null;
+                    Boolean bRet = false;
+                    int Errors = 0;
+                    int Warnings = 0;
                     
-
                     AddedReferencePlane tmpInitPlane = null;
-                    InitialRefPlanes = new List<AddedReferencePlane>(); //set the instance for the first time for sacing all the reference planes
+                    InitialRefPlanes = new List<AddedReferencePlane>(); //set the instance for the first time for saving all the reference planes
+                    InitialBodies = new List<Body2>(); //set the instance for the first time for saving all initial bodies
                                      
                     //select the raw material for editing
                     boolStatus = compName[0].Select2(true, 0);
 
                     if (boolStatus == true)
                     {
-                        assyModel.EditPart();
+                        String CompPathName = compName[0].GetPathName();
+                        iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be invisble
+                        ModelDoc2 CompDocumentModel = (ModelDoc2)SwApp.OpenDoc6(CompPathName, (int)swDocumentTypes_e.swDocPART,
+                            (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
+                        
+                        PartDoc PartDocument = (PartDoc)CompDocumentModel;
+                        Array AllBodies = (Array)PartDocument.GetBodies2((int)swBodyType_e.swSolidBody, true);
+                        //assyModel.EditPart();
 
-                        Array AllBodies = (Array)swPartDoc.GetBodies2((int)swBodyType_e.swSolidBody, true);
-                                                                        
-                        foreach (Face2 tmpFace in swFaces)
+                        //Array AllBodies = (Array)swPartDoc.GetBodies2((int)swBodyType_e.swSolidBody, true);
+
+                        foreach (Body2 ThisBody in AllBodies)
                         {
-                            entName = swPartDoc.GetEntityName(tmpFace);
-                            PatternState = new PatternConfig();
-                            
-                            //select the face without name
-                            if (entName == "")
+                            InitialBodies.Add(ThisBody);
+
+                            object[] AllFaces = ThisBody.GetFaces();
+                                            
+                            //foreach (Face2 tmpFace in swFaces)
+                            foreach (Face2 tmpFace in AllFaces)
                             {
                                 TessFaceArray = (Object)tmpFace.GetTessTriangles(true);
                                 TessVerticesArray = GetMaxMin(TessFaceArray);
+                                swEnt = (Entity)tmpFace;
+                                swEnt = swEnt.GetSafeEntity();
 
-                                //set the reference plane instance
-                                tmpInitPlane = new AddedReferencePlane();
+                                entName = swPartDoc.GetEntityName(tmpFace);
+                                PatternState = new PatternConfig();
 
-                                if (IsPlanar(tmpFace))
+                                //set the attribute definition
+                                attDef = SwApp.DefineAttribute("newface" + swEnt.ModelName);
+                                bRet = attDef.AddParameter("newface", (int)swParamType_e.swParamTypeDouble, 1, 0);
+
+                                SolidWorks.Interop.sldworks.Attribute swAtt = default(SolidWorks.Interop.sldworks.Attribute);
+
+                                int n = 0; // arbitrary counter
+
+                                while (swAtt == null && n < 300)
                                 {
-                                    swEnt = (Entity)tmpFace;
-                                    swEnt.Select2(true, 0);
-
-                                    //create coincide reference plane to it
-                                    swRefPlane = (RefPlane)Doc.FeatureManager.InsertRefPlane(4, 0, 0, 0, 0, 0);
-                                    tmpInitPlane.IsPlanar = true;
-
-                                }
-                                else
-                                {
-
-                                    swRefPlane = SetupRefPlane(tmpFace, Doc, TessVerticesArray);
-                                    tmpInitPlane.IsPlanar = false;
-                                }
-
-                                if (swRefPlane != null)
-                                {
-                                    countFace += 1;
-
-                                    //set reference name
-                                    refName = "REF_PLANE" + countFace.ToString();
-                                    swPartDoc.SetEntityName(swRefPlane, refName);
-
-                                    //set the reference plane, included with name, coincided face, and its pointer
-                                    tmpInitPlane.name = refName;
-                                    tmpInitPlane.AttachedFace = tmpFace;
-                                    tmpInitPlane.ReferencePlane = swRefPlane;
-                                    tmpInitPlane.MaxMinValue = TessVerticesArray;
-
-                                    //Check the face configurations
-                                    tmpInitPlane.Patterns = CollectPatterns(tmpFace, IsPlanar(tmpFace));
-
-                                    //Check the face location on bounding box
-                                    tmpInitPlane.isOnBB = CheckFaceOnBB(tmpFace);
-
-                                    //add the reference plane
-                                    InitialRefPlanes.Add(tmpInitPlane);
-
-                                    //set the MaxMinValue
-                                    SetMaxMin(TessVerticesArray, ref MaxMinValue);
+                                    swAtt = swEnt.FindAttribute(attDef, n);
+                                    n++;
                                 }
 
+                                ////select the face without name
+                                //if (entName == "")
+                                if (swAtt != null)
+                                {
+                                    
+                                //    //set the reference plane instance
+                                    tmpInitPlane = new AddedReferencePlane();
+
+                                    if (IsPlanar(tmpFace))
+                                    {
+                                        
+                                        //bRet = swEnt.Select2(false, 0);
+                                        bRet = swEnt.Select4(false, SwSelData);
+
+                                        //create coincide reference plane to it
+                                        //swRefPlane = (RefPlane) Doc.FeatureManager.InsertRefPlane(4, 0, 0, 0, 0, 0);
+                                        swRefPlane = (RefPlane) CompDocumentModel.FeatureManager.InsertRefPlane(4, 0, 0, 0, 0, 0);
+                                        tmpInitPlane.IsPlanar = true;
+                                    }
+                                    else
+                                    {
+                                        //swRefPlane = SetupRefPlane(tmpFace, Doc, TessVerticesArray);
+                                        swRefPlane = SetupRefPlane(tmpFace, Doc, compName[0], TessVerticesArray);
+                                        tmpInitPlane.IsPlanar = false;
+                                    }
+
+                                    if (swRefPlane != null)
+                                    {
+                                        countFace += 1;
+
+                                        //set reference name
+                                        refName = "REF_PLANE" + countFace.ToString();
+                                        swPartDoc.SetEntityName(swRefPlane, refName);
+
+                                        //set the reference plane, included with name, coincided face, and its pointer
+                                        tmpInitPlane.name = refName;
+                                        tmpInitPlane.AttachedFace = tmpFace;
+                                        tmpInitPlane.ReferencePlane = swRefPlane;
+                                        tmpInitPlane.MaxMinValue = TessVerticesArray;
+
+                                        //Check the face configurations
+                                        tmpInitPlane.Patterns = CollectPatterns(tmpFace, IsPlanar(tmpFace));
+
+                                        //Check the face location on bounding box
+                                        tmpInitPlane.isOnBB = CheckFaceOnBB(tmpFace);
+
+                                        //add the reference plane
+                                        InitialRefPlanes.Add(tmpInitPlane);
+
+                                        //set the MaxMinValue
+                                        SetMaxMin(TessVerticesArray, ref MaxMinValue);
+                                    }
+
+                                }
                             }
                         }
+
                     }
 
                     //store number of reference plane
                     addedRefPlane = countFace;
 
                     //close editing the raw material
-                    assyModel.EditAssembly();
+                    //assyModel.EditAssembly();
 
                     boolStatus = compName[0].Select2(true, 0);
                     
                 }
             }
 
-            Doc.ClearSelection2(true);
+            //Doc.ClearSelection2(true);
 
             ProcessLog_TaskPaneHost.LogProcess("Generate all coincident planes");
             PPDetails_TaskPaneHost.LogProcess("Generate all coincident planes");
@@ -1288,6 +1344,9 @@ namespace cs_ppx
 
         //save the number of generated reference plane
         public int addedRefPlane { get; set; }
+
+        //save all initial body
+        public List<Body2> InitialBodies;
 
         //save all generate reference plane
         public List<AddedReferencePlane> InitialRefPlanes;
@@ -1414,6 +1473,90 @@ namespace cs_ppx
  
             return null;
  
+        }
+
+        //OVERLOAD set the reference plane for non-planar and inclined surface
+        public RefPlane SetupRefPlane(Face2 ThisFace, ModelDoc2 ThisModelDoc, Component2 ThisComp, Double[] ThisTessArray)
+        {
+            Object BoxFaceArray = null;
+            Object TessFaceArray = null;
+            Double[] BoxVerticesArray = null;
+            Double[] TessVerticesArray = null;
+            //Double DepthZ;
+            Double[] TmpPoint;
+            ModelDocExtension SwExt = null;
+            FeatureManager SwFM = null;
+            Boolean SelectionStatus = false;
+            RefPlane RefPlaneInstance = null;
+            SketchPoint SkPoint1, SkPoint2, SkPoint3 = null;
+
+            try
+            {
+                AssemblyDoc ThisAssyDoc = (AssemblyDoc)ThisModelDoc;
+
+                ThisComp.Select2(true, 0);
+
+                ThisAssyDoc.EditPart();
+
+                SwExt = ThisModelDoc.Extension;
+                SwFM = ThisModelDoc.FeatureManager;
+
+                BoxFaceArray = (Object)ThisFace.GetBox();
+                BoxVerticesArray = (Double[])BoxFaceArray;
+
+                //TessFaceArray = (Object)ThisFace.GetTessTriangles(true);
+                //TessVerticesArray = GetMaxMin(TessFaceArray);
+
+                ////get the lowest Z level
+                //if (BoxVerticesArray[2] < BoxVerticesArray[5]) { DepthZ = BoxVerticesArray[2]; }
+                //else { DepthZ = BoxVerticesArray[5]; }
+
+                //DepthZ = TessVerticesArray[5];
+
+
+                //draw the 1st corner points
+                ThisModelDoc.SketchManager.Insert3DSketch(true);
+                TmpPoint = new Double[] { ThisTessArray[0], ThisTessArray[1], ThisTessArray[5] };
+                SkPoint1 = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
+                //ThisModelDoc.SketchManager.Insert3DSketch(true);
+
+                //draw the 2nd corner points
+                //ThisModelDoc.SketchManager.Insert3DSketch(true);
+                TmpPoint = new Double[] { ThisTessArray[0], ThisTessArray[4], ThisTessArray[5] };
+                SkPoint2 = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
+                //ThisModelDoc.SketchManager.Insert3DSketch(true);
+
+                //draw the 3rd corner points
+                //ThisModelDoc.SketchManager.Insert3DSketch(true);
+                TmpPoint = new Double[] { ThisTessArray[3], ThisTessArray[4], ThisTessArray[5] };
+                SkPoint3 = (SketchPoint)ThisModelDoc.SketchManager.CreatePoint(TmpPoint[0], TmpPoint[1], TmpPoint[2]);
+                ThisModelDoc.SketchManager.Insert3DSketch(true);
+
+                //select the constraint and insert the reference plane
+                SkPoint1.Select2(true, 0);
+                SkPoint2.Select2(true, 1);
+                SkPoint3.Select2(true, 2);
+
+                //SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", ThisTessArray[0], ThisTessArray[1], ThisTessArray[5], true, 0, null, 1);
+                //SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", ThisTessArray[0], ThisTessArray[4], ThisTessArray[5], true, 1, null, 1);
+                //SelectionStatus = SwExt.SelectByID2("", "EXTSKETCHPOINT", ThisTessArray[3], ThisTessArray[4], ThisTessArray[5], true, 2, null, 1);
+
+                RefPlaneInstance = (RefPlane)SwFM.InsertRefPlane(4, 0, 4, 0, 4, 0);
+
+                ThisAssyDoc.EditAssembly();
+
+                if (RefPlaneInstance != null) { return RefPlaneInstance; }
+
+            }
+
+            catch (Exception Ex)
+            {
+                iSwApp.SendMsgToUser(Ex.Message);
+
+            }
+
+            return null;
+
         }
 
         //get the maximum value of four values
@@ -3164,7 +3307,7 @@ namespace cs_ppx
                     //check the generated MP
                     if (MPGenerator(Doc, assyModel, compName[0], PlaneFeatures, MachiningPlanList[MPIndex], MPIndex, PlanDirectory, out PathList) == true)
                     {   
-                        ModelDoc2 NewDoc = (ModelDoc2)SwApp.NewDocument("D:\\Program Files\\SolidWorks Corp\\SOLIDWORKS\\lang\\english\\Tutorial\\assem.asmdot", 0, 0, 0);
+                        ModelDoc2 NewDoc = (ModelDoc2)SwApp.NewDocument("G:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\lang\\english\\Tutorial\\assem.asmdot", 0, 0, 0);
                         
                         string[] StringNames = new string[PathList.Count + 1];
                         string[] CoordinateName = new string[PathList.Count + 1];
@@ -3527,7 +3670,7 @@ namespace cs_ppx
                 
             }
 
-            ModelDoc2 ThisDoc = (ModelDoc2)SwApp.NewDocument("D:\\Program Files\\SolidWorks Corp\\SOLIDWORKS\\lang\\english\\Tutorial\\part.prtdot", 0, 0, 0);            
+            ModelDoc2 ThisDoc = (ModelDoc2)SwApp.NewDocument("G:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\lang\\english\\Tutorial\\part.prtdot", 0, 0, 0);            
             bool SaveStatus = ThisDoc.Extension.SaveAs(ThisPath, (int)swSaveAsVersion_e.swSaveAsCurrentVersion, (int)swSaveAsOptions_e.swSaveAsOptions_Silent, null, 0, 0);
 
             ThisDoc = SwApp.ActivateDoc3(Path.GetFileNameWithoutExtension(ThisPath), false, 2, ref Errors);
@@ -5287,10 +5430,10 @@ namespace cs_ppx
             //AttributeDef SwAttDef = SwApp.DefineAttribute("open_face");
             //Boolean RetVal = SwAttDef.AddParameter("status", (int)swParamType_e.swParamTypeDouble, 1, 0);
 
-            AttributeDef SwAttDef = SwApp.DefineAttribute("bb");
-            Boolean RetVal = SwAttDef.AddParameter("bb", (int)swParamType_e.swParamTypeDouble, 1, 0);
+            AttributeDef SwAttDef = SwApp.DefineAttribute("open_face");
+            //Boolean RetVal = SwAttDef.AddParameter("status", (int)swParamType_e.swParamTypeDouble, 1, 0);
 
-            RetVal = SwAttDef.Register();
+            Boolean RetVal = SwAttDef.Register();
             
             SolidWorks.Interop.sldworks.Attribute SwAttribute = default(SolidWorks.Interop.sldworks.Attribute);
 
@@ -5308,7 +5451,7 @@ namespace cs_ppx
             else
             {
                 //Parameter OpenParam = SwAttribute.GetParameter("status");
-                Parameter OpenParam = SwAttribute.GetParameter("bb");
+                Parameter OpenParam = SwAttribute.GetParameter("status");
 
                 String Value = OpenParam.GetDoubleValue().ToString();
 
