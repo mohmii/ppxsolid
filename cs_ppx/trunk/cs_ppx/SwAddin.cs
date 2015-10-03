@@ -356,7 +356,8 @@ namespace cs_ppx
             //set the button properties here
 
             int menuToolbarOption = (int)(swCommandItemType_e.swMenuItem | swCommandItemType_e.swToolbarItem);
-            cmdIndex0 = cmdGroup.AddCommandItem2("Load Samples", -1, "Load all raw model and product samples", "Load Samples", 2, "LoadSamples", "", mainItemID1, menuToolbarOption);
+            //cmdIndex0 = cmdGroup.AddCommandItem2("Load Samples", -1, "Load all raw model and product samples", "Load Samples", 2, "LoadSamples", "", mainItemID1, menuToolbarOption);
+            cmdIndex0 = cmdGroup.AddCommandItem2("Read Tolerance", -1, "Read tolerance from product", "Read Tolerance", 2, "ReadTolerance", "", mainItemID1, menuToolbarOption);
             cmdIndex1 = cmdGroup.AddCommandItem2("Select Sample", -1, "Select sample available", "Select Sample", 2, "ShowPMP", "EnablePMP", mainItemID2, menuToolbarOption);
             cmdIndex2 = cmdGroup.AddCommandItem2("Match Body", -1, "Matching material and product", "Match Body", 2, "MatchBody", "", mainItemID3, menuToolbarOption);
             cmdIndex3 = cmdGroup.AddCommandItem2("Main TRV", -1, "Generate TRV from raw model and product", "Main TRV", 2, "MainTRV", "", mainItemID4, menuToolbarOption);
@@ -1831,6 +1832,152 @@ namespace cs_ppx
 
 
         #endregion 
+
+        public void ReadTolerance()
+        {
+            iSwApp.SendMsgToUser("the is the call from read tolerance");
+
+            ModelDoc2 Doc = (ModelDoc2)SwApp.ActiveDoc;
+            
+            MathUtility swMathUtils = (MathUtility)SwApp.GetMathUtility();
+            int docType = (int)Doc.GetType();
+            bool boolStatus = false;
+            bool RegStatus = false;
+            bool RetVal = false;
+            int Errors = 0;
+            int Warnings = 0;
+
+            List<Entity> EntityWithTolerance = null;
+            List<PlaneTolerance> EntityTolerance = null;
+
+            AssemblyDoc assyModel = null;
+            Component2[] compName = null;
+
+            if (Doc.GetType() == 2)
+            { 
+                assyModel = (AssemblyDoc)Doc;
+                if (assyModel.GetComponentCount(false) != 0)
+                {
+                    //get the components
+                    ConfigurationManager configDocManager = (ConfigurationManager)Doc.ConfigurationManager;
+                    Configuration configDoc = (Configuration)configDocManager.ActiveConfiguration;
+                    Component2 compInAssembly = (Component2)configDoc.GetRootComponent3(true);
+
+                    if (compName == null)
+                    {
+                        //define the raw material and product
+                        compName = new Component2[2];
+                        GetCompName(compInAssembly, ref compName);
+                        PPDetails_TaskPaneHost.getCompName(ref compName);
+                    }
+
+                    EntityWithTolerance = new List<Entity>();
+                    EntityTolerance = new List<PlaneTolerance>();
+
+                    //select the raw material for editing
+                    boolStatus = compName[1].Select2(true, 0);
+
+                    if (boolStatus == true)
+                    {
+                        String CompPathName = compName[1].GetPathName();
+                        iSwApp.DocumentVisible(true, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be invisble
+                        ModelDoc2 CompDocumentModel = (ModelDoc2)SwApp.OpenDoc6(CompPathName, (int)swDocumentTypes_e.swDocPART,
+                            (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
+                        
+                        ModelDocExtension ThisDocExtension = (ModelDocExtension)CompDocumentModel.Extension;
+                        SelectionMgr ThisSelMgr = (SelectionMgr)CompDocumentModel.SelectionManager;
+                        SolidWorks.Interop.sldworks.Attribute ThisAtt = default(SolidWorks.Interop.sldworks.Attribute);
+
+                        bool SelectStatus = false;
+                        
+                        int i = 1;
+                        string AttName = "TolNumber" + i.ToString();
+                        SelectStatus = ThisDocExtension.SelectByID2(AttName, "ATTRIBUTE", 0, 0, 0, false, 0, null, 0);
+
+                        while (SelectStatus == true)
+                        {
+                            Feature ThisFeat = (Feature)ThisSelMgr.GetSelectedObject6(1, -1);
+                            ThisAtt = (SolidWorks.Interop.sldworks.Attribute)ThisFeat.GetSpecificFeature2();
+
+                            if (ThisAtt != null)
+                            {
+                                RetVal = GetTolerance(ThisAtt, ref EntityTolerance);
+                                if (RetVal == true) { EntityWithTolerance.Add(ThisAtt.GetEntity2()); }
+                            }
+
+                            i++;
+                            AttName = "TolNumber" + i.ToString();
+                            SelectStatus = ThisDocExtension.SelectByID2(AttName, "ATTRIBUTE", 0, 0, 0, false, 0, null, 0);
+                        }
+
+                    }
+
+
+
+
+                }
+            }
+        }
+
+        #region ReadTolerance
+
+        //get the tolerance value from attribute
+        public bool GetTolerance(SolidWorks.Interop.sldworks.Attribute ThisAttribute, ref List<PlaneTolerance> ToleranceOnFaces)
+        {
+            PlaneTolerance TmpTolerance = new PlaneTolerance();
+            Parameter TolParam = null;
+            string TolValue = "";
+
+            //get all the tolerance value
+            TolParam = ThisAttribute.GetParameter("datum");
+            if (TolParam != null) 
+            { 
+                TolValue = TolParam.GetStringValue();
+                TmpTolerance.datum = TolValue.Replace("datum ", "");  
+            }
+
+            TolParam = ThisAttribute.GetParameter("flatness");
+            if (TolParam != null) 
+            { 
+                TolValue = TolParam.GetStringValue(); 
+                TmpTolerance.flatness = TolValue.Replace("flatness ", ""); 
+            }
+
+            TolParam = ThisAttribute.GetParameter("parallelism");
+            if (TolParam != null) 
+            { 
+                TolValue = TolParam.GetStringValue();
+                TmpTolerance.parallelism = TolValue.Replace("parallelism ", ""); 
+            }
+
+            TolParam = ThisAttribute.GetParameter("angularity");
+            if (TolParam != null) 
+            { 
+                TolValue = TolParam.GetStringValue();
+                TmpTolerance.angularity = TolValue.Replace("angularity ", ""); 
+            }
+
+            TolParam = ThisAttribute.GetParameter("perpendicularity");
+            if (TolParam != null) 
+            { 
+                TolValue = TolParam.GetStringValue();
+                TmpTolerance.perpendicularity = TolValue.Replace("perpendicularity ", ""); 
+            }
+
+            TolParam = ThisAttribute.GetParameter("location");
+            if (TolParam != null) 
+            { 
+                TolValue = TolParam.GetStringValue();
+                TmpTolerance.location = TolValue.Replace("location ", ""); 
+            }
+
+            //add the tolerance to the list
+            ToleranceOnFaces.Add(TmpTolerance);
+
+            return true;
+        }
+
+        #endregion
 
         //plane Calculator
         public void PlaneCalculator()
@@ -6087,5 +6234,15 @@ namespace cs_ppx
         public int Curve { get; set; }
     }
 
+    //class for keeping the plane's tolerance
+    public class PlaneTolerance
+    { 
+        public string datum { get;set; }
+        public string flatness { get;set; }
+        public string parallelism { get;set; }
+        public string angularity { get;set; }
+        public string perpendicularity { get;set; }
+        public string location { get;set; }
+    }
 
 }
