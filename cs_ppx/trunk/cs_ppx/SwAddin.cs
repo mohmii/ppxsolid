@@ -947,7 +947,9 @@ namespace cs_ppx
                     //{
                     //    TmpEntity.Select(true);
                     //}
-                    
+
+                    ProcessLog_TaskPaneHost.LogProcess("Generate main TRV");
+                    PPDetails_TaskPaneHost.LogProcess("Generate main TRV");
 
                 }
             }
@@ -1061,6 +1063,9 @@ namespace cs_ppx
 
                 SwFace = null;
                 SwEntity = null;
+                object[] AllFaces = (object[])TmpBody.GetFaces();
+
+                //bRet = SetNewFaceAtt(CompDocumentModel, AllFaces, ref NewFace);
 
                 SwFace = (Face2)TmpBody.GetFirstFace();
                 while (SwFace != null)
@@ -1078,7 +1083,7 @@ namespace cs_ppx
 
                     if (bRet == true)
                     {
-                        swAtt = attDef.CreateInstance5(CompDocumentModel, SwFace, "new_face" + faceIndex.ToString(), 0, (int)swInConfigurationOpts_e.swAllConfiguration);
+                        swAtt = attDef.CreateInstance5(CompDocumentModel, SwFace, TmpBody.Name + "_nf" + faceIndex.ToString(), 0, (int)swInConfigurationOpts_e.swAllConfiguration);
                         faceIndex++;
                     }
 
@@ -1096,13 +1101,14 @@ namespace cs_ppx
                     SwEntity = null;
                     object[] AllFaces = (object[])TmpBody.GetFaces();
 
+                    //bRet = SetNewFaceAtt(CompDocumentModel, AllFaces, ref NewFace);
+
                     //SwFace = (Face2)TmpBody.GetFirstFace();
                     //while (SwFace != null)
                     foreach (Face2 ThisFace in AllFaces)
                     {
-
                         //SwEntity = (Entity)SwFace;
-                        SwEntity = (Entity) ThisFace;
+                        SwEntity = (Entity)ThisFace;
                         SwEntity = SwEntity.GetSafeEntity();
 
                         //set the attribute definition
@@ -1115,7 +1121,7 @@ namespace cs_ppx
 
                         if (bRet == true)
                         {
-                            swAtt = attDef.CreateInstance5(CompDocumentModel, ThisFace, "new_face" + faceIndex.ToString(), 0, (int)swInConfigurationOpts_e.swAllConfiguration);
+                            swAtt = attDef.CreateInstance5(CompDocumentModel, ThisFace, TmpBody.Name + "_nf" + faceIndex.ToString(), 0, (int)swInConfigurationOpts_e.swAllConfiguration);
                             faceIndex++;
                         }
 
@@ -1130,6 +1136,48 @@ namespace cs_ppx
 
             return true;
            
+        }
+
+        //Set the attribute "nf" on face that is newly created
+        public bool SetNewFaceAtt(ModelDoc2 ThisPartDoc, object[] ThisObjFaces, ref AttributeDef NewFace)
+        {
+            Entity SwEntity = null;
+            AttributeDef attDef = null;
+            Boolean bRet = false;
+            int faceIndex = 1;
+
+            try
+            {
+                foreach (Face2 ThisFace in ThisObjFaces)
+                {   
+                    SwEntity = (Entity)ThisFace;
+                    SwEntity = SwEntity.GetSafeEntity();
+
+                    //set the attribute definition
+                    attDef = SwApp.DefineAttribute("newface" + SwEntity.ModelName);
+                    bRet = attDef.AddParameter("newface", (int)swParamType_e.swParamTypeDouble, 1, 0);
+                    bRet = attDef.Register();
+
+                    SolidWorks.Interop.sldworks.Attribute swAtt = default(SolidWorks.Interop.sldworks.Attribute);
+
+                    if (bRet == true)
+                    {
+                        NewFace = attDef;
+                        swAtt = attDef.CreateInstance5(ThisPartDoc, ThisFace, "new_face" + faceIndex.ToString(), 0, (int)swInConfigurationOpts_e.swAllConfiguration);
+                        faceIndex++;
+                    }
+                }
+            }
+            catch (Exception Ex)
+            {
+                ProcessLog_TaskPaneHost.LogProcess("[ERROR] look up on SetNewFaceAtt");
+                PPDetails_TaskPaneHost.LogProcess("[ERROR] look up on SetNewFaceAtt");
+                
+                return false;
+
+            }
+
+            return false;
         }
 
         //check number of Main TRV
@@ -1296,6 +1344,7 @@ namespace cs_ppx
                                         tmpInitPlane.AttachedFace = tmpFace;
                                         tmpInitPlane.ReferencePlane = swRefPlane;
                                         tmpInitPlane.MaxMinValue = TessVerticesArray;
+                                        tmpInitPlane.BodyOwner = ThisBody.Name;
 
                                         //Check the face configurations
                                         tmpInitPlane.Patterns = CollectPatterns(tmpFace, IsPlanar(tmpFace));
@@ -2881,6 +2930,8 @@ namespace cs_ppx
                 TargetItem.isOuter = Source.isOuter;
                 TargetItem.isOnBB = Source.isOnBB;
                 TargetItem.NormalOrientation = Source.NormalOrientation;
+                TargetItem.Patterns = Source.Patterns;
+                TargetItem.BodyOwner = Source.BodyOwner;
                 
                 TargetList.Add(TargetItem);
             }
@@ -5948,6 +5999,8 @@ namespace cs_ppx
         public Boolean IsPlanar { get; set; } //keep the type of the reference plane (true: planar, false: non planar)
 
         public PatternConfig Patterns { get; set; } //keep the pattern (line, circle, arc) configuration
+
+        public string BodyOwner { get; set; } //keep the name of the owner
 
     }
 
