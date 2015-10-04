@@ -1256,7 +1256,9 @@ namespace cs_ppx
                     int Warnings = 0;
                     
                     AddedReferencePlane tmpInitPlane = null;
+                    AddedReferenceProfile tmpInitProfile = null;
                     InitialRefPlanes = new List<AddedReferencePlane>(); //set the instance for the first time for saving all the reference planes
+                    InitialRefProfiles = new List<AddedReferenceProfile>(); //set the instance for the first time for saving all the reference profiles
                     InitialBodies = new List<Body2>(); //set the instance for the first time for saving all initial bodies
                                      
                     //select the raw material for editing
@@ -1310,8 +1312,8 @@ namespace cs_ppx
                                 //if (entName == "")
                                 if (swAtt != null)
                                 {
-                                    
-                                //    //set the reference plane instance
+
+                                    //set the reference plane instance
                                     tmpInitPlane = new AddedReferencePlane();
 
                                     if (IsPlanar(tmpFace))
@@ -1358,6 +1360,29 @@ namespace cs_ppx
 
                                         //set the MaxMinValue
                                         SetMaxMin(TessVerticesArray, ref MaxMinValue);
+
+                                        //check the profile on this face add it to InitialRefProfiles if exist
+                                        List<Edge> EdgeProfiles = new List<Edge>();
+                                        bRet = FindRefProfile(tmpFace, ref EdgeProfiles);
+
+                                        if (bRet == true)
+                                        {
+                                            foreach (Edge ThisEdge in EdgeProfiles)
+                                            { 
+                                                tmpInitProfile = new AddedReferenceProfile();
+
+                                                tmpInitProfile.name = refName;
+                                                tmpInitProfile.EdgeProfile = ThisEdge;
+                                                tmpInitProfile.CircleParam = GetCircleParam(ThisEdge);
+                                                tmpInitProfile.AttachedFace = tmpFace;
+                                                tmpInitProfile.ReferencePlane = swRefPlane;
+                                                tmpInitProfile.BodyOwner = ThisBody.Name;
+                                                
+                                                
+                                                InitialRefProfiles.Add(tmpInitProfile);
+                                            }
+                                        }
+
                                     }
 
                                 }
@@ -1383,12 +1408,6 @@ namespace cs_ppx
             PPDetails_TaskPaneHost.LogProcess("Generate all coincident planes");
         }
 
-        //function for generating plane on TRV's chunk
-        public bool PlaneGeneratorOnChunk()
-        {
-            return false;
-        }
-
         //tools for plane generator
         #region PlaneGenerator
 
@@ -1398,8 +1417,11 @@ namespace cs_ppx
         //save all initial body
         public List<Body2> InitialBodies;
 
-        //save all generate reference plane
+        //save all generated reference plane
         public List<AddedReferencePlane> InitialRefPlanes;
+
+        //save all generated edge profile
+        public List<AddedReferenceProfile> InitialRefProfiles;
 
         //save all circle pattern
         public List<CircularPattern> InitialCirclePattern;
@@ -1828,6 +1850,69 @@ namespace cs_ppx
             return false;
         }
 
+        //get the reference of profile on ThisFace
+        private Boolean FindRefProfile(Face2 ThisFace, ref List<Edge> PutIntoThisEdge)
+        {
+            object[] EdgesOnLoop = null;
+            
+            if (ThisFace != null)
+            {
+                object[] LoopsOnFace = (object[])ThisFace.GetLoops();
+
+                if (LoopsOnFace.Count() == 1)
+                {
+                    Loop2 ThisLoop = (Loop2) LoopsOnFace.First();
+                    EdgesOnLoop = (object[])ThisLoop.GetEdges();
+
+                    if (EdgesOnLoop.Count() == 1)
+                    {
+                        PutIntoThisEdge.Add((Edge)EdgesOnLoop.First());
+                    }
+
+                }
+                else
+                {
+                    foreach (Loop2 ThisLoop in LoopsOnFace)
+                    {
+                        if (ThisLoop.IsOuter() == false)
+                        {
+                            EdgesOnLoop = (object[]) ThisLoop.GetEdges();
+
+                            if (EdgesOnLoop.Count() == 1)
+                            {
+                                PutIntoThisEdge.Add((Edge)EdgesOnLoop.First());
+                            }
+                        }
+                    }
+
+                    
+
+                }
+
+                if (PutIntoThisEdge.Count() >= 1)
+                {
+                    return true;
+                }
+
+            }
+
+            return false;
+        }
+
+        //get the circle parameter
+        private double[] GetCircleParam(Edge ThisEdge)
+        { 
+            Curve ThisEdgeCurve = (Curve) ThisEdge.GetCurve();
+            double[] CircleParam = null;
+            
+            if (ThisEdgeCurve.IsCircle())
+            {   
+                CircleParam = (double[])ThisEdgeCurve.CircleParams;
+            }
+
+            return CircleParam;
+        }
+
         public Double[] MaxMinValue;
 
 
@@ -1847,9 +1932,8 @@ namespace cs_ppx
             int Errors = 0;
             int Warnings = 0;
 
-            List<Entity> EntityWithTolerance = null;
-            List<PlaneTolerance> EntityTolerance = null;
-
+            List<string> FaceFound = null;
+            
             AssemblyDoc assyModel = null;
             Component2[] compName = null;
 
@@ -1877,6 +1961,7 @@ namespace cs_ppx
                     //select the raw material for editing
                     boolStatus = compName[1].Select2(true, 0);
 
+                    //get the tolerance from product
                     if (boolStatus == true)
                     {
                         String CompPathName = compName[1].GetPathName();
@@ -1910,9 +1995,72 @@ namespace cs_ppx
                             SelectStatus = ThisDocExtension.SelectByID2(AttName, "ATTRIBUTE", 0, 0, 0, false, 0, null, 0);
                         }
 
+                        //set the product's tolerance availability to be true
+                        ProductToleranceExist = true;
+
                     }
 
+                    FaceFound = new List<string>();
 
+                    //copy the tolerance to added reference plane list
+                    if (ProductToleranceExist == true)
+                    {
+                        for (int i = 0; i < EntityWithTolerance.Count(); i++)
+                        {
+                            int EntityType = EntityWithTolerance[i].GetType();
+
+                            if (EntityType == 2) // Type 2 means FACE type
+                            {
+                                Face2 ThisFace = (Face2)EntityWithTolerance[i];
+
+                                foreach (AddedReferencePlane ThisRefPlane in InitialRefPlanes)
+                                {
+                                    int FaceSimilarity = ThisFace.IsCoincident(ThisRefPlane.AttachedFace, 0.001);
+
+                                    if (FaceSimilarity == 0 || FaceSimilarity == 1)
+                                    {
+                                        ThisRefPlane.Tolerance = EntityTolerance[i];
+                                        FaceFound.Add(ThisRefPlane.name);
+                                    }
+                                }
+                            }
+
+                            if (EntityType == 1) // Type 1 means EDGE type
+                            {
+                                Edge ThisEdge = (Edge)EntityWithTolerance[i];
+                                Curve ThisCurve = (Curve)ThisEdge.GetCurve();
+                                double[] ThisCircleParam = null;
+
+                                if (ThisCurve.IsCircle())
+                                {
+                                    ThisCircleParam = (double[])ThisCurve.CircleParams;
+
+                                    foreach (AddedReferenceProfile ThisRefProfile in InitialRefProfiles)
+                                    {
+                                        if (ThisRefProfile.CircleParam != null && ThisCircleParam != null)
+                                        {
+                                            RetVal = CircleSimilarity(ThisRefProfile.CircleParam, ThisCircleParam);
+
+                                            if (RetVal == true)
+                                            {
+                                                ThisRefProfile.Tolerance = EntityTolerance[i];
+                                                break;
+                                            }
+                                        }
+
+                                    }
+                                }
+                                else
+                                { 
+                                    //add the code here for others
+
+                                }
+
+                                
+                            }
+
+                        }
+                    }
 
 
                 }
@@ -1921,6 +2069,13 @@ namespace cs_ppx
 
         #region ReadTolerance
 
+        //keep the sign to notify that tolerance is available for use (will be true if exist)
+        public bool ProductToleranceExist = false;
+
+        //list of entity and the corresponding tolerance from product
+        public List<Entity> EntityWithTolerance = null;
+        public List<PlaneTolerance> EntityTolerance = null;
+        
         //get the tolerance value from attribute
         public bool GetTolerance(SolidWorks.Interop.sldworks.Attribute ThisAttribute, ref List<PlaneTolerance> ToleranceOnFaces)
         {
@@ -1975,6 +2130,21 @@ namespace cs_ppx
             ToleranceOnFaces.Add(TmpTolerance);
 
             return true;
+        }
+
+        //check the similarity between two circles
+        public bool CircleSimilarity(double[] CircleA, double[] CircleB)
+        {
+            if (CircleA.Count() == 7 && CircleB.Count() == 7)
+            {
+                if ((isEqual(CircleA[0], CircleB[0]) == true) && (isEqual(CircleA[1], CircleB[1]) == true) && (isEqual(CircleA[2], CircleB[2]) == true) && (isEqual(CircleA[6], CircleB[6]) == true))
+                {
+                    return true;
+                }
+
+            }
+
+            return false;
         }
 
         #endregion
@@ -3079,6 +3249,7 @@ namespace cs_ppx
                 TargetItem.NormalOrientation = Source.NormalOrientation;
                 TargetItem.Patterns = Source.Patterns;
                 TargetItem.BodyOwner = Source.BodyOwner;
+                TargetItem.Tolerance = Source.Tolerance;
                 
                 TargetList.Add(TargetItem);
             }
@@ -6149,6 +6320,58 @@ namespace cs_ppx
 
         public string BodyOwner { get; set; } //keep the name of the owner
 
+        public PlaneTolerance Tolerance { get; set; } // keep the plane tolerance
+
+    }
+
+    //Class for saving AddedReferenceProfile
+    public class AddedReferenceProfile
+    {
+        public string name { get; set; } //keep the name
+
+        public RefPlane ReferencePlane { get; set; } //keep the pointer to the original plane
+
+        public Face2 AttachedFace { get; set; } //keep the pointer to the corresponding face
+
+        public Feature CorrespondFeature { get; set; } //keep the pointer to the corresponding feature
+
+        public Edge EdgeProfile { get; set; } // keep the pointer to the corresponding edge profile
+
+        public double[] CircleParam { get; set; } // keep the pointer to the corresponding circle profile data
+
+        public int RankByDistance { get; set; } //keep the rank by the distance
+
+        public Double DistanceFromCentroid { get; set; } //keep the distance from centroid
+
+        public List<string> PlaneIntersection { get; set; } //keep the intersection with other planes
+
+        public int Score { get; set; } //keep the score of intersection
+
+        public object PlaneNormal { get; set; } //keep the plane normal
+
+        public string NormalOrientation { get; set; } //keep the plane normal orientation
+
+        public Boolean isOnBB { get; set; } //keep the information to indicate whether if the reference plane is located on the side of the bounding box or not
+
+        public Boolean isOuter { get; set; } //keep the information to indicate whether if the reference plane is located on the most outer surface or not
+
+        public Boolean CPost { get; set; } //keep the centroid position refer to the normal direction
+
+        public int MarkingOpt { get; set; } //keep the marking options that is used for iterating the plane
+
+        public int Remark { get; set; } //keep additional remark for the plane
+
+        public Boolean Possibility { get; set; } //keep the status for possibility to add as a plane candidate
+
+        public Object MaxMinValue { get; set; } //keep the MaxMin value that has been define by tesselating corresponding face
+
+        public Boolean IsPlanar { get; set; } //keep the type of the reference plane (true: planar, false: non planar)
+
+        public PatternConfig Patterns { get; set; } //keep the pattern (line, circle, arc) configuration
+
+        public string BodyOwner { get; set; } //keep the name of the owner
+
+        public PlaneTolerance Tolerance { get; set; } // keep the plane tolerance
     }
 
     //class for saving the machining plan
