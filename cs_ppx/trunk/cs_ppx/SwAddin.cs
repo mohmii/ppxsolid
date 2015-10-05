@@ -1370,10 +1370,12 @@ namespace cs_ppx
                                             foreach (Edge ThisEdge in EdgeProfiles)
                                             { 
                                                 tmpInitProfile = new AddedReferenceProfile();
+                                                string CurveType = "";
 
                                                 tmpInitProfile.name = refName;
                                                 tmpInitProfile.EdgeProfile = ThisEdge;
-                                                tmpInitProfile.CircleParam = GetCircleParam(ThisEdge);
+                                                tmpInitProfile.CurveParam = GetCurveParam(ThisEdge, ref CurveType, refName);
+                                                tmpInitProfile.CurveType = CurveType;
                                                 tmpInitProfile.AttachedFace = tmpFace;
                                                 tmpInitProfile.ReferencePlane = swRefPlane;
                                                 tmpInitProfile.BodyOwner = ThisBody.Name;
@@ -1874,15 +1876,17 @@ namespace cs_ppx
                 {
                     foreach (Loop2 ThisLoop in LoopsOnFace)
                     {
+                        EdgesOnLoop = (object[])ThisLoop.GetEdges();
+
                         if (ThisLoop.IsOuter() == false)
                         {
-                            EdgesOnLoop = (object[]) ThisLoop.GetEdges();
-
                             if (EdgesOnLoop.Count() == 1)
                             {
                                 PutIntoThisEdge.Add((Edge)EdgesOnLoop.First());
                             }
+
                         }
+                        
                     }
 
                     
@@ -1900,17 +1904,79 @@ namespace cs_ppx
         }
 
         //get the circle parameter
-        private double[] GetCircleParam(Edge ThisEdge)
+        private double[] GetCurveParam(Edge ThisEdge, ref string ThisCurveType, string RefName)
         { 
             Curve ThisEdgeCurve = (Curve) ThisEdge.GetCurve();
-            double[] CircleParam = null;
             
+            double[] CurveParam = null;
+            
+            //check first if its a circle
             if (ThisEdgeCurve.IsCircle())
-            {   
-                CircleParam = (double[])ThisEdgeCurve.CircleParams;
+            {
+                ThisCurveType = "circle";
+                CurveParam = (double[])ThisEdgeCurve.CircleParams;
+
+                ProcessLog_TaskPaneHost.LogProcess("there is a circle on " + RefName);
+            }
+            //check if its an ellipse
+            else if (ThisEdgeCurve.IsEllipse())
+            {
+                ThisCurveType = "ellipse";
+                CurveParam = (double[])ThisEdgeCurve.GetEllipseParams();
+                ProcessLog_TaskPaneHost.LogProcess("there is an ellipse on " + RefName);
+            }
+            //check if its a Bcurve
+            else if (ThisEdgeCurve.IsBcurve())
+            {
+                ThisCurveType = "bcurve";
+
+                CurveParam = GetCurveMaxTess(ThisEdgeCurve);
+
+                ProcessLog_TaskPaneHost.LogProcess("there is a bcurve on " + RefName);
             }
 
-            return CircleParam;
+            return CurveParam;
+        }
+
+        //get max tesselation point from bcurve
+        public double[] GetCurveMaxTess(Curve ThisCurve)
+        { 
+            double[] CurveParam = null;
+            double StartPoint = 0.0;
+            double EndPoint = 0.0;
+            double[] ObjStartPoint = null;
+            double[] ObjEndPoint = null;
+            double[] CurveTessPts = null;
+            Single[] CurveTessPtsSingle = null;
+            bool ClosedStatus = false;
+            bool PeriodicType = false;
+            bool RetVal = false;
+            int i = 0;
+
+            RetVal = ThisCurve.GetEndParams(out StartPoint, out EndPoint, out ClosedStatus, out PeriodicType);
+
+            if (RetVal == true)
+            {
+                ObjStartPoint = (double[]) ThisCurve.Evaluate2(StartPoint, 7);
+                ObjEndPoint = (double[])ThisCurve.Evaluate2(EndPoint, 7);
+                CurveTessPts = (double[])ThisCurve.GetTessPts(0.001, 0.001, ObjStartPoint, ObjEndPoint);
+
+                CurveTessPtsSingle = new Single[CurveTessPts.Count()];
+
+                i = 0;
+
+                foreach (double ThisValue in CurveTessPts)
+                {
+                    CurveTessPtsSingle[i] = Convert.ToSingle(ThisValue);
+                    i++;
+                }
+
+                CurveParam = GetMaxMin(CurveTessPtsSingle);
+
+            }
+
+
+            return CurveParam;
         }
 
         public Double[] MaxMinValue;
@@ -2029,30 +2095,71 @@ namespace cs_ppx
                             {
                                 Edge ThisEdge = (Edge)EntityWithTolerance[i];
                                 Curve ThisCurve = (Curve)ThisEdge.GetCurve();
-                                double[] ThisCircleParam = null;
+                                double[] ThisCurveParam = null;
 
                                 if (ThisCurve.IsCircle())
                                 {
-                                    ThisCircleParam = (double[])ThisCurve.CircleParams;
+                                    ThisCurveParam = (double[])ThisCurve.CircleParams;
 
                                     foreach (AddedReferenceProfile ThisRefProfile in InitialRefProfiles)
                                     {
-                                        if (ThisRefProfile.CircleParam != null && ThisCircleParam != null)
+                                        if (ThisRefProfile.CurveType.Equals("circle") && ThisRefProfile.CurveParam != null && ThisCurveParam != null)
                                         {
-                                            RetVal = CircleSimilarity(ThisRefProfile.CircleParam, ThisCircleParam);
+                                            RetVal = CircleSimilarity(ThisRefProfile.CurveParam, ThisCurveParam);
 
                                             if (RetVal == true)
                                             {
                                                 ThisRefProfile.Tolerance = EntityTolerance[i];
+                                                ThisRefProfile.Main = true;
                                                 break;
                                             }
                                         }
 
                                     }
                                 }
-                                else
+                                else if (ThisCurve.IsEllipse())
                                 { 
                                     //add the code here for others
+                                    ThisCurveParam = (double[])ThisCurve.GetEllipseParams();
+
+                                    foreach (AddedReferenceProfile ThisRefProfile in InitialRefProfiles)
+                                    {
+                                        if (ThisRefProfile.CurveType.Equals("ellipse") && ThisRefProfile.CurveParam != null && ThisCurveParam != null)
+                                        {
+                                            RetVal = EllipseSimilarity(ThisRefProfile.CurveParam, ThisCurveParam);
+
+                                            if (RetVal == true)
+                                            {
+                                                ThisRefProfile.Tolerance = EntityTolerance[i];
+                                                ThisRefProfile.Main = true;
+                                                break;
+                                            }
+                                        }
+
+                                    }
+
+
+                                }
+                                else if (ThisCurve.IsBcurve())
+                                {
+                                    ThisCurveParam = (double[])GetCurveMaxTess(ThisCurve);
+
+                                    foreach (AddedReferenceProfile ThisRefProfile in InitialRefProfiles)
+                                    {
+                                        if (ThisRefProfile.CurveType.Equals("bcurve") && ThisRefProfile.CurveParam != null && ThisCurveParam != null)
+                                        {
+                                            RetVal = BCurveSimilarity(ThisRefProfile.CurveParam, ThisCurveParam);
+
+                                            if (RetVal == true)
+                                            {
+                                                ThisRefProfile.Tolerance = EntityTolerance[i];
+                                                ThisRefProfile.Main = true;
+                                                break;
+                                            }
+                                        }
+
+                                    }
+                                   
 
                                 }
 
@@ -2132,9 +2239,11 @@ namespace cs_ppx
             return true;
         }
 
-        //check the similarity between two circles
-        public bool CircleSimilarity(double[] CircleA, double[] CircleB)
+        //check the similarity of two circles
+        public bool CircleSimilarity(object ObjCircleA, double[] CircleB)
         {
+            double[] CircleA = (double[])ObjCircleA;
+
             if (CircleA.Count() == 7 && CircleB.Count() == 7)
             {
                 if ((isEqual(CircleA[0], CircleB[0]) == true) && (isEqual(CircleA[1], CircleB[1]) == true) && (isEqual(CircleA[2], CircleB[2]) == true) && (isEqual(CircleA[6], CircleB[6]) == true))
@@ -2142,6 +2251,52 @@ namespace cs_ppx
                     return true;
                 }
 
+            }
+
+            return false;
+        }
+
+        //check the similarity of two ellipse
+        public bool EllipseSimilarity(object ObjEllipseA, double[] EllipseB)
+        {
+            double[] EllipseA = (double[])ObjEllipseA;
+            bool Status = false;
+            int i = 0;
+
+            if (EllipseA.Count() == 11 && EllipseB.Count() == 11)
+            {
+                Status = true;
+
+                while (Status == true && i <= 10)
+                {   
+                    Status = isEqual(EllipseA[i], EllipseB[i]);
+                    i++;
+                }
+
+                return Status;
+            }
+
+            return false;
+        }
+
+        //check the similarity of two Bcurves
+        public bool BCurveSimilarity(object ObjBCurveA, double[] BCurveB)
+        {
+            double[] BCurveA = (double[])ObjBCurveA;
+            bool Status = false;
+            int i = 0;
+
+            if (BCurveA.Count() == 6 && BCurveB.Count() == 6)
+            {
+                Status = true;
+
+                while (Status == true && i <= 5)
+                {
+                    Status = isEqual(BCurveA[i], BCurveB[i]);
+                    i++;
+                }
+
+                return Status;
             }
 
             return false;
@@ -2271,8 +2426,6 @@ namespace cs_ppx
             }
 
         }
-
-        
 
         //tools for plane calculator
         #region PlaneCalculator
@@ -6337,7 +6490,11 @@ namespace cs_ppx
 
         public Edge EdgeProfile { get; set; } // keep the pointer to the corresponding edge profile
 
-        public double[] CircleParam { get; set; } // keep the pointer to the corresponding circle profile data
+        public string CurveType { get; set; } // keep the type of curve
+
+        public object CurveParam { get; set; } // keep the pointer to the corresponding curve profile data
+
+        public Boolean Main { get; set; } // keep the status whether this entity profile is the main profile, in initial profile there are two similar profiles.
 
         public int RankByDistance { get; set; } //keep the rank by the distance
 
