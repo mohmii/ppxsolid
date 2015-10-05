@@ -1200,8 +1200,6 @@ namespace cs_ppx
 
         #endregion
 
-        
-
         //generate the plane needed for TRV generation
         public void PlaneGenerator()
         {            
@@ -1229,10 +1227,10 @@ namespace cs_ppx
                         PPDetails_TaskPaneHost.getCompName(ref compName);
                     }
 
-                    //get faces from raw material (at this stage is main trv)
-                    object bodyEnts = (object) compName[0].GetBody();
-                    Body2 swBody = (Body2)bodyEnts;
-                    //object[] swFaces = (object[])swBody.GetFaces();
+                    //get faces from product
+                    object bodyEnts = (object) compName[1].GetBody();
+                    Body2 ProdBody = (Body2)bodyEnts;
+                    object[] ProdFaces = (object[])ProdBody.GetFaces();
 
                     //get the part document of the raw material
                     ModelDoc2 compModDoc = (ModelDoc2)compName[0].GetModelDoc2();
@@ -1259,7 +1257,8 @@ namespace cs_ppx
                     AddedReferenceProfile tmpInitProfile = null;
                     InitialRefPlanes = new List<AddedReferencePlane>(); //set the instance for the first time for saving all the reference planes
                     InitialRefProfiles = new List<AddedReferenceProfile>(); //set the instance for the first time for saving all the reference profiles
-                    InitialBodies = new List<Body2>(); //set the instance for the first time for saving all initial bodies
+                    InitialTRVBodies = new List<RemovalBody>(); //set the instance for the first time for saving all initial bodies
+                    RemovalBody ThisInitialTRV = null;
                                      
                     //select the raw material for editing
                     boolStatus = compName[0].Select2(true, 0);
@@ -1273,13 +1272,23 @@ namespace cs_ppx
                         
                         PartDoc PartDocument = (PartDoc)CompDocumentModel;
                         Array AllBodies = (Array)PartDocument.GetBodies2((int)swBodyType_e.swSolidBody, true);
+                        
                         //assyModel.EditPart();
 
                         //Array AllBodies = (Array)swPartDoc.GetBodies2((int)swBodyType_e.swSolidBody, true);
 
                         foreach (Body2 ThisBody in AllBodies)
                         {
-                            InitialBodies.Add(ThisBody);
+                            //set the new instance for body and thisbody
+                            ThisInitialTRV = new RemovalBody();
+                            ThisInitialTRV.BodyObj = ThisBody;
+                            ThisInitialTRV.Name = ThisBody.Name;
+
+                            //calculate the virtual centroid
+                            bRet = CalculateMidPoint(Doc, compName[0], ThisBody, ref ThisInitialTRV);
+
+                            //calculate the TAD (listing all available TAD and the recommendation based on LWD
+                            bRet = CalculateTAD(ThisBody, ref ThisInitialTRV, ProdFaces);
 
                             object[] AllFaces = ThisBody.GetFaces();
                                             
@@ -1355,14 +1364,12 @@ namespace cs_ppx
                                         //Check the face location on bounding box
                                         tmpInitPlane.isOnBB = CheckFaceOnBB(tmpFace);
 
-                                        //add the reference plane
-                                        InitialRefPlanes.Add(tmpInitPlane);
-
                                         //set the MaxMinValue
                                         SetMaxMin(TessVerticesArray, ref MaxMinValue);
 
                                         //check the profile on this face add it to InitialRefProfiles if exist
                                         List<Edge> EdgeProfiles = new List<Edge>();
+                                        List<AddedReferenceProfile> ConnectedProfile = new List<AddedReferenceProfile>();
                                         bRet = FindRefProfile(tmpFace, ref EdgeProfiles);
 
                                         if (bRet == true)
@@ -1380,15 +1387,27 @@ namespace cs_ppx
                                                 tmpInitProfile.ReferencePlane = swRefPlane;
                                                 tmpInitProfile.BodyOwner = ThisBody.Name;
                                                 
+                                                InitialRefProfiles.Add(tmpInitProfile); //add the profile to initial profile list
                                                 
-                                                InitialRefProfiles.Add(tmpInitProfile);
+                                                ConnectedProfile.Add(tmpInitProfile); //collect all the profile that is correspond to this profile
+                                                
                                             }
+
+                                            tmpInitPlane.Profiles = (ConnectedProfile); //add the collected profile to the corresponding plane
+
                                         }
+
+                                        //add the reference plane
+                                        InitialRefPlanes.Add(tmpInitPlane);
 
                                     }
 
                                 }
                             }
+
+                            //add this initial TRV body into collection of initial TRV bodies
+                            InitialTRVBodies.Add(ThisInitialTRV);
+
                         }
 
                     }
@@ -1417,7 +1436,7 @@ namespace cs_ppx
         public int addedRefPlane { get; set; }
 
         //save all initial body
-        public List<Body2> InitialBodies;
+        public List<RemovalBody> InitialTRVBodies;
 
         //save all generated reference plane
         public List<AddedReferencePlane> InitialRefPlanes;
@@ -1977,6 +1996,128 @@ namespace cs_ppx
 
 
             return CurveParam;
+        }
+
+        //calculate the TAD (listing all TAD and the recommentation based on LWD
+        public bool CalculateTAD(Body2 ThisBody, ref RemovalBody ThisTRV, object[] ProdFaces)
+        {
+            object[] ThisBodyFaces = (object[])ThisBody.GetFaces();
+            bool Retval = false;
+            double similarity;
+            MathUtility SwMathUtility = (MathUtility)SwApp.GetMathUtility();
+            MathVector VectorValue;
+            List<MathVector> ListVectorValue = new List<MathVector>();
+            List<double[]> ListOfDoubles = new List<double[]>();
+            List<TAD> ListOfTAD;
+            TAD ThisTAD;
+
+            foreach (Face2 BodyFace in ThisBodyFaces)
+            {   
+                foreach (Face2 ProdFace in ProdFaces)
+                {
+                    int sim = BodyFace.IsCoincident(ProdFace, 0.001);
+ 
+                    if (sim == 1 || sim == 0)
+                    {
+                        Retval = true;
+                        break;
+                    }
+                }
+
+                if (Retval == false && BodyFace.Normal != null)
+                {
+                    VectorValue = SwMathUtility.CreateVector(BodyFace.Normal);
+
+                    if (ListVectorValue.Count == 0)
+                    {
+                        ListVectorValue.Add(VectorValue);
+                        ListOfDoubles.Add((double[])BodyFace.Normal);
+                    }
+                    else
+                    {
+                        Retval = false;
+
+                        foreach (MathVector ThisVector in ListVectorValue)
+                        {
+                            similarity = VectorValue.Dot(ThisVector) / (VectorValue.GetLength() * ThisVector.GetLength());
+
+                            if (isEqual(similarity, 1) == true)
+                            {
+                                Retval = true;
+                                break;
+                            }
+
+                        }
+
+                        if (Retval == false)
+                        {
+                            ListVectorValue.Add(VectorValue);
+                            ListOfDoubles.Add((double[])BodyFace.Normal);
+                        }
+
+                    }
+                }
+
+                //reset the bool to false
+                Retval = false;
+            }
+
+            if (ListOfDoubles.Count != 0)
+            {
+                ListOfTAD = new List<TAD>();
+
+                foreach (double[] TmpTAD in ListOfDoubles)
+                {
+                    ThisTAD = new TAD();
+                    ThisTAD.X = TmpTAD[0];
+                    ThisTAD.Y = TmpTAD[1];
+                    ThisTAD.Z = TmpTAD[2];
+
+                    ListOfTAD.Add(ThisTAD);
+                }
+            }
+            else
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        //calculate the centroid of TRV body
+        public bool CalculateMidPoint(ModelDoc2 ThisRootModDoc, Component2 ThisCompBody, Body2 ThisBody, ref RemovalBody ThisTRV)
+        {
+            MathUtility swMathUtil = (MathUtility)SwApp.GetMathUtility();
+            SelectionMgr swSelMgr = (SelectionMgr)ThisRootModDoc.SelectionManager;
+            MathTransform swXform = (MathTransform)ThisCompBody.Transform2;
+
+            object[] AllFaces = (object[])ThisBody.GetFaces();
+            Single[] TessFaceArray;
+            double[] MaxMin;
+            var TessList = new List<Single>();
+            double[] MidPoint = new double[3];
+            MathPoint PointXYZ = null;
+            
+            foreach (Face2 tmpFace in AllFaces)
+            {
+                TessFaceArray = (Single[])tmpFace.GetTessTriangles(true);
+                TessList.AddRange(TessFaceArray);
+            }
+
+            TessFaceArray = TessList.ToArray();
+            MaxMin = GetMaxMin(TessFaceArray);
+
+            MidPoint[0] = (MaxMin[0] + MaxMin[3]) / 2;
+            MidPoint[1] = (MaxMin[1] + MaxMin[4]) / 2;
+            MidPoint[2] = (MaxMin[2] + MaxMin[5]) / 2;
+
+            PointXYZ = swMathUtil.CreatePoint(MidPoint);
+            PointXYZ = PointXYZ.MultiplyTransform(swXform);
+
+            ThisTRV.MaxMin = MaxMin;
+            ThisTRV.MidPoint = new double[3] { PointXYZ.ArrayData[0], PointXYZ.ArrayData[1], PointXYZ.ArrayData[2] };
+
+            return true;
         }
 
         public Double[] MaxMinValue;
@@ -6415,6 +6556,12 @@ namespace cs_ppx
         public double Volume { get; set; } //keep the volume of the body
 
         public string Name { get; set; } //keep the split name
+
+        public TAD RecommendedTAD { get; set; } //keep the recommended TAD based on the LWD analysis
+
+        public double[] MaxMin { get; set; } //keep the maximum and minimum point of body from tesselation process
+
+        public double[] MidPoint { get; set; } //keep the middle point of the bodybox
     }
 
     //class for plane and removal volume body relation
@@ -6474,6 +6621,8 @@ namespace cs_ppx
         public string BodyOwner { get; set; } //keep the name of the owner
 
         public PlaneTolerance Tolerance { get; set; } // keep the plane tolerance
+
+        public List<AddedReferenceProfile> Profiles { get; set; } // keep the profile on this plane
 
     }
 

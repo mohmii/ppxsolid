@@ -159,6 +159,7 @@
             this.log_messages.Location = new System.Drawing.Point(3, 21);
             this.log_messages.Multiline = true;
             this.log_messages.Name = "log_messages";
+            this.log_messages.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.log_messages.Size = new System.Drawing.Size(304, 218);
             this.log_messages.TabIndex = 7;
             // 
