@@ -1357,6 +1357,7 @@ namespace cs_ppx
                                         tmpInitPlane.ReferencePlane = swRefPlane;
                                         tmpInitPlane.MaxMinValue = TessVerticesArray;
                                         tmpInitPlane.BodyOwner = ThisBody.Name;
+                                        tmpInitPlane.AttachedBody = ThisInitialTRV;
 
                                         //Check the face configurations
                                         tmpInitPlane.Patterns = CollectPatterns(tmpFace, IsPlanar(tmpFace));
@@ -1386,6 +1387,7 @@ namespace cs_ppx
                                                 tmpInitProfile.AttachedFace = tmpFace;
                                                 tmpInitProfile.ReferencePlane = swRefPlane;
                                                 tmpInitProfile.BodyOwner = ThisBody.Name;
+                                                tmpInitProfile.AttachedBody = ThisInitialTRV;
                                                 
                                                 InitialRefProfiles.Add(tmpInitProfile); //add the profile to initial profile list
                                                 
@@ -2118,7 +2120,46 @@ namespace cs_ppx
             //get the recommended TAD based on existing closedTAD and its LWD
             ThisTRV.RecommendedTAD = GetRecommendedTAD(ref ThisTRV);
 
+            //set the virtual point of the body
+            ThisTRV.VirtualPoint = GetBodyVirtualPoint(ThisTRV);
+
             return true;
+        }
+
+        //get the lowest virtual point based on the direction of the recommended TAD
+        public double[] GetBodyVirtualPoint(RemovalBody ThisBody)
+        {
+            double[] TmpVector = new double[3] { ThisBody.RecommendedTAD.X, ThisBody.RecommendedTAD.Y, ThisBody.RecommendedTAD.Z };
+            double[] MaxMin = ThisBody.MaxMin;
+            double[] MidPoint = ThisBody.MidPoint;
+            double[] VirtualPoint = null;
+
+            if (isEqual(TmpVector[0], 1) == true) // X+
+            {
+                VirtualPoint = new double[3] {MaxMin[3], MidPoint[1], MidPoint[2] };
+            }
+            else if (isEqual(TmpVector[0], -1) == true) // X-
+            {
+                VirtualPoint = new double[3] { MaxMin[0], MidPoint[1], MidPoint[2] }; 
+            }
+            else if (isEqual(TmpVector[1], 1) == true) // Y+
+            {
+                VirtualPoint = new double[3] { MidPoint[0], MaxMin[4], MidPoint[2] }; 
+            }
+            else if (isEqual(TmpVector[1], -1) == true) // Y-
+            {
+                VirtualPoint = new double[3] { MidPoint[0], MaxMin[1], MidPoint[2] }; 
+            }
+            else if (isEqual(TmpVector[2], 1) == true) // Z+
+            {
+                VirtualPoint = new double[3] { MidPoint[0], MidPoint[1], MaxMin[5] }; 
+            }
+            else if (isEqual(TmpVector[2], -1) == true) // Z-
+            {
+                VirtualPoint = new double[3] { MidPoint[0], MidPoint[1], MaxMin[2] };
+            }
+            
+            return VirtualPoint;
         }
 
         //remove empty TAD
@@ -3789,6 +3830,7 @@ namespace cs_ppx
                 TargetItem.NormalOrientation = Source.NormalOrientation;
                 TargetItem.Patterns = Source.Patterns;
                 TargetItem.BodyOwner = Source.BodyOwner;
+                TargetItem.AttachedBody = Source.AttachedBody;
                 TargetItem.Tolerance = Source.Tolerance;
                 
                 TargetList.Add(TargetItem);
@@ -6812,6 +6854,8 @@ namespace cs_ppx
         public double[] MaxMin { get; set; } //keep the maximum and minimum point of body from tesselation process
 
         public double[] MidPoint { get; set; } //keep the middle point of the bodybox
+
+        public double[] VirtualPoint { get; set; } //keep the lowest point based on the direction of the recommended TAD
     }
 
     //class for plane and removal volume body relation
@@ -6870,6 +6914,8 @@ namespace cs_ppx
 
         public string BodyOwner { get; set; } //keep the name of the owner
 
+        public RemovalBody AttachedBody { get; set; } //keep the body pointer
+
         public PlaneTolerance Tolerance { get; set; } // keep the plane tolerance
 
         public List<AddedReferenceProfile> Profiles { get; set; } // keep the profile on this plane
@@ -6926,6 +6972,8 @@ namespace cs_ppx
         public PatternConfig Patterns { get; set; } //keep the pattern (line, circle, arc) configuration
 
         public string BodyOwner { get; set; } //keep the name of the owner
+
+        public RemovalBody AttachedBody { get; set; } //keep the body pointer
 
         public PlaneTolerance Tolerance { get; set; } // keep the plane tolerance
     }
