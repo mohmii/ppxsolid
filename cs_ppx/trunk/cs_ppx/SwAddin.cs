@@ -2002,15 +2002,16 @@ namespace cs_ppx
         public bool CalculateTAD(Body2 ThisBody, ref RemovalBody ThisTRV, object[] ProdFaces)
         {
             object[] ThisBodyFaces = (object[])ThisBody.GetFaces();
+            List<Face2> ClosedFaces = new List<Face2>();
             bool Retval = false;
             double similarity;
             MathUtility SwMathUtility = (MathUtility)SwApp.GetMathUtility();
             MathVector VectorValue;
             List<MathVector> ListVectorValue = new List<MathVector>();
             List<double[]> ListOfDoubles = new List<double[]>();
-            List<TAD> ListOfTAD;
-            TAD ThisTAD;
+            List<double[]> ClosedFaceNorms = new List<double[]>();
 
+            //find the TAD (open face) from this body
             foreach (Face2 BodyFace in ThisBodyFaces)
             {   
                 foreach (Face2 ProdFace in ProdFaces)
@@ -2020,6 +2021,7 @@ namespace cs_ppx
                     if (sim == 1 || sim == 0)
                     {
                         Retval = true;
+                        ClosedFaces.Add(BodyFace); //collect the coincident face (closed)
                         break;
                     }
                 }
@@ -2062,11 +2064,103 @@ namespace cs_ppx
                 Retval = false;
             }
 
-            if (ListOfDoubles.Count != 0)
+            //add the TAD (open faces) to the removal body
+            ThisTRV.ListOfTAD = GetTADForm(ListOfDoubles);
+
+            //find the unaccessible TAD (closed face)
+            if (ClosedFaces.Count != 0)
+            {
+                //collect the face normal
+                foreach (Face2 ThisFace in ClosedFaces)
+                {
+                    if (ThisFace.Normal != null)
+                    {
+                        ClosedFaceNorms.Add((double[])ThisFace.Normal);
+                    }
+                }
+
+                ListOfDoubles = new List<double[]>();
+
+                foreach (double[] ClosedNorm in ClosedFaceNorms)
+                {
+                    VectorValue = SwMathUtility.CreateVector(ClosedNorm);
+
+                    Retval = false;
+
+                    foreach (MathVector ThisVector in ListVectorValue)
+                    {
+                        similarity = VectorValue.Dot(ThisVector) / (VectorValue.GetLength() * ThisVector.GetLength());
+
+                        if (isEqual(similarity, 1) == true)
+                        {
+                            Retval = true;
+                            break;
+                        }
+
+                    }
+
+                    if (Retval == false)
+                    {
+                        ListVectorValue.Add(VectorValue);
+                        ListOfDoubles.Add(ClosedNorm);
+                    }
+
+                }
+
+            }
+
+            //add the unaccesible TAD (closed faces) into removal body
+            ThisTRV.ClosedTAD = GetTADForm(ListOfDoubles);
+
+            //remove any empty TAD
+            ThisTRV.ClosedTAD = RemoveEmptyTAD(ThisTRV.ClosedTAD);
+
+            //get the recommended TAD based on existing closedTAD and its LWD
+            ThisTRV.RecommendedTAD = GetRecommendedTAD(ThisTRV);
+
+            return true;
+        }
+
+        //remove empty TAD
+        public List<TAD> RemoveEmptyTAD(List<TAD> ThisTADs)
+        {
+            List<int> EmptyIndex = new List<int>();
+
+            //get the index which is empty
+            for (int i = 0; i < ThisTADs.Count; i++)
+            {
+                if (ThisTADs[i].IsEmpty())
+                {
+                    EmptyIndex.Add(i);
+                }
+            }
+
+            //sort from biggest to smallest value
+            var SortedIndex = from Index in EmptyIndex
+                              orderby Index descending
+                              select Index;
+
+            //remove the empty TAD space
+            foreach (int Index in SortedIndex)
+            {
+                ThisTADs.RemoveAt(Index);
+            }
+
+            return ThisTADs;
+        }
+
+        //set the TAD format
+        public List<TAD> GetTADForm(List<double[]> ThisDoubles)
+        {
+            List<TAD> ListOfTAD = new List<TAD>();
+            TAD ThisTAD;
+            
+            //add the TAD (open faces)
+            if (ThisDoubles.Count != 0)
             {
                 ListOfTAD = new List<TAD>();
 
-                foreach (double[] TmpTAD in ListOfDoubles)
+                foreach (double[] TmpTAD in ThisDoubles)
                 {
                     ThisTAD = new TAD();
                     ThisTAD.X = TmpTAD[0];
@@ -2076,13 +2170,146 @@ namespace cs_ppx
                     ListOfTAD.Add(ThisTAD);
                 }
             }
-            else
+
+            return ListOfTAD;
+        }
+
+        //evaluate recommended TAD based on LWD from existing closedTAD
+        public TAD GetRecommendedTAD(RemovalBody ThisBody)
+        {
+            double[] ThisTADdouble = null;
+            TAD ThisTAD = null;
+            List<TAD> OpenTAD = ThisBody.ListOfTAD;
+            List<TAD> ClosedTAD = ThisBody.ClosedTAD;
+            List<TAD> BestTADs = new List<TAD>();
+            List<double> AreaOfBestTAD = new List<double>();
+            double[] MaxMin;
+            double[] TmpVector;
+            MathVector TADVector;
+            List<MathVector> BasicTAD;
+            MathUtility SwMathUtility = (MathUtility)SwApp.GetMathUtility();
+            double similarity;
+            double MaxArea = 0.0;
+            double TmpArea = 0.0;
+            
+            foreach (TAD TmpClosedTAD in ClosedTAD)
             {
-                return false;
+                //inverse the vector direction
+                TmpClosedTAD.Scale(-1);
+
+                foreach (TAD TmpOpenTAD in OpenTAD)
+                {
+                    if (TmpClosedTAD.IsNear(TmpOpenTAD, SwMathUtility))
+                    {
+                        BestTADs.Add(TmpOpenTAD);
+                        break;
+                    }
+                }
             }
 
-            return true;
+            if (BestTADs.Count == 1)
+            {
+                return BestTADs.First();
+            }
+            else
+            {
+                BasicTAD = new List<MathVector>();
+                BasicTAD = InitBasicTAD();
+
+                MaxMin = (double[])ThisBody.MaxMin;
+
+                foreach (TAD TmpTAD in BestTADs)
+                {
+                    TADVector = SwMathUtility.CreateVector(new double[3] {TmpTAD.X, TmpTAD.Y, TmpTAD.Z});
+                    
+                    foreach (MathVector ThisVector in BasicTAD)
+                    {
+                        similarity = TADVector.Dot(ThisVector) / (TADVector.GetLength() * ThisVector.GetLength());
+
+                        if (similarity > Math.Cos(45))
+                        {
+                            TmpVector = (double[])ThisVector.ArrayData;
+
+                            if (isEqual(Math.Abs(TmpVector[0]), 1) == true) 
+                            {
+                                TmpArea = Math.Abs((MaxMin[1] - MaxMin[4]) * (MaxMin[2] - MaxMin[5]));
+                            }
+                            else if (isEqual(Math.Abs(TmpVector[1]), 1) == true)
+                            {
+                                TmpArea = Math.Abs((MaxMin[0] - MaxMin[3]) * (MaxMin[2] - MaxMin[5]));
+                            }
+                            else if (isEqual(Math.Abs(TmpVector[2]), 1) == true)
+                            {
+                                TmpArea = Math.Abs((MaxMin[0] - MaxMin[3]) * (MaxMin[1] - MaxMin[4]));
+                            }
+
+                            if (TmpArea > MaxArea)
+                            {
+                                MaxArea = TmpArea;
+                                ThisTADdouble = TmpVector;
+                            }
+
+                        }
+
+                    }
+
+                }
+            }
+
+            if (ThisTADdouble != null)
+            {
+                ThisTAD = new TAD();
+
+                ThisTAD.X = ThisTADdouble[0];
+                ThisTAD.Y = ThisTADdouble[1];
+                ThisTAD.Z = ThisTADdouble[2];
+
+            }
+
+            return ThisTAD;
         }
+
+        //initialize basic direction of TAD
+        public List<MathVector> InitBasicTAD()
+        {
+            MathUtility SwMathUtility = (MathUtility)SwApp.GetMathUtility();
+            List<MathVector> BasicTAD = new List<MathVector>();
+            double[] ThisTAD;
+
+            ThisTAD = new double[3] {1, 0, 0}; // X+
+            BasicTAD.Add(SwMathUtility.CreateVector(ThisTAD));
+
+            ThisTAD = new double[3] {-1, 0, 0}; // X-
+            BasicTAD.Add(SwMathUtility.CreateVector(ThisTAD));
+
+            ThisTAD = new double[3] {0, 1, 0}; // Y+
+            BasicTAD.Add(SwMathUtility.CreateVector(ThisTAD));
+
+            ThisTAD = new double[3] {0, -1, 0}; // Y-
+            BasicTAD.Add(SwMathUtility.CreateVector(ThisTAD));
+            
+            ThisTAD = new double[3] {0, 0, 1}; // Z+
+            BasicTAD.Add(SwMathUtility.CreateVector(ThisTAD));
+
+            ThisTAD = new double[3] {0, 0, -1}; // Z-
+            BasicTAD.Add(SwMathUtility.CreateVector(ThisTAD));
+
+            return BasicTAD;
+        }
+
+        //evaluate the similarity of TAD
+        public bool IsTADsimilar(TAD firstTAD, TAD SecondTAD)
+        {
+            if ((isEqual(firstTAD.X, SecondTAD.X) == true) && 
+                (isEqual(firstTAD.Y, SecondTAD.Y) == true) &&
+                (isEqual(firstTAD.Z, SecondTAD.Z) == true))
+            {
+                return true;
+            }
+            
+            return false;
+        }
+
 
         //calculate the centroid of TRV body
         public bool CalculateMidPoint(ModelDoc2 ThisRootModDoc, Component2 ThisCompBody, Body2 ThisBody, ref RemovalBody ThisTRV)
@@ -6557,6 +6784,8 @@ namespace cs_ppx
 
         public string Name { get; set; } //keep the split name
 
+        public List<TAD> ClosedTAD { get; set; } //keep the unaccessible TAD (closed face)
+
         public TAD RecommendedTAD { get; set; } //keep the recommended TAD based on the LWD analysis
 
         public double[] MaxMin { get; set; } //keep the maximum and minimum point of body from tesselation process
@@ -6698,13 +6927,71 @@ namespace cs_ppx
         public Double MachiningTime { get; set; } //keep the machining time for TRV
 
     }
-
+    
     //class for TAD
     public class TAD
     {
         public double X { get; set; }
         public double Y { get; set; }
         public double Z { get; set; }
+
+        public bool IsEmpty()
+        {
+            if ((isEqual(X, 0.0) == true) &&
+                (isEqual(Y, 0.0) == true) &&
+                (isEqual(Z, 0.0) == true))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool IsSimilar(TAD ThisTAD)
+        {
+            if ((isEqual(X, ThisTAD.X) == true) &&
+                (isEqual(Y, ThisTAD.Y) == true) &&
+                (isEqual(Z, ThisTAD.Z) == true))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool IsNear(TAD ThisTAD, MathUtility ThisUtils)
+        {   
+            MathVector VectorA, VectorB;
+            double DistValue;
+
+            VectorA = ThisUtils.CreateVector(new double[3] { X, Y, Z });
+            VectorB = ThisUtils.CreateVector(new double[3] { ThisTAD.X, ThisTAD.Y, ThisTAD.Z });
+
+            DistValue = VectorA.Dot(VectorB) / (VectorA.GetLength() * VectorB.GetLength());
+
+            if (DistValue > Math.Cos(45))
+            {
+                return true;
+            }
+
+            return false;
+
+        }
+
+        public void Scale(double ThisValue)
+        {
+            this.X = this.X * ThisValue;
+            this.Y = this.Y * ThisValue;
+            this.Z = this.Z * ThisValue;
+
+            return;
+        }
+
+        private bool isEqual(double value1, double value2)
+        {
+            return (Math.Abs(Math.Round((value1 - value2), 4)) <= 0.001);
+
+        }
     }
 
     //class for candidate of machining plan
