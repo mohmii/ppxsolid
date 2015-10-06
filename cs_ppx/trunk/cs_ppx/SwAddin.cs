@@ -2116,7 +2116,7 @@ namespace cs_ppx
             ThisTRV.ClosedTAD = RemoveEmptyTAD(ThisTRV.ClosedTAD);
 
             //get the recommended TAD based on existing closedTAD and its LWD
-            ThisTRV.RecommendedTAD = GetRecommendedTAD(ThisTRV);
+            ThisTRV.RecommendedTAD = GetRecommendedTAD(ref ThisTRV);
 
             return true;
         }
@@ -2175,7 +2175,7 @@ namespace cs_ppx
         }
 
         //evaluate recommended TAD based on LWD from existing closedTAD
-        public TAD GetRecommendedTAD(RemovalBody ThisBody)
+        public TAD GetRecommendedTAD(ref RemovalBody ThisBody)
         {
             double[] ThisTADdouble = null;
             TAD ThisTAD = null;
@@ -2207,16 +2207,33 @@ namespace cs_ppx
                 }
             }
 
+            MaxMin = (double[])ThisBody.MaxMin;
+
             if (BestTADs.Count == 1)
             {
+                TmpVector = new double[3] {BestTADs.First().X, BestTADs.First().Y, BestTADs.First().Z};
+
+                if (isEqual(Math.Abs(TmpVector[0]), 1) == true)
+                {
+                    TmpArea = Math.Abs((MaxMin[1] - MaxMin[4]) * (MaxMin[2] - MaxMin[5]));
+                }
+                else if (isEqual(Math.Abs(TmpVector[1]), 1) == true)
+                {
+                    TmpArea = Math.Abs((MaxMin[0] - MaxMin[3]) * (MaxMin[2] - MaxMin[5]));
+                }
+                else if (isEqual(Math.Abs(TmpVector[2]), 1) == true)
+                {
+                    TmpArea = Math.Abs((MaxMin[0] - MaxMin[3]) * (MaxMin[1] - MaxMin[4]));
+                }
+
+                ThisBody.BestTADArea = TmpArea * 1000000;
+
                 return BestTADs.First();
             }
             else
             {
                 BasicTAD = new List<MathVector>();
                 BasicTAD = InitBasicTAD();
-
-                MaxMin = (double[])ThisBody.MaxMin;
 
                 foreach (TAD TmpTAD in BestTADs)
                 {
@@ -2258,8 +2275,10 @@ namespace cs_ppx
 
             if (ThisTADdouble != null)
             {
-                ThisTAD = new TAD();
+                //save the area of the recommended TAD
+                ThisBody.BestTADArea = MaxArea * 1000000;
 
+                ThisTAD = new TAD();
                 ThisTAD.X = ThisTADdouble[0];
                 ThisTAD.Y = ThisTADdouble[1];
                 ThisTAD.Z = ThisTADdouble[2];
@@ -6787,6 +6806,8 @@ namespace cs_ppx
         public List<TAD> ClosedTAD { get; set; } //keep the unaccessible TAD (closed face)
 
         public TAD RecommendedTAD { get; set; } //keep the recommended TAD based on the LWD analysis
+
+        public double BestTADArea { get; set; } //keep the area of recommended TAD
 
         public double[] MaxMin { get; set; } //keep the maximum and minimum point of body from tesselation process
 
