@@ -913,8 +913,6 @@ namespace cs_ppx
                     Boolean retVal = false;
                     retVal = SetAttribute(compName[0], ref NFDef);
 
-
-
                     boolStatus = compName[1].Select2(true, 0);
                     boolStatus = assyModel.SetComponentTransparent(true);
                                         
@@ -1351,6 +1349,8 @@ namespace cs_ppx
                                                 tmpInitSurface.SurfacePlane = ThisFace.GetSurface();
                                                 tmpInitSurface.SurfaceFeature = ThisFeature;
                                                 tmpInitSurface.SurfaceName = ThisFeature.Name + "@" + compName[0].Name2 + "@" + Path.GetFileNameWithoutExtension(Doc.GetPathName());
+                                                tmpInitSurface.BodyOwner = ThisBody.Name;
+                                                tmpInitSurface.AttachedBody = ThisInitialTRV;
 
                                                 //add to the surface collection
                                                 InitialRefSurfaces.Add(tmpInitSurface);
@@ -1861,28 +1861,29 @@ namespace cs_ppx
         //check the location of a face whether if it is located on bounding box or not
         private Boolean CheckFaceOnBB(Face2 ThisFace)
         {
-            //SolidWorks.Interop.sldworks.Attribute swAtt = default(SolidWorks.Interop.sldworks.Attribute);
-            //Entity TmpEntity = (Entity)ThisFace;
+            SolidWorks.Interop.sldworks.Attribute swAtt = default(SolidWorks.Interop.sldworks.Attribute);
+            Entity TmpEntity = (Entity)ThisFace;
 
-            //int i = 0;
+            int i = 0;
 
-            //while (swAtt == null && i < 300)
-            //{
-            //    swAtt = TmpEntity.FindAttribute(BBDef, i);
-            //    i++;
-            //}
-
-            //if (swAtt != null) { return true; }
-            
-            foreach (Face2 ThisRawFace in RawMaterialFaces)
+            while (swAtt == null && i < 300)
             {
-                if (ThisFace.IsCoincident(ThisRawFace, 0.001) == 0 || 
-                    ThisFace.IsCoincident(ThisRawFace, 0.001) == 1 ||
-                    ThisFace.IsCoincident(ThisRawFace, 0.001) == 7 ||
-                    ThisFace.IsCoincident(ThisRawFace, 0.001) == 4 ||
-                    ThisFace.IsCoincident(ThisRawFace, 0.001) == 6)
+                swAtt = TmpEntity.FindAttribute(BBDef, i);
+                i++;
+            }
+
+            if (swAtt != null) { return true; }
+            else
+            {
+                foreach (Face2 ThisRawFace in RawMaterialFaces)
                 {
-                    return true;
+                    if (ThisFace.IsCoincident(ThisRawFace, 0.001) == 0 ||
+                        ThisFace.IsCoincident(ThisRawFace, 0.001) == 1 ||
+                        ThisFace.IsCoincident(ThisRawFace, 0.001) == 4 ||
+                        ThisFace.IsCoincident(ThisRawFace, 0.001) == 6)
+                    {
+                        return true;
+                    }
                 }
             }
 
@@ -2554,6 +2555,7 @@ namespace cs_ppx
                                             if (RetVal == true)
                                             {
                                                 ThisRefProfile.Tolerance = EntityTolerance[i];
+                                                ThisRefProfile.ReferenceSurface = GetReferenceSurface(ThisRefProfile);
                                                 ThisRefProfile.Main = true;
                                                 break;
                                             }
@@ -2575,6 +2577,7 @@ namespace cs_ppx
                                             if (RetVal == true)
                                             {
                                                 ThisRefProfile.Tolerance = EntityTolerance[i];
+                                                ThisRefProfile.ReferenceSurface = GetReferenceSurface(ThisRefProfile);
                                                 ThisRefProfile.Main = true;
                                                 break;
                                             }
@@ -2597,6 +2600,7 @@ namespace cs_ppx
                                             if (RetVal == true)
                                             {
                                                 ThisRefProfile.Tolerance = EntityTolerance[i];
+                                                ThisRefProfile.ReferenceSurface = GetReferenceSurface(ThisRefProfile);
                                                 ThisRefProfile.Main = true;
                                                 break;
                                             }
@@ -2627,6 +2631,45 @@ namespace cs_ppx
         public List<Entity> EntityWithTolerance = null;
         public List<PlaneTolerance> EntityTolerance = null;
         
+        //get the reference surface from the collection of reference surface
+        public AddedReferenceSurface GetReferenceSurface(AddedReferenceProfile ThisProfile)
+        {
+            AddedReferenceSurface ThisRefSurface = new AddedReferenceSurface();
+            Edge ThisProfileEdge;
+            object[] ObjTmpFace;
+            object[] ThisProfileObjFace;
+            Face2 TmpFace;
+
+            //get the edge and all adjacent faces from this profile
+            ThisProfileEdge = (Edge)ThisProfile.EdgeProfile;
+            ThisProfileObjFace = (object[])ThisProfileEdge.GetTwoAdjacentFaces2();
+
+            //find this face whether is coincident with the face in initiail surface's feature
+            foreach (AddedReferenceSurface TmpSurface in InitialRefSurfaces)
+            {
+                if (ThisProfile.BodyOwner.Equals(TmpSurface.BodyOwner))
+                {
+                    ObjTmpFace = (object[]) TmpSurface.SurfaceFeature.GetFaces();
+
+                    if (ObjTmpFace.Count() == 1)
+                    {
+                        TmpFace = (Face2) ObjTmpFace.First();
+
+                        foreach (Face2 FacesOnProfile in ThisProfileObjFace)
+                        { 
+                            if(TmpFace.IsCoincident(FacesOnProfile, 0.001) == 0 ||
+                                TmpFace.IsCoincident(FacesOnProfile, 0.001) == 1)
+                            {
+                                return TmpSurface;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
         //get the tolerance value from attribute
         public bool GetTolerance(SolidWorks.Interop.sldworks.Attribute ThisAttribute, ref List<PlaneTolerance> ToleranceOnFaces)
         {
@@ -7046,6 +7089,10 @@ namespace cs_ppx
         public Surface SurfacePlane { get; set; } //keep the pointer to the surface that is created only for freeform surface (include cylinder)
 
         public Feature SurfaceFeature { get; set; } // keep the feature of the surface
+
+        public string BodyOwner { get; set; } //keep the name of the owner
+
+        public RemovalBody AttachedBody { get; set; } //keep the body pointer
     }
 
     //class for saving the machining plan
