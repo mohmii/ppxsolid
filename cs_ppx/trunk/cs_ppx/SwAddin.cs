@@ -1364,7 +1364,8 @@ namespace cs_ppx
                                         tmpInitPlane.Patterns = CollectPatterns(tmpFace, IsPlanar(tmpFace));
 
                                         //Check the face location on bounding box
-                                        tmpInitPlane.isOnBB = CheckFaceOnBB(tmpFace);
+                                        //tmpInitPlane.isOnBB = CheckFaceOnBB(tmpFace);
+                                        tmpInitPlane.isOnBB = CheckFaceOnBB(tmpInitPlane);
 
                                         //set the MaxMinValue
                                         SetMaxMin(TessVerticesArray, ref MaxMinValue);
@@ -1878,17 +1879,104 @@ namespace cs_ppx
                 foreach (Face2 ThisRawFace in RawMaterialFaces)
                 {
                     if (ThisFace.IsCoincident(ThisRawFace, 0.001) == 0 ||
-                        ThisFace.IsCoincident(ThisRawFace, 0.001) == 1 ||
-                        ThisFace.IsCoincident(ThisRawFace, 0.001) == 4 ||
-                        ThisFace.IsCoincident(ThisRawFace, 0.001) == 6)
+                        ThisFace.IsCoincident(ThisRawFace, 0.001) == 1)
                     {
                         return true;
                     }
+                    
                 }
             }
 
             return false;
         }
+
+        
+        //OVERLOAD check the location of a face whether if it is located on bounding box or not
+        private Boolean CheckFaceOnBB(AddedReferencePlane ThisPlane)
+        {
+            Face2 FaceOnRefPlane = (Face2)ThisPlane.AttachedFace;
+
+            if (ThisPlane.IsPlanar == true)
+            {
+                foreach (Face2 ThisRawFace in RawMaterialFaces)
+                {
+                    if (FaceOnRefPlane.IsCoincident(ThisRawFace, 0.001) == 0 ||
+                        FaceOnRefPlane.IsCoincident(ThisRawFace, 0.001) == 1)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        if (CheckFacePlaneSim(ThisPlane, ThisRawFace) == true)
+                        {
+                            return true;
+                        }
+                    }
+
+                }
+            }
+            
+            return false;
+        }
+
+        //check similarity between two faces based on normal direction and their coincident
+        private bool CheckFacePlaneSim(AddedReferencePlane ThisPlane, Face2 FaceB)
+        {
+            Face2 FaceOnRefPlane = (Face2)ThisPlane.AttachedFace;
+            MathUtility ThisMathUtility = (MathUtility) SwApp.GetMathUtility();
+            double[] NormA = (double[])FaceOnRefPlane.Normal;
+            double[] NormB = (double[])FaceB.Normal;
+            bool NormalSim;
+            bool LevelSim;
+
+            //check if parallel
+            NormalSim = checkNormalSim(NormA, NormB, ThisMathUtility);
+
+            if (NormalSim == true)
+            {
+                //check if coincident
+                LevelSim = CheckFaceLevel(ThisPlane, NormA, FaceB, ThisMathUtility);
+
+                if (LevelSim == true)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        //check the level between two faces
+        private bool CheckFaceLevel(AddedReferencePlane ThisPlane, object PlaneNormal, Face2 FaceB, MathUtility ThisUtils)
+        {   
+            MathPoint firstPoint = getPointOnPlane(ThisPlane);
+            MathPoint secondPoint = GetPointOnFace(FaceB, ThisUtils);
+            MathVector pointsVector = (MathVector)firstPoint.Subtract(secondPoint);
+
+            MathVector firstVector = ThisUtils.CreateVector(PlaneNormal);
+
+            Double distance = Math.Abs(pointsVector.Dot(firstVector) / firstVector.GetLength());
+
+            //check the distance, if equal with 0, then it should be on the same level
+            return isEqual(distance, 0);
+
+        }
+
+        //get random point on face (only for planar and non bcurve and cyclinder edge
+        private MathPoint GetPointOnFace(Face2 ThisFace, MathUtility ThisUtils)
+        {
+            object[] ObjEdges = (object[])ThisFace.GetEdges();
+            Edge ThisEdge;
+            Vertex ObjVertex;
+            double[] Vertex;
+
+            ThisEdge = (Edge)ObjEdges.Last();
+            ObjVertex = ThisEdge.GetStartVertex();
+            Vertex = (double[])ObjVertex.GetPoint();
+            
+            return ThisUtils.CreatePoint(Vertex);
+        }
+    
 
         //get the reference of profile on ThisFace
         private Boolean FindRefProfile(Face2 ThisFace, ref List<Edge> PutIntoThisEdge)
@@ -2533,6 +2621,11 @@ namespace cs_ppx
                                         ThisRefPlane.Tolerance = EntityTolerance[i];
                                         FaceFound.Add(ThisRefPlane.name);
                                     }
+                                    else 
+                                    { 
+
+                                    }
+
                                 }
                             }
 
@@ -2842,22 +2935,6 @@ namespace cs_ppx
                             Doc.SketchManager.Insert3DSketch(true);
                         }
 
-                        ////draw the real centroid
-                        ////Doc.SketchManager.Insert3DSketch(true);
-                        //centroid = (double[]) bodyProperties.CenterOfMass;
-                        //SketchPoint skPoint1 = (SketchPoint)Doc.SketchManager.CreatePoint(centroid[0], centroid[1], centroid[2]);
-                        //Doc.SketchManager.Insert3DSketch(true);
-
-                        ////get the virtual centroid
-                        ////object boxVertices = compName[0].GetBox(false, false);
-                        //virtualCentroid = getMidPoint(MaxMinValue);
-                                                
-                        ////draw the virtual centroid
-                        ////Doc.SketchManager.Insert3DSketch(true);
-                        //double[] tmpPoint = (double[])virtualCentroid;
-                        //SketchPoint skPoint2 = (SketchPoint)Doc.SketchManager.CreatePoint(tmpPoint[0], tmpPoint[1], tmpPoint[2]);
-                        //Doc.SketchManager.Insert3DSketch(true);
-
                         //get the part document of the raw material
                         ModelDoc2 compModDoc = (ModelDoc2)compName[0].GetModelDoc2();
                         PartDoc swPartDoc = (PartDoc)compModDoc;
@@ -2880,6 +2957,11 @@ namespace cs_ppx
 
                                 //find the outer reference plane
                                 boolStatus = FindTheOuter(ref InitialRefPlanes);
+
+                                if (ProductToleranceExist == true)
+                                {
+                                    boolStatus = AnalyzeDatum();
+                                }
 
                                 List<int> removeId = new List<int>();
 
@@ -3126,15 +3208,18 @@ namespace cs_ppx
 
                 foreach (AddedReferencePlane TmpPlaneB in SelectedPlanesIn)
                 {
-                    normVectorB = getVector(TmpPlaneB.PlaneNormal);
-
-                    crossProduct = new Vector3D();
-                    crossProduct = Vector3D.CrossProduct(normVectorA, normVectorB);
-
-                    if (isIntersect(crossProduct) == true)
+                    if (TmpPlaneA.BodyOwner.Equals(TmpPlaneB.BodyOwner))
                     {
-                        trueIntersection += 1;
-                        TmpPlaneA.PlaneIntersection.Add(TmpPlaneB.name);
+                        normVectorB = getVector(TmpPlaneB.PlaneNormal);
+
+                        crossProduct = new Vector3D();
+                        crossProduct = Vector3D.CrossProduct(normVectorA, normVectorB);
+
+                        if (isIntersect(crossProduct) == true)
+                        {
+                            trueIntersection += 1;
+                            TmpPlaneA.PlaneIntersection.Add(TmpPlaneB.name);
+                        }
                     }
                     
                 }
@@ -3563,7 +3648,7 @@ namespace cs_ppx
 
             //if (isEqual(dotProduct, 1) == true | isEqual(dotProduct, -1) == true) { return true; }
 
-            if (isEqual(Math.Abs(dotProduct), 1) == true) { return true; }
+            if (isEqual(dotProduct, 1) == true) { return true; }
 
             return false;
 
@@ -3773,12 +3858,22 @@ namespace cs_ppx
                 }
             }
         }
-            
+
+        //analyze the datum
+        private static bool AnalyzeDatum()
+        {
+
+            return true;
+        }
+    
+
         //storage for all generated planes *OLD ONE
         public static List<_planeProperties> planeList;
 
         //save only the selected reference planes *NEW ONE
         public static List<AddedReferencePlane> SelectedRefPlanes;
+
+        public static List<int> Datum;
 
         #endregion
 
