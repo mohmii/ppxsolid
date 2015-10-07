@@ -1397,7 +1397,7 @@ namespace cs_ppx
                                                 
                                             }
 
-                                            tmpInitPlane.Profiles = (ConnectedProfile); //add the collected profile to the corresponding plane
+                                            tmpInitPlane.Profiles = ConnectedProfile; //add the collected profile to the corresponding plane
 
                                         }
 
@@ -3860,13 +3860,108 @@ namespace cs_ppx
         }
 
         //analyze the datum
-        private static bool AnalyzeDatum()
+        private bool AnalyzeDatum()
         {
+            PPX_Datum ThisDatum;
+            bool IsDatum;
+            List<PPX_Datum> TmpDatumList = new List<PPX_Datum>();
+            List<int> AvailableIndex = new List<int>();
+            
+            //list all datum from plane
+            foreach (AddedReferencePlane ThisRefPlane in InitialRefPlanes)
+            {
+                if (ThisRefPlane.Tolerance != null)
+                {
+                    if (ThisRefPlane.Tolerance.datum != "")
+                    {
+                        ThisDatum = new PPX_Datum();
+                        ThisDatum.Name = ThisRefPlane.name;
+                        ThisDatum.Index = Convert.ToInt32(ThisRefPlane.GetToleranceValue(1));
+                        ThisDatum.Type = "plane";
 
+                        TmpDatumList.Add(ThisDatum);
+                    }
+                }
+            }
+
+            //list all datum from profile
+            foreach (AddedReferenceProfile ThisRefProfile in InitialRefProfiles)
+            {
+                if (ThisRefProfile.Tolerance != null)
+                {
+                    if (ThisRefProfile.Tolerance.datum != "")
+                    {
+                        ThisDatum = new PPX_Datum();
+                        ThisDatum.Name = ThisRefProfile.name;
+                        ThisDatum.Index = Convert.ToInt32(ThisRefProfile.GetToleranceValue(1));
+                        ThisDatum.Type = "profile";
+
+                        TmpDatumList.Add(ThisDatum);
+                    }
+                }
+            }
+
+            //sort the datum from the smallest index
+            List<PPX_Datum> SortedDatum = TmpDatumList.OrderBy(Plane => Plane.Index).ToList();
+            AddedReferenceProfile TmpProfile;
+
+            //list all datum from plane with profile
+            foreach (AddedReferencePlane ThisRefPlane in InitialRefPlanes)
+            {   
+                if (ThisRefPlane.Profiles != null)
+                {
+                    if (ThisRefPlane.Profiles.Count() == 1)
+                    {
+                        TmpProfile = ThisRefPlane.Profiles.First();
+
+                        if (TmpProfile.Main == true && ThisRefPlane.isOnBB == false)
+                        {
+                            var Items = from item in SortedDatum
+                                        where (item.Name == ThisRefPlane.name)
+                                        select item;
+
+                            if (Items.Count() == 0)
+                            {
+                                ThisDatum = new PPX_Datum();
+                                ThisDatum.Name = ThisRefPlane.name;
+                                ThisDatum.Index = SortedDatum.Last().Index + 1;
+                                ThisDatum.Type = "plane";
+
+                                SortedDatum.Add(ThisDatum);
+                            }
+                        }
+                    }
+                }
+            }
+
+            
+
+            //set new instance of datum collection and copy all sorted datum
+            RefDatum = new List<PPX_Datum>();
+            CopyDatum(ref RefDatum, SortedDatum);
+            
             return true;
         }
-    
 
+        //copy all the datum to a new place
+        private void CopyDatum(ref List<PPX_Datum> Target, List<PPX_Datum> Source)
+        {
+            PPX_Datum NewDatum;
+
+            foreach (PPX_Datum ThisDatum in Source)
+            { 
+                NewDatum = new PPX_Datum();
+                NewDatum.Name = ThisDatum.Name;
+                NewDatum.Index = ThisDatum.Index;
+                NewDatum.Type = ThisDatum.Type;
+
+                Target.Add(NewDatum);
+            }
+        }
+
+        //strorage for all datum
+        public static List<PPX_Datum> RefDatum;
+    
         //storage for all generated planes *OLD ONE
         public static List<_planeProperties> planeList;
 
@@ -7066,6 +7161,14 @@ namespace cs_ppx
         
     }
 
+    //class for keeping the datums
+    public class PPX_Datum
+    {
+        public string Name { get; set; } //the name that keeping the datum
+        public int Index { get; set; } //the index
+        public string Type { get; set; } // type of the datum (plane or profile)
+    }
+
     //class for saving addedReferencePlane
     public class AddedReferencePlane
     {
@@ -7114,6 +7217,33 @@ namespace cs_ppx
         public RemovalBody AttachedBody { get; set; } //keep the body pointer
 
         public PlaneTolerance Tolerance { get; set; } // keep the plane tolerance
+
+        public string GetToleranceValue(int ThisTol)
+        {
+            switch (ThisTol)
+            { 
+                case 1:
+                    return Tolerance.datum;
+                    
+                case 2:
+                    return Tolerance.flatness;
+                    
+                case 3:
+                    return Tolerance.parallelism;
+                    
+                case 4:
+                    return Tolerance.angularity;
+                    
+                case 5:
+                    return Tolerance.perpendicularity;
+                    
+                case 6:
+                    return Tolerance.location;
+                    
+            }
+
+            return "";
+        } //function to get tolerance value
 
         public List<AddedReferenceProfile> Profiles { get; set; } // keep the profile on this plane
 
@@ -7175,6 +7305,33 @@ namespace cs_ppx
         public RemovalBody AttachedBody { get; set; } //keep the body pointer
 
         public PlaneTolerance Tolerance { get; set; } // keep the plane tolerance
+
+        public string GetToleranceValue(int ThisTol)
+        {
+            switch (ThisTol)
+            {
+                case 1:
+                    return Tolerance.datum;
+
+                case 2:
+                    return Tolerance.flatness;
+
+                case 3:
+                    return Tolerance.parallelism;
+
+                case 4:
+                    return Tolerance.angularity;
+
+                case 5:
+                    return Tolerance.perpendicularity;
+
+                case 6:
+                    return Tolerance.location;
+
+            }
+
+            return "";
+        } //function to get tolerance value
     }
 
     public class AddedReferenceSurface
