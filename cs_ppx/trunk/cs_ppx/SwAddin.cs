@@ -1860,33 +1860,31 @@ namespace cs_ppx
         }
 
         //check the location of a face whether if it is located on bounding box or not
-        private Boolean CheckFaceOnBB(Face2 ThisFace)
+        private Boolean CheckFaceOnBB(Face2 ThisFace, out Face2 SimilarFace)
         {
-            SolidWorks.Interop.sldworks.Attribute swAtt = default(SolidWorks.Interop.sldworks.Attribute);
-            Entity TmpEntity = (Entity)ThisFace;
-
-            int i = 0;
-
-            while (swAtt == null && i < 300)
-            {
-                swAtt = TmpEntity.FindAttribute(BBDef, i);
-                i++;
-            }
-
-            if (swAtt != null) { return true; }
-            else
+            if (IsPlanar(ThisFace) == true)
             {
                 foreach (Face2 ThisRawFace in RawMaterialFaces)
                 {
                     if (ThisFace.IsCoincident(ThisRawFace, 0.001) == 0 ||
                         ThisFace.IsCoincident(ThisRawFace, 0.001) == 1)
                     {
+                        SimilarFace = ThisRawFace;
                         return true;
                     }
-                    
+                    else
+                    {
+                        if (CheckFaceSim(ThisFace, ThisRawFace) == true)
+                        {
+                            SimilarFace = ThisRawFace;
+                            return true;
+                        }
+                    }
+
                 }
             }
 
+            SimilarFace = null;
             return false;
         }
 
@@ -1946,11 +1944,134 @@ namespace cs_ppx
             return false;
         }
 
+        //OVERLOAD check similarity between two faces based on normal direction and their coincident
+        private bool CheckFaceSim(Face2 FaceA, Face2 FaceB)
+        {
+            
+            MathUtility ThisMathUtility = (MathUtility)SwApp.GetMathUtility();
+            double[] NormA = (double[])FaceA.Normal;
+            double[] NormB = (double[])FaceB.Normal;
+            bool NormalSim;
+            bool LevelSim;
+
+            //check if parallel
+            NormalSim = checkNormalSim(NormA, NormB, ThisMathUtility);
+
+            if (NormalSim == true)
+            {
+                
+                //check curve type on face B
+                object[] ObjLoopsfaceB = (object[])FaceB.GetLoops();
+                object[] ThisLoopEdgeB;
+                string CurveB = "";
+                int CurveTypeB;
+                Curve CurveBInstance;
+                CurveParamData ParamDataB;
+                double[] CurvePointsB = null;
+                MathPoint ThisPointB;
+                Edge ThisEdgeB;
+
+                foreach (Loop2 ThisLoop in ObjLoopsfaceB)
+                {
+                    if (ThisLoop.IsOuter())
+                    {
+                        ThisLoopEdgeB = (object[])ThisLoop.GetEdges();
+
+                        ThisEdgeB = (Edge)ThisLoopEdgeB.FirstOrDefault();
+                        CurveBInstance = (Curve) ThisEdgeB.GetCurve();
+
+                        ParamDataB = (CurveParamData)ThisEdgeB.GetCurveParams3();
+                        CurvePointsB = (double[])ParamDataB.StartPoint;
+                        CurveTypeB = ParamDataB.CurveType;
+
+                        break;
+                           
+                    }
+                }
+
+                //check curve type on face A
+                object[] ObjLoopsfaceA = (object[])FaceA.GetLoops();
+                object[] ThisLoopEdgeA;
+                string CurveA = "";
+                int CurveTypeA;
+                Curve CurveAInstance;
+                CurveParamData ParamDataA;
+                double[] CurvePointsA = null;
+                MathPoint ThisPointA;
+                Edge ThisEdgeA;
+
+                foreach (Loop2 ThisLoop in ObjLoopsfaceA)
+                {
+                    if (ThisLoop.IsOuter())
+                    {
+                        ThisLoopEdgeA = (object[])ThisLoop.GetEdges();
+
+                        ThisEdgeA = (Edge)ThisLoopEdgeA.FirstOrDefault();
+                        CurveAInstance = (Curve)ThisEdgeA.GetCurve();
+
+                        ParamDataA = (CurveParamData)ThisEdgeA.GetCurveParams3();
+                        CurvePointsA = (double[])ParamDataA.StartPoint;
+                        CurveTypeA = ParamDataA.CurveType;
+
+                        break;
+                            
+                    }
+                }
+
+                //create the point
+                ThisPointA = ThisMathUtility.CreatePoint(new double[3] { CurvePointsA[0], CurvePointsA[1], CurvePointsA[2] });
+                ThisPointB = ThisMathUtility.CreatePoint(new double[3] { CurvePointsB[0], CurvePointsB[1], CurvePointsB[2] });
+
+                LevelSim = CheckFaceLevel(ThisPointA, NormA, ThisPointB, ThisMathUtility);
+                
+
+                if (LevelSim == true)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         //check the level between two faces
         private bool CheckFaceLevel(AddedReferencePlane ThisPlane, object PlaneNormal, Face2 FaceB, MathUtility ThisUtils)
         {   
             MathPoint firstPoint = getPointOnPlane(ThisPlane);
             MathPoint secondPoint = GetPointOnFace(FaceB, ThisUtils);
+            MathVector pointsVector = (MathVector)firstPoint.Subtract(secondPoint);
+
+            MathVector firstVector = ThisUtils.CreateVector(PlaneNormal);
+
+            Double distance = Math.Abs(pointsVector.Dot(firstVector) / firstVector.GetLength());
+
+            //check the distance, if equal with 0, then it should be on the same level
+            return isEqual(distance, 0);
+
+        }
+
+        //OVERLOAD check the level between two faces
+        private bool CheckFaceLevel(Face2 ThisFace, object PlaneNormal, Face2 FaceB, MathUtility ThisUtils)
+        {
+            MathPoint firstPoint = GetPointOnFace(ThisFace, ThisUtils);
+            MathPoint secondPoint = GetPointOnFace(FaceB, ThisUtils);
+            MathVector pointsVector = (MathVector)firstPoint.Subtract(secondPoint);
+
+            MathVector firstVector = ThisUtils.CreateVector(PlaneNormal);
+
+            Double distance = Math.Abs(pointsVector.Dot(firstVector) / firstVector.GetLength());
+
+            //check the distance, if equal with 0, then it should be on the same level
+            return isEqual(distance, 0);
+
+        }
+
+        //OVERLOAD check the level between two faces with curveparam points
+        private bool CheckFaceLevel(MathPoint ThisPointA, object PlaneNormal, MathPoint ThisPointB, MathUtility ThisUtils)
+        {
+            //MathPoint firstPoint = GetPointOnFace(ThisFace, ThisUtils);
+            MathPoint firstPoint = ThisPointA;
+            MathPoint secondPoint = ThisPointB;
             MathVector pointsVector = (MathVector)firstPoint.Subtract(secondPoint);
 
             MathVector firstVector = ThisUtils.CreateVector(PlaneNormal);
@@ -2614,16 +2735,28 @@ namespace cs_ppx
 
                                 foreach (AddedReferencePlane ThisRefPlane in InitialRefPlanes)
                                 {
-                                    int FaceSimilarity = ThisFace.IsCoincident(ThisRefPlane.AttachedFace, 0.001);
-
-                                    if (FaceSimilarity == 0 || FaceSimilarity == 1)
+                                    if (ThisRefPlane.Tolerance == null)
                                     {
-                                        ThisRefPlane.Tolerance = EntityTolerance[i];
-                                        FaceFound.Add(ThisRefPlane.name);
-                                    }
-                                    else 
-                                    { 
+                                        int FaceSimilarity = ThisFace.IsCoincident(ThisRefPlane.AttachedFace, 0.001);
 
+                                        if (FaceSimilarity == 0 || FaceSimilarity == 1)
+                                        {
+                                            ThisRefPlane.Tolerance = EntityTolerance[i];
+                                            FaceFound.Add(ThisRefPlane.name);
+                                        }
+                                        else
+                                        {
+                                            Face2 ThisRawFace;
+
+                                            if (CheckFaceOnBB(ThisFace, out ThisRawFace) == true && ThisRefPlane.IsPlanar == true)
+                                            {
+                                                if (CheckFaceSim(ThisRawFace, ThisRefPlane.AttachedFace) == true)
+                                                {
+                                                    ThisRefPlane.Tolerance = EntityTolerance[i];
+                                                    FaceFound.Add(ThisRefPlane.name);
+                                                }
+                                            }
+                                        }
                                     }
 
                                 }
@@ -2961,6 +3094,17 @@ namespace cs_ppx
                                 if (ProductToleranceExist == true)
                                 {
                                     boolStatus = AnalyzeDatum();
+
+                                    boolStatus = AnalyzeProfile(compModDoc);
+
+                                    if (boolStatus == true)
+                                    {
+                                        //try to extend the surface
+                                        
+
+                                    }
+
+
                                 }
 
                                 List<int> removeId = new List<int>();
@@ -3863,7 +4007,6 @@ namespace cs_ppx
         private bool AnalyzeDatum()
         {
             PPX_Datum ThisDatum;
-            bool IsDatum;
             List<PPX_Datum> TmpDatumList = new List<PPX_Datum>();
             List<int> AvailableIndex = new List<int>();
             
@@ -3914,7 +4057,7 @@ namespace cs_ppx
                     {
                         TmpProfile = ThisRefPlane.Profiles.First();
 
-                        if (TmpProfile.Main == true && ThisRefPlane.isOnBB == false)
+                        if (TmpProfile.Main == true)
                         {
                             var Items = from item in SortedDatum
                                         where (item.Name == ThisRefPlane.name)
@@ -3933,8 +4076,6 @@ namespace cs_ppx
                     }
                 }
             }
-
-            
 
             //set new instance of datum collection and copy all sorted datum
             RefDatum = new List<PPX_Datum>();
@@ -3957,6 +4098,86 @@ namespace cs_ppx
 
                 Target.Add(NewDatum);
             }
+        }
+
+        //analyze the profile surface for perpendicularity
+        private bool AnalyzeProfile(ModelDoc2 ThisDoc)
+        {
+            string ReqDatum;
+            string [] ProfileTol;
+            Edge ThisProfileEdge;
+            Edge ThisSurfaceEdge;
+            object[] SurfaceEdges;
+            List<string> DatumTarget = new List<string>();
+            
+            List<AddedReferencePlane> RefPlaneTargets = new List<AddedReferencePlane>();
+            List<AddedReferenceProfile> RefProfile = new List<AddedReferenceProfile>();
+            bool StatusFound = false;
+
+            //find the surface which will be used to extend the profile
+            foreach (AddedReferenceProfile ThisProfile in InitialRefProfiles)
+            { 
+                //check the datum requirement
+                ReqDatum = ThisProfile.Tolerance.perpendicularity;
+
+                //only check for main profile
+                if (ReqDatum != "" && ThisProfile.Main == true)
+                {
+                    ProfileTol = ReqDatum.Split(' ');
+
+                    //get the required datum and collect its name
+                    if (ProfileTol.Count() == 1)
+                    {
+                        DatumTarget.Add(ProfileTol.First());
+                        foreach (PPX_Datum ThisDatum in RefDatum)
+                        {
+                            StatusFound = false;
+
+                            if (ThisDatum.Index == Convert.ToInt32(ProfileTol.First()))
+                            {
+                                if (ThisDatum.Type == "plane" && ThisDatum.Name != ThisProfile.name) 
+                                {
+                                    //find the refplane
+                                    foreach (AddedReferencePlane ThisPlane in InitialRefPlanes)
+                                    {
+                                        if (ThisPlane.name.Equals(ThisDatum.Name))
+                                        {
+                                            //add the refplane as targets 
+                                            //and also collect the corresponding surface from profile
+
+                                            RefPlaneTargets.Add(ThisPlane);
+                                            RefProfile.Add(ThisProfile);
+                                            StatusFound = true;
+                                            break;
+                                            ;
+                                        }
+                                    }
+
+                                }
+                            }
+
+                            if (StatusFound == true) { break; }
+                        }
+                    }
+
+                }
+            }
+
+            //try to extend the required surface
+            foreach (AddedReferenceProfile ThisProfile in RefProfile)
+            {
+                ThisProfileEdge = ThisProfile.EdgeProfile;
+
+                if (ThisProfile.ReferenceSurface.SurfacePlane.IsOffset())
+                {
+                    iSwApp.SendMsgToUser("you found the surface and the pointer is still valid");
+                }
+
+
+
+            }
+
+            return true;
         }
 
         //strorage for all datum
@@ -6625,6 +6846,22 @@ namespace cs_ppx
         public void SetupCalculator()
         {
             iSwApp.SendMsgToUser("got from Setup calculator");
+            ModelDoc2 swDoc = null;
+            PartDoc swPart = null;
+            DrawingDoc swDrawing = null;
+            AssemblyDoc swAssembly = null;
+            bool boolstatus = false;
+            int longstatus = 0;
+            int longwarnings = 0;
+            swDoc = (ModelDoc2)SwApp.ActiveDoc;
+            boolstatus = swDoc.Extension.SelectByID2("rawm_70x70x70-1@LEM_model", "COMPONENT", 0, 0, 0, false, 0, null, 0);
+            swAssembly = ((AssemblyDoc)(swDoc));
+            swAssembly.EditPart();
+            swDoc.ClearSelection2(true);
+            boolstatus = swDoc.Extension.SelectByID2("", "EDGE", 0.055993595414179254, 0.02706513508894659, 0.034959982884174678, false, 0, null, 0);
+            boolstatus = swDoc.Extension.SelectByID2("", "FACE", 0.052288178117237294, 0.02239888957558378, 0.054999999999985505, true, 0, null, 0);
+            swDoc.InsertExtendSurface(false, 2, 0.013);
+
         }
 
         //tools for calculating setup position
