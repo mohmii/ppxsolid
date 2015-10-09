@@ -4021,6 +4021,7 @@ namespace cs_ppx
                         ThisDatum.Name = ThisRefPlane.name;
                         ThisDatum.Index = Convert.ToInt32(ThisRefPlane.GetToleranceValue(1));
                         ThisDatum.Type = "plane";
+                        ThisDatum.BodyOwner = ThisRefPlane.BodyOwner;
 
                         TmpDatumList.Add(ThisDatum);
                     }
@@ -4038,6 +4039,7 @@ namespace cs_ppx
                         ThisDatum.Name = ThisRefProfile.name;
                         ThisDatum.Index = Convert.ToInt32(ThisRefProfile.GetToleranceValue(1));
                         ThisDatum.Type = "profile";
+                        ThisDatum.BodyOwner = ThisRefProfile.BodyOwner;
 
                         TmpDatumList.Add(ThisDatum);
                     }
@@ -4069,6 +4071,7 @@ namespace cs_ppx
                                 ThisDatum.Name = ThisRefPlane.name;
                                 ThisDatum.Index = SortedDatum.Last().Index + 1;
                                 ThisDatum.Type = "plane";
+                                ThisDatum.BodyOwner = ThisRefPlane.BodyOwner;
 
                                 SortedDatum.Add(ThisDatum);
                             }
@@ -4095,6 +4098,7 @@ namespace cs_ppx
                 NewDatum.Name = ThisDatum.Name;
                 NewDatum.Index = ThisDatum.Index;
                 NewDatum.Type = ThisDatum.Type;
+                NewDatum.BodyOwner = ThisDatum.BodyOwner;
 
                 Target.Add(NewDatum);
             }
@@ -4116,50 +4120,56 @@ namespace cs_ppx
 
             //find the surface which will be used to extend the profile
             foreach (AddedReferenceProfile ThisProfile in InitialRefProfiles)
-            { 
-                //check the datum requirement
-                ReqDatum = ThisProfile.Tolerance.perpendicularity;
-
-                //only check for main profile
-                if (ReqDatum != "" && ThisProfile.Main == true)
+            {
+                if (ThisProfile.Tolerance != null)
                 {
-                    ProfileTol = ReqDatum.Split(' ');
+                    //check the datum requirement
+                    ReqDatum = ThisProfile.Tolerance.perpendicularity;
 
-                    //get the required datum and collect its name
-                    if (ProfileTol.Count() == 1)
+                    //only check for main profile
+                    if (ReqDatum != "" && ThisProfile.Main == true)
                     {
-                        DatumTarget.Add(ProfileTol.First());
-                        foreach (PPX_Datum ThisDatum in RefDatum)
+                        ProfileTol = ReqDatum.Split(' ');
+
+                        //get the required datum and collect its name
+                        if (ProfileTol.Count() == 1)
                         {
-                            StatusFound = false;
-
-                            if (ThisDatum.Index == Convert.ToInt32(ProfileTol.First()))
+                            DatumTarget.Add(ProfileTol.First());
+                            foreach (PPX_Datum ThisDatum in RefDatum)
                             {
-                                if (ThisDatum.Type == "plane" && ThisDatum.Name != ThisProfile.name) 
-                                {
-                                    //find the refplane
-                                    foreach (AddedReferencePlane ThisPlane in InitialRefPlanes)
-                                    {
-                                        if (ThisPlane.name.Equals(ThisDatum.Name))
-                                        {
-                                            //add the refplane as targets 
-                                            //and also collect the corresponding surface from profile
+                                StatusFound = false;
 
-                                            RefPlaneTargets.Add(ThisPlane);
-                                            RefProfile.Add(ThisProfile);
-                                            StatusFound = true;
-                                            break;
-                                            ;
+                                if (ThisDatum.BodyOwner.Equals(ThisProfile.BodyOwner) && ThisDatum.Name != ThisProfile.name)
+                                {
+                                    if (ThisDatum.Index == Convert.ToInt32(ProfileTol.First()))
+                                    {
+                                        if (ThisDatum.Type == "plane")
+                                        {
+                                            //find the refplane
+                                            foreach (AddedReferencePlane ThisPlane in InitialRefPlanes)
+                                            {
+                                                if (ThisPlane.name.Equals(ThisDatum.Name))
+                                                {
+                                                    //add the refplane as targets 
+                                                    //and also collect the corresponding surface from profile
+
+                                                    RefPlaneTargets.Add(ThisPlane);
+                                                    RefProfile.Add(ThisProfile);
+                                                    StatusFound = true;
+                                                    break;
+                                                    ;
+                                                }
+                                            }
+
                                         }
                                     }
-
                                 }
+
+                                if (StatusFound == true) { break; }
                             }
-
-                            if (StatusFound == true) { break; }
                         }
-                    }
 
+                    }
                 }
             }
 
@@ -7404,6 +7414,7 @@ namespace cs_ppx
         public string Name { get; set; } //the name that keeping the datum
         public int Index { get; set; } //the index
         public string Type { get; set; } // type of the datum (plane or profile)
+        public string BodyOwner { get; set; } //keep the owner of the datum
     }
 
     //class for saving addedReferencePlane
