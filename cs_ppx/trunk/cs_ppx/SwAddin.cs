@@ -358,20 +358,20 @@ namespace cs_ppx
             int menuToolbarOption = (int)(swCommandItemType_e.swMenuItem | swCommandItemType_e.swToolbarItem);
             //cmdIndex0 = cmdGroup.AddCommandItem2("Load Samples", -1, "Load all raw model and product samples", "Load Samples", 2, "LoadSamples", "", mainItemID1, menuToolbarOption);
             cmdIndex0 = cmdGroup.AddCommandItem2("Read Tolerance", -1, "Read tolerance from product", "Read Tolerance", 2, "ReadTolerance", "", mainItemID1, menuToolbarOption);
-            cmdIndex1 = cmdGroup.AddCommandItem2("Select Sample", -1, "Select sample available", "Select Sample", 2, "ShowPMP", "EnablePMP", mainItemID2, menuToolbarOption);
-            cmdIndex2 = cmdGroup.AddCommandItem2("Match Body", -1, "Matching material and product", "Match Body", 2, "MatchBody", "", mainItemID3, menuToolbarOption);
+            //cmdIndex1 = cmdGroup.AddCommandItem2("Select Sample", -1, "Select sample available", "Select Sample", 2, "ShowPMP", "EnablePMP", mainItemID2, menuToolbarOption);
+            //cmdIndex2 = cmdGroup.AddCommandItem2("Match Body", -1, "Matching material and product", "Match Body", 2, "MatchBody", "", mainItemID3, menuToolbarOption);
             cmdIndex3 = cmdGroup.AddCommandItem2("Main TRV", -1, "Generate TRV from raw model and product", "Main TRV", 2, "MainTRV", "", mainItemID4, menuToolbarOption);
             cmdIndex4 = cmdGroup.AddCommandItem2("Plane Generator", -1, "Generate all planes", "Plane Generator", 2, "PlaneGenerator", "", mainItemID5, menuToolbarOption);
             cmdIndex5 = cmdGroup.AddCommandItem2("Plane Calculator", -1, "Calculating relationship matrix", "Plane Calculator", 2, "PlaneCalculator", "", mainItemID6, menuToolbarOption);
             cmdIndex6 = cmdGroup.AddCommandItem2("TRV Feature", -1, "Generate TRV features", "TRV Feature", 2, "TRVFeature", "", mainItemID7, menuToolbarOption);
-            cmdIndex7 = cmdGroup.AddCommandItem2("Machinable Space", -1, "Machinable space calculation", "Machinable Space", 2, "MachinableSpace", "", mainItemID8, menuToolbarOption);
-            cmdIndex8 = cmdGroup.AddCommandItem2("TRV network", -1, "TRV network calculation", "TRV Network", 2, "TRVNetwork", "", mainItemID9, menuToolbarOption);
-            cmdIndex9 = cmdGroup.AddCommandItem2("Calculate Setup", -1, "Setup calculation", "Calculate Setup", 2, "SetupCalculator", "", mainItemID10, menuToolbarOption);
+            //cmdIndex7 = cmdGroup.AddCommandItem2("Machinable Space", -1, "Machinable space calculation", "Machinable Space", 2, "MachinableSpace", "", mainItemID8, menuToolbarOption);
+            //cmdIndex8 = cmdGroup.AddCommandItem2("TRV network", -1, "TRV network calculation", "TRV Network", 2, "TRVNetwork", "", mainItemID9, menuToolbarOption);
+            //cmdIndex9 = cmdGroup.AddCommandItem2("Calculate Setup", -1, "Setup calculation", "Calculate Setup", 2, "SetupCalculator", "", mainItemID10, menuToolbarOption);
             cmdIndex10 = cmdGroup.AddCommandItem2("Set Open Face", -1, "Defining a open face", "Set Open Face", 2, "SetOpenFace", "", mainItemID11, menuToolbarOption);
             cmdIndex11 = cmdGroup.AddCommandItem2("Read Open Face", -1, "Reading a open face", "Read Open Face", 2, "ReadOpenFace", "", mainItemID12, menuToolbarOption);
             cmdIndex12 = cmdGroup.AddCommandItem2("Analyze Open Faces", -1, "Analyzing open faces", "Analyze Open Faces", 2, "AnalyzeOpenFace", "", mainItemID13, menuToolbarOption);
-            cmdIndex13 = cmdGroup.AddCommandItem2("Cost Analysis", -1, "Analyzing the cost", "Analyze Cost", 2, "CostAnalysis", "", mainItemID14, menuToolbarOption);
-            cmdIndex14 = cmdGroup.AddCommandItem2("Test Bar", -1, "Testing the ribbon toolbar", "Test Bar", 2, "TestBar", "", mainItemID15, menuToolbarOption);
+            //cmdIndex13 = cmdGroup.AddCommandItem2("Cost Analysis", -1, "Analyzing the cost", "Analyze Cost", 2, "CostAnalysis", "", mainItemID14, menuToolbarOption);
+            //cmdIndex14 = cmdGroup.AddCommandItem2("Test Bar", -1, "Testing the ribbon toolbar", "Test Bar", 2, "TestBar", "", mainItemID15, menuToolbarOption);
             
 
             cmdGroup.HasToolbar = true;
@@ -415,13 +415,13 @@ namespace cs_ppx
                     cmdIDs[0] = cmdGroup.get_CommandID(cmdIndex0);
                     TextType[0] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
 
-                    //show pmp button
-                    cmdIDs[1] = cmdGroup.get_CommandID(cmdIndex1);
-                    TextType[1] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+                    ////show pmp button
+                    //cmdIDs[1] = cmdGroup.get_CommandID(cmdIndex1);
+                    //TextType[1] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
 
-                    //match body button
-                    cmdIDs[2] = cmdGroup.get_CommandID(cmdIndex2);
-                    TextType[2] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+                    ////match body button
+                    //cmdIDs[2] = cmdGroup.get_CommandID(cmdIndex2);
+                    //TextType[2] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
                     
                     //main trv button
                     cmdIDs[3] = cmdGroup.get_CommandID(cmdIndex3);
@@ -441,25 +441,25 @@ namespace cs_ppx
 
                     bResult = cmdBox1.AddCommands(cmdIDs, TextType);
 
-                    //add another group
-                    CommandTabBox cmdBox2 = cmdTab.AddCommandTabBox();
-                    cmdIDs = new int[3];
-                    TextType = new int[3];
+                    ////add another group
+                    //CommandTabBox cmdBox2 = cmdTab.AddCommandTabBox();
+                    //cmdIDs = new int[3];
+                    //TextType = new int[3];
 
-                    //Machinable space calculation button
-                    cmdIDs[0] = cmdGroup.get_CommandID(cmdIndex7);
-                    TextType[0] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+                    ////Machinable space calculation button
+                    //cmdIDs[0] = cmdGroup.get_CommandID(cmdIndex7);
+                    //TextType[0] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
                     
-                    //TRV network calculation buttion
-                    cmdIDs[1] = cmdGroup.get_CommandID(cmdIndex8);
-                    TextType[1] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+                    ////TRV network calculation buttion
+                    //cmdIDs[1] = cmdGroup.get_CommandID(cmdIndex8);
+                    //TextType[1] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
                                         
-                    //Setup calculation button
-                    cmdIDs[2] = cmdGroup.get_CommandID(cmdIndex9);
-                    TextType[2] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+                    ////Setup calculation button
+                    //cmdIDs[2] = cmdGroup.get_CommandID(cmdIndex9);
+                    //TextType[2] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
 
-                    bResult = cmdBox2.AddCommands(cmdIDs, TextType);
-                    cmdTab.AddSeparator(cmdBox2, cmdGroup.ToolbarId);
+                    //bResult = cmdBox2.AddCommands(cmdIDs, TextType);
+                    //cmdTab.AddSeparator(cmdBox2, cmdGroup.ToolbarId);
 
                     //add another group
                     CommandTabBox cmdBox3 = cmdTab.AddCommandTabBox();
@@ -479,20 +479,20 @@ namespace cs_ppx
                     bResult = cmdBox3.AddCommands(cmdIDs, TextType);
                     cmdTab.AddSeparator(cmdBox3, cmdGroup.ToolbarId);
 
-                    //add another group
-                    CommandTabBox cmdBox4 = cmdTab.AddCommandTabBox();
-                    cmdIDs = new int[2];
-                    TextType = new int[2];
+                    ////add another group
+                    //CommandTabBox cmdBox4 = cmdTab.AddCommandTabBox();
+                    //cmdIDs = new int[2];
+                    //TextType = new int[2];
 
-                    //Cost analysis
-                    cmdIDs[0] = cmdGroup.get_CommandID(cmdIndex13);
-                    TextType[0] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+                    ////Cost analysis
+                    //cmdIDs[0] = cmdGroup.get_CommandID(cmdIndex13);
+                    //TextType[0] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
 
-                    cmdIDs[1] = cmdGroup.get_CommandID(cmdIndex14);
-                    TextType[1] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+                    //cmdIDs[1] = cmdGroup.get_CommandID(cmdIndex14);
+                    //TextType[1] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
 
-                    bResult = cmdBox4.AddCommands(cmdIDs, TextType);
-                    cmdTab.AddSeparator(cmdBox4, cmdGroup.ToolbarId);
+                    //bResult = cmdBox4.AddCommands(cmdIDs, TextType);
+                    //cmdTab.AddSeparator(cmdBox4, cmdGroup.ToolbarId);
 
                     /*
                     CommandTabBox cmdBox1 = cmdTab.AddCommandTabBox();
@@ -3072,6 +3072,9 @@ namespace cs_ppx
                         ModelDoc2 compModDoc = (ModelDoc2)compName[0].GetModelDoc2();
                         PartDoc swPartDoc = (PartDoc)compModDoc;
 
+                        SelectionMgr SwSelMgr = (SelectionMgr)compModDoc.SelectionManager;
+                        SelectData SwSelData = (SelectData)SwSelMgr.CreateSelectData();
+
                         //get the plane feature
                         boolStatus = getPlanes(swPartDoc, ref InitialRefPlanes);
 
@@ -3091,11 +3094,12 @@ namespace cs_ppx
                                 //find the outer reference plane
                                 boolStatus = FindTheOuter(ref InitialRefPlanes);
 
+                                //analyze the tolerance if exist
                                 if (ProductToleranceExist == true)
                                 {
                                     boolStatus = AnalyzeDatum();
 
-                                    boolStatus = AnalyzeProfile(compModDoc);
+                                    boolStatus = AnalyzeProfile(Doc, compModDoc, assyModel, compName[0], Doc.SelectionManager, ref SwSelData);
 
                                     if (boolStatus == true)
                                     {
@@ -4105,14 +4109,17 @@ namespace cs_ppx
         }
 
         //analyze the profile surface for perpendicularity
-        private bool AnalyzeProfile(ModelDoc2 ThisDoc)
+        private bool AnalyzeProfile(ModelDoc2 MasterDoc, ModelDoc2 ThisCompDoc, AssemblyDoc ThisAssyDoc, 
+            Component2 ThisComp, SelectionMgr ThisComSelMgr, ref SelectData ThisSelectData)
         {
             string ReqDatum;
             string [] ProfileTol;
-            Edge ThisProfileEdge;
+            Face ThisTargetFace = null;
+            Edge ThisProfileEdge = null;
             Edge ThisSurfaceEdge;
             object[] SurfaceEdges;
             List<string> DatumTarget = new List<string>();
+            bool SelectStatus = false;
             
             List<AddedReferencePlane> RefPlaneTargets = new List<AddedReferencePlane>();
             List<AddedReferenceProfile> RefProfile = new List<AddedReferenceProfile>();
@@ -4173,19 +4180,152 @@ namespace cs_ppx
                 }
             }
 
-            //try to extend the required surface
-            foreach (AddedReferenceProfile ThisProfile in RefProfile)
-            {
-                ThisProfileEdge = ThisProfile.EdgeProfile;
+            SelectStatus = ThisComp.Select2(true, 0);
 
-                if (ThisProfile.ReferenceSurface.SurfacePlane.IsOffset())
+            ThisAssyDoc.EditPart();
+
+            Feature ThisFeature;
+            object[] ObjBodies;
+            Body2 SelectedBody = null;
+            
+            //select the surface body
+
+            for (int i = 1; i < RefProfile.Count(); i++)
+            {
+                ThisFeature = ThisCompDoc.FirstFeature();
+                while (ThisFeature != null)
                 {
-                    iSwApp.SendMsgToUser("you found the surface and the pointer is still valid");
+                    if (ThisFeature.GetTypeName2() == "SurfaceBodyFolder")
+                    {
+                        SelectedBody = null;
+                        BodyFolder ThisBodyFolder = ThisFeature.GetSpecificFeature2();
+                        ObjBodies = (object[])ThisBodyFolder.GetBodies();
+                        foreach (Body2 ThisBody in ObjBodies)
+                        {
+                            if (RefProfile[i].ReferenceSurface.SurfaceName.Contains(ThisBody.Name))
+                            {
+                                SelectStatus = MasterDoc.Extension.SelectByID2(RefProfile[i].ReferenceSurface.SurfaceName, "SURFACEBODY", 0, 0, 0, true, 0, null, 0);
+                                SelectedBody = ThisComSelMgr.GetSelectedObject5(1);
+                                //SelectStatus = ThisBody.Select2(true, ThisSelectData);
+                                //int DisplayStatus = ThisBody.Display3(ThisComp, 150, (int)swTempBodySelectOptions_e.swTempBodySelectable);
+                                //SelectedBody = ThisBody;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (SelectedBody != null) { break; }
+                    ThisFeature = ThisFeature.GetNextFeature();
                 }
 
 
+                //select the edge for extension
+
+                object[] ObjEdgesBody = (object[])SelectedBody.GetEdges();
+
+                foreach (Edge ThisEdge in ObjEdgesBody)
+                {
+                    Curve ThisEdgeCurve = (Curve)ThisEdge.GetCurve();
+
+                    if (RefProfile[i].CurveType == "circle")
+                    {
+                        if (CircleSimilarity(RefProfile[i].CurveParam, (double[])ThisEdgeCurve.CircleParams) == true)
+                        {
+                            ThisProfileEdge = ThisEdge;
+                            break;
+                        }
+                    }
+
+                    if (RefProfile[i].CurveType == "ellipse")
+                    {
+                        if (EllipseSimilarity(RefProfile[i].CurveParam, (double[])ThisEdgeCurve.GetEllipseParams()) == true)
+                        {
+                            ThisProfileEdge = ThisEdge;
+                            break;
+                        }
+                    }
+
+                    if (RefProfile[i].CurveType == "bcurve")
+                    {
+                        double[] ThisCurveParam = (double[])GetCurveMaxTess(ThisEdgeCurve);
+
+                        if (BCurveSimilarity(RefProfile[i].CurveParam, ThisCurveParam) == true)
+                        {
+                            ThisProfileEdge = ThisEdge;
+                            break;
+                        }
+                    }
+
+                }
+
+                //get the similar edge on the corresponding solid body
+
+                Entity ThisProfileEntity = (Entity)ThisProfileEdge;
+                ThisProfileEntity = ThisProfileEntity.GetSafeEntity();
+                
+                ThisFeature = ThisCompDoc.FirstFeature();
+                while (ThisFeature != null)
+                {
+                    if (ThisFeature.GetTypeName2() == "SolidBodyFolder")
+                    {   
+                        BodyFolder ThisBodyFolder = ThisFeature.GetSpecificFeature2();
+                        ObjBodies = (object[])ThisBodyFolder.GetBodies();
+                        foreach (Body2 ThisBody in ObjBodies)
+                        {
+                            if (RefProfile[i].BodyOwner.Contains(ThisBody.Name))
+                            {
+                                StatusFound = false;
+                                object[] ObjFacesFromBody = (object[])ThisBody.GetFaces();
+                                foreach (Face2 ThisFace in ObjFacesFromBody)
+                                {
+                                    if (CheckFaceSim(ThisFace, RefPlaneTargets[i].AttachedFace) == true)
+                                    {
+                                        ThisTargetFace = (Face) ThisFace;
+                                        StatusFound = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (StatusFound == true) { break; }
+
+                        }
+                    }
+
+                    if (StatusFound == true) { break; }
+                    ThisFeature = ThisFeature.GetNextFeature();
+                }
+
+                //create a surface_offset from the target face
+
+                Entity ThisTargetFaceEntity = (Entity) ThisTargetFace;
+                ThisTargetFaceEntity = ThisTargetFaceEntity.GetSafeEntity();
+                SelectStatus = ThisTargetFaceEntity.Select4(false, ThisSelectData);
+
+                ThisCompDoc.InsertOffsetSurface(0.0, false);
+                Feature NewFeature = (Feature)ThisCompDoc.Extension.GetLastFeatureAdded();
+                object[] ObjFaces = (object[])NewFeature.GetFaces();
+                Face2 NewFace = (Face2)ObjFaces.FirstOrDefault();
+                ThisTargetFaceEntity = (Entity)NewFace;
+                ThisTargetFaceEntity = ThisTargetFaceEntity.GetSafeEntity();
+                
+
+                SelectStatus = MasterDoc.Extension.SelectByID2(NewFeature.Name + "@" + Path.GetFileNameWithoutExtension(ThisCompDoc.GetPathName())+ "@"+ Path.GetFileNameWithoutExtension(MasterDoc.GetPathName()), "SURFACEBODY", 0, 0, 0, false, 0, null, 0);
+                SelectStatus = ThisTargetFaceEntity.Select4(false, ThisSelectData);
+                SelectStatus = ThisProfileEntity.Select4(true, ThisSelectData);
+
+                object[] ThisEdges = new object[1] { ThisProfileEdge };
+                //Body2 NewSurfaceBody = SelectedBody.ExtendSurface(ThisEdges, false, 2, 0, null, NewFace);
+
+                //MasterDoc.InsertExtendSurface(false, 2, 0);
+
+                //try to extend exceed the selected surface
+                ThisCompDoc.InsertExtendSurface(false, 0, 0.030);
+
+                //
 
             }
+
 
             return true;
         }
@@ -6863,14 +7003,76 @@ namespace cs_ppx
             bool boolstatus = false;
             int longstatus = 0;
             int longwarnings = 0;
+            object[] ObjBodies;
+            Body2 SelectedBody = null;
+            bool SelectStatus;
+
             swDoc = (ModelDoc2)SwApp.ActiveDoc;
-            boolstatus = swDoc.Extension.SelectByID2("rawm_70x70x70-1@LEM_model", "COMPONENT", 0, 0, 0, false, 0, null, 0);
+            
             swAssembly = ((AssemblyDoc)(swDoc));
+
+            //get the components
+            ConfigurationManager configDocManager = (ConfigurationManager) swDoc.ConfigurationManager;
+            Configuration configDoc = (Configuration)configDocManager.ActiveConfiguration;
+            Component2 compInAssembly = (Component2)configDoc.GetRootComponent3(true);
+
+            if (compName == null)
+            {
+                //define the raw material and product
+                compName = new Component2[2];
+                GetCompName(compInAssembly, ref compName);
+                PPDetails_TaskPaneHost.getCompName(ref compName);
+            }
+
+            //get the part document of the raw material
+            ModelDoc2 compModDoc = (ModelDoc2)compName[0].GetModelDoc2();
+            PartDoc swPartDoc = (PartDoc)compModDoc;
+
+            SelectionMgr SwSelMgr = (SelectionMgr)compModDoc.SelectionManager;
+            SelectData SwSelData = (SelectData)SwSelMgr.CreateSelectData();
+
+            SelectStatus = compName[0].Select2(true, 0);
+
             swAssembly.EditPart();
-            swDoc.ClearSelection2(true);
-            boolstatus = swDoc.Extension.SelectByID2("", "EDGE", 0.055993595414179254, 0.02706513508894659, 0.034959982884174678, false, 0, null, 0);
-            boolstatus = swDoc.Extension.SelectByID2("", "FACE", 0.052288178117237294, 0.02239888957558378, 0.054999999999985505, true, 0, null, 0);
-            swDoc.InsertExtendSurface(false, 2, 0.013);
+
+            Feature ThisFeature = compModDoc.FirstFeature();
+            
+
+            while (ThisFeature != null)
+            {
+                if (ThisFeature.GetTypeName2() == "SurfaceBodyFolder")
+                {
+                    SelectedBody = null;
+                    BodyFolder ThisBodyFolder = ThisFeature.GetSpecificFeature2();
+                    ObjBodies = (object[])ThisBodyFolder.GetBodies();
+                    //foreach (Body2 ThisBody in ObjBodies)
+                    //{
+                    foreach (AddedReferenceSurface ThisSurface in InitialRefSurfaces)
+                    {
+                        //if (InitialRefSurfaces[0].SurfaceName.Contains(ThisBody.Name))
+                        //{
+
+                        //SelectStatus = ThisBody.Select2(true, SwSelData);
+                        //int DisplayStatus = ThisBody.Display3(compModDoc, 150, (int)swTempBodySelectOptions_e.swTempBodySelectable);
+                        //SelectStatus = swDoc.Extension.SelectByID2(InitialRefSurfaces[0].SurfaceName, "SURFACEBODY", 0, 0, 0, true, 0, null, 0);
+                        //SelectStatus = ThisSurface.SurfaceFeature.Select2(true, 0);
+                        SelectStatus = swDoc.Extension.SelectByID2(ThisSurface.SurfaceName, "SURFACEBODY", 0, 0, 0, true, 0, null, 0);
+                        //SelectedBody = ThisBody;
+                        //break;
+                        // }
+                        //}
+                    }
+
+                    break;
+                }
+
+
+                ThisFeature = ThisFeature.GetNextFeature();
+            }
+
+            //SelectStatus = SelectedBody.Select2(true, SwSelData);
+
+            //SelectStatus = swDoc.Extension.SelectByID2(SelectedBody.Name, "SURFACEBODY", 0, 0, 0, true, 0, null, 0);
 
         }
 
