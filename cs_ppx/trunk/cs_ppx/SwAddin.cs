@@ -1330,6 +1330,7 @@ namespace cs_ppx
                                         tmpInitPlane.MaxMinValue = TessVerticesArray;
                                         tmpInitPlane.BodyOwner = ThisBody.Name;
                                         tmpInitPlane.AttachedBody = ThisInitialTRV;
+                                        tmpInitPlane.SafeDirection = true;
 
                                         //set the surface if it is a freeform or cylinder surface
                                         if (PlanarState == false)
@@ -3589,19 +3590,20 @@ namespace cs_ppx
                     removeId.Add(i);
                 }
                 else
-                {
+                {                    
                     //add the reference plane for the first time if the list still empty
                     if (SelectedRefPlanes.Count == 0)
                     {
-                        retSim = checkPlaneSim(ListOfPlanes, tmpSetPlane, mathUtils);
+                        //retSim = checkPlaneSim(ListOfPlanes, tmpSetPlane, mathUtils);
 
-                        if (retSim == true)
-                        {
-                            SelectedRefPlanes.Add(tmpSetPlane);
-                        }
-                        else
-                        {
-                            if (tmpSetPlane.CPost == false)
+                        //if (retSim == true)
+                        //{
+                        //    SelectedRefPlanes.Add(tmpSetPlane);
+                        //}
+                        //else
+                        //{
+                            //if (tmpSetPlane.CPost == false)
+                            if (tmpSetPlane.SafeDirection == true)
                             {
                                 SelectedRefPlanes.Add(tmpSetPlane);
                             }
@@ -3609,7 +3611,7 @@ namespace cs_ppx
                             {
                                 removeId.Add(i); //add the plane that need to be removed
                             }
-                        }
+                        //}
                     }
                     else
                     {
@@ -3622,39 +3624,41 @@ namespace cs_ppx
                         }
                         else
                         {
-                            if (tmpSetPlane.CPost == false)
+                            //if (tmpSetPlane.CPost == false)
+                            if (tmpSetPlane.SafeDirection == true)
                             {
                                 SelectedRefPlanes.Add(tmpSetPlane);
                             }
                             else
                             {
-                                retSim = checkPlaneSim(ListOfPlanes, removeId, tmpSetPlane, mathUtils);
+                                //retSim = checkPlaneSim(ListOfPlanes, removeId, tmpSetPlane, mathUtils);
 
-                                //retSim = checkPlaneSim(ListOfPlanes, tmpSetPlane, mathUtils);
+                                ////retSim = checkPlaneSim(ListOfPlanes, tmpSetPlane, mathUtils);
 
-                                if (retSim == true)
-                                {
-                                    SelectedRefPlanes.Add(tmpSetPlane);
-                                }
-                                else
-                                {
-                                    if (tmpSetPlane.Patterns.Type == "MIX")
-                                    {
-                                        if (tmpSetPlane.Patterns.Line <= 2)
-                                        {
-                                            SelectedRefPlanes.Add(tmpSetPlane);
-                                        }
-                                    }
+                                //if (retSim == true)
+                                //{
+                                //    SelectedRefPlanes.Add(tmpSetPlane);
+                                //}
+                                //else
+                                //{
+                                //    if (tmpSetPlane.Patterns.Type == "MIX")
+                                //    {
+                                //        if (tmpSetPlane.Patterns.Line <= 2)
+                                //        {
+                                //            SelectedRefPlanes.Add(tmpSetPlane);
+                                //        }
+                                //    }
 
-                                    else
-                                    {
-                                        removeId.Add(i); //add the plane that need to be removed
-                                    }
-                                }
+                                //    else
+                                //    {
+                                        removeId.Add(i); //add the plane that needs to be removed
+                                //    }
+                                //}
                             }
                         }
 
                     }
+                    
                 }
 
             }
@@ -3988,14 +3992,152 @@ namespace cs_ppx
             return true;
         }
 
-        //analyze the direction
+        //analyze the x, y, z direction
         private static bool AnalyzeDirection(ref List<AddedReferencePlane> ListOfRefPlanes)
         {
+            bool boolStatus = false;
 
+            boolStatus = AnalyzeDirection(ref ListOfRefPlanes, "x");
+            boolStatus = AnalyzeDirection(ref ListOfRefPlanes, "y");
+            boolStatus = AnalyzeDirection(ref ListOfRefPlanes, "z");
 
+            if (boolStatus == false) { return false; }
 
             return true;
         }
+
+        //analyze particular direction
+        private static bool AnalyzeDirection(ref List<AddedReferencePlane> ListOfRefPlanes, string ThisAxis)
+        {   
+            int RefAxis = WhichAxis(ThisAxis);
+
+            //query the reference plane by the lowest order of plane (ascending)
+            var PlaneOrderByAscending = from Plane in ListOfRefPlanes
+                                        where (Plane.NormalOrientation.Contains(ThisAxis) && Plane.isOnBB == false)
+                                        orderby Plane.Location(RefAxis) ascending
+                                        select Plane;
+
+            //do the comparison of planes
+            if (PlaneOrderByAscending.Count() > 1)
+            {
+                foreach (AddedReferencePlane PlaneA in PlaneOrderByAscending)
+                {
+                    if (PlaneA.NormalOrientation.Contains("plus"))
+                    {
+                        foreach (AddedReferencePlane PlaneB in PlaneOrderByAscending)
+                        {
+                            if ((PlaneB.NormalOrientation.Contains("negative")) && 
+                                (PlaneA.Location(RefAxis) < PlaneB.Location(RefAxis)))
+                            {
+                                if (IsOverlapped(PlaneA, PlaneB, RefAxis) == true)
+                                {
+                                    PlaneA.SafeDirection = false;
+                                    PlaneB.SafeDirection = false;
+                                }
+                            
+                            }
+                        }
+                    }
+                }
+            }
+
+            //query the reference plane by the lowest order of plane (descending)
+            var PlaneOrderByDescending = from Plane in ListOfRefPlanes
+                                         where (Plane.NormalOrientation.Contains(ThisAxis) && Plane.isOnBB == false)
+                                         orderby Plane.Location(RefAxis) descending
+                                         select Plane;
+
+            //do the comparison of planes
+            if (PlaneOrderByDescending.Count() > 1)
+            {
+                foreach (AddedReferencePlane PlaneA in PlaneOrderByDescending)
+                {
+                    if (PlaneA.NormalOrientation.Contains("negative"))
+                    {
+                        foreach (AddedReferencePlane PlaneB in PlaneOrderByDescending)
+                        {
+                            if ((PlaneB.NormalOrientation.Contains("plus")) &&
+                                (PlaneA.Location(RefAxis) > PlaneB.Location(RefAxis)))
+                            {
+                                if (IsOverlapped(PlaneA, PlaneB, RefAxis) == true)
+                                {
+                                    PlaneA.SafeDirection = false;
+                                    PlaneB.SafeDirection = false;
+                                }
+
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return true;
+        }
+
+        //check whether two reference planes are overlapped (PlaneA overlaps PlaneB)
+        public static bool IsOverlapped(AddedReferencePlane PlaneA, AddedReferencePlane PlaneB, int RefAxis)
+        {
+            bool MaxPoint = false;
+            bool MinPoint = false;
+
+            switch (RefAxis)
+            { 
+                case 0: //evaluate the (y,z) point
+                    MaxPoint = CompareMaxPoint(PlaneA.GetCornerValue(1), PlaneA.GetCornerValue(2),
+                        PlaneB.GetCornerValue(1), PlaneB.GetCornerValue(2));
+                    MinPoint = CompareMinPoint(PlaneA.GetCornerValue(4), PlaneA.GetCornerValue(5),
+                        PlaneB.GetCornerValue(4), PlaneB.GetCornerValue(5));
+
+                    break;
+
+                case 1: //evaluate the (x,z) point
+                    MaxPoint = CompareMaxPoint(PlaneA.GetCornerValue(0), PlaneA.GetCornerValue(2),
+                        PlaneB.GetCornerValue(0), PlaneB.GetCornerValue(2));
+                    MinPoint = CompareMinPoint(PlaneA.GetCornerValue(3), PlaneA.GetCornerValue(5),
+                        PlaneB.GetCornerValue(3), PlaneB.GetCornerValue(5));
+
+                    break;
+
+                case 2: //evaluate the (x,y) point
+                    MaxPoint = CompareMaxPoint(PlaneA.GetCornerValue(0), PlaneA.GetCornerValue(1),
+                        PlaneB.GetCornerValue(0), PlaneB.GetCornerValue(1));
+                    MinPoint = CompareMinPoint(PlaneA.GetCornerValue(3), PlaneA.GetCornerValue(4),
+                        PlaneB.GetCornerValue(3), PlaneB.GetCornerValue(4));
+
+                    break;
+            }
+
+            if (MaxPoint == true && MinPoint == true) { return true; }
+
+            return false;
+        }
+
+        //compare min point between two points
+        public static bool CompareMinPoint(Double MinA, Double MinB, Double MinA2, Double MinB2)
+        {   
+            if ((MinA >= MinA2) || (MinB >= MinB2)) { return true; }
+
+            return false;
+        }
+
+        //compare max point between two points
+        public static bool CompareMaxPoint(Double MaxA, Double MaxB, Double MaxA2, Double MaxB2)
+        {
+            if ((MaxA <= MaxA2) || (MaxB <= MaxB2)) { return true; }
+
+            return false;
+        }
+
+        //return the int name of and axis 0:x, 1:y, 2:z
+        private static int WhichAxis(string ThisAxis)
+        {
+            if (ThisAxis.Contains("x")) return 0;
+            if (ThisAxis.Contains("y")) return 1;
+            if (ThisAxis.Contains("z")) return 2;
+
+            return -1;
+        }
+
 
         //find similar reference plane on each axis orientation
         private static void FindOrientation(ref List<AddedReferencePlane> ThisRefList, string ThisOrientation)
@@ -4507,6 +4649,7 @@ namespace cs_ppx
                 TargetItem.AttachedBody = Source.AttachedBody;
                 TargetItem.Tolerance = Source.Tolerance;
                 TargetItem.ReferenceSurface = Source.ReferenceSurface;
+                TargetItem.SafeDirection = Source.SafeDirection;
                 
                 TargetList.Add(TargetItem);
             }
@@ -7670,7 +7813,9 @@ namespace cs_ppx
         public Boolean isOuter { get; set; } //keep the information to indicate whether if the reference plane is located on the most outer surface or not
 
         public Boolean CPost { get; set; } //keep the centroid position refer to the normal direction
-        
+
+        public Boolean SafeDirection { get; set; } //keep the direction position, true: safe, false: unsafe
+
         public int MarkingOpt { get; set; } //keep the marking options that is used for iterating the plane
 
         public int Remark { get; set; } //keep additional remark for the plane
@@ -7678,6 +7823,45 @@ namespace cs_ppx
         public Boolean Possibility { get; set; } //keep the status for possibility to add as a plane candidate
 
         public Object MaxMinValue { get; set; } //keep the MaxMin value that has been define by tesselating corresponding face
+
+        public Double Location(int Axis) //keep the location of the plane based on its axis requirement, 0:x, 1:y, 2:z
+        {
+            Double[] ThisBoundary = (Double[])MaxMinValue;
+
+            if (Axis == 0)
+            {
+                return ThisBoundary[0];
+            }
+
+            if (Axis == 1)
+            {
+                return ThisBoundary[1];
+            }
+
+            if (Axis == 2)
+            {
+                return ThisBoundary[2];
+            }
+
+            return 0.0;
+        }
+
+        public Double GetCornerValue(int Index) //get the maxmin value based on its requirement
+        {
+            Double[] ThisMaxMin = (Double[]) MaxMinValue;
+            
+            switch(Index)
+            {
+                case 0: return ThisMaxMin[0];
+                case 1: return ThisMaxMin[1];
+                case 2: return ThisMaxMin[2];
+                case 3: return ThisMaxMin[3];
+                case 4: return ThisMaxMin[4];
+                case 5: return ThisMaxMin[5];
+            }
+                
+            return 0.0;
+        }
 
         public Boolean IsPlanar { get; set; } //keep the type of the reference plane (true: planar, false: non planar)
 
@@ -7758,9 +7942,7 @@ namespace cs_ppx
         public Boolean isOuter { get; set; } //keep the information to indicate whether if the reference plane is located on the most outer surface or not
 
         public Boolean CPost { get; set; } //keep the centroid position refer to the normal direction
-
-        public Boolean Direction { get; set; } //keep the direction position, true: safe, false: unsafe
-
+        
         public int MarkingOpt { get; set; } //keep the marking options that is used for iterating the plane
 
         public int Remark { get; set; } //keep additional remark for the plane
