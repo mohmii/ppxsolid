@@ -3094,6 +3094,9 @@ namespace cs_ppx
                                 //find the outer reference plane
                                 boolStatus = FindTheOuter(ref InitialRefPlanes);
 
+                                //analyze the inner plane
+                                boolStatus = AnalyzeDirection(ref InitialRefPlanes);
+
                                 //analyze the tolerance if exist
                                 if (ProductToleranceExist == true)
                                 {
@@ -3985,6 +3988,15 @@ namespace cs_ppx
             return true;
         }
 
+        //analyze the direction
+        private static bool AnalyzeDirection(ref List<AddedReferencePlane> ListOfRefPlanes)
+        {
+
+
+
+            return true;
+        }
+
         //find similar reference plane on each axis orientation
         private static void FindOrientation(ref List<AddedReferencePlane> ThisRefList, string ThisOrientation)
         {
@@ -4409,15 +4421,17 @@ namespace cs_ppx
                                        
                     traversePlanes(Doc, assyModel, compName[0], PlaneFeatures, ParentPlane, ParentList, RemovalList);
 
-                    iSwApp.SendMsgToUser("Number of process: " + MachiningPlanList.Count.ToString());
+                    if (MachiningPlanList != null)
+                    {
+                        iSwApp.SendMsgToUser("Number of process: " + MachiningPlanList.Count.ToString());
 
-                    boolStatus = compName[0].Select2(true, 0);
-                    assyModel.EditPart();
-                    
-                    PPDetails_TaskPaneHost.RegisterToTree(MachiningPlanList);
-                    ProcessLog_TaskPaneHost.LogProcess("Add machining plans to the tree");
-                    PPDetails_TaskPaneHost.LogProcess("Add machining plans to the tree");
+                        boolStatus = compName[0].Select2(true, 0);
+                        assyModel.EditPart();
 
+                        PPDetails_TaskPaneHost.RegisterToTree(MachiningPlanList);
+                        ProcessLog_TaskPaneHost.LogProcess("Add machining plans to the tree");
+                        PPDetails_TaskPaneHost.LogProcess("Add machining plans to the tree");
+                    }
                 }
             }
 
@@ -4817,10 +4831,14 @@ namespace cs_ppx
                 }
             }
             else
-            {
-                SetAsMachiningPlan(PreviousRemoval);
-                ProcessLog_TaskPaneHost.LogProcess("Found " + MachiningPlanList.Count.ToString() + " machining plans");
-                PPDetails_TaskPaneHost.LogProcess("Found " + MachiningPlanList.Count.ToString() + " machining plans");
+            {   
+                bool AssignedStatus = SetAsMachiningPlan(PreviousRemoval);
+
+                if (AssignedStatus == true)
+                {
+                    ProcessLog_TaskPaneHost.LogProcess("Found " + MachiningPlanList.Count.ToString() + " machining plans");
+                    PPDetails_TaskPaneHost.LogProcess("Found " + MachiningPlanList.Count.ToString() + " machining plans");
+                }
             }
  
         }
@@ -5652,9 +5670,12 @@ namespace cs_ppx
                 ThisMachiningPlan.NumberOfTADchanges = CalChange(Normals);
                 ThisMachiningPlan.MachiningTime = MachiningTime + (ThisMachiningPlan.NumberOfTADchanges * tDC);
                 MachiningPlanList.Add(ThisMachiningPlan);
+
+                return true;
+
             }
-            
-            return true;
+
+            return false;
 
         }
 
@@ -7737,6 +7758,8 @@ namespace cs_ppx
         public Boolean isOuter { get; set; } //keep the information to indicate whether if the reference plane is located on the most outer surface or not
 
         public Boolean CPost { get; set; } //keep the centroid position refer to the normal direction
+
+        public Boolean Direction { get; set; } //keep the direction position, true: safe, false: unsafe
 
         public int MarkingOpt { get; set; } //keep the marking options that is used for iterating the plane
 
