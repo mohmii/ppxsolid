@@ -230,5 +230,16 @@ namespace cs_ppx
             if (SwAddin.compName != null) { SwAddin.compName = null; }
         }
 
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (CheckedNodes.Count > 0)
+            {
+                foreach (string NodeIndex in CheckedNodes)
+                {
+                    SwAddin.SplitandDelete(Convert.ToInt32(NodeIndex) - 1);
+                }
+            }
+        }
+
     }
 }
