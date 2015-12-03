@@ -42,6 +42,7 @@
             this.log_messages = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.clear_all = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.MP_details)).BeginInit();
             this.SuspendLayout();
             // 
@@ -51,8 +52,11 @@
             | System.Windows.Forms.AnchorStyles.Left)));
             this.label1.AutoSize = true;
             this.label1.Location = new System.Drawing.Point(3, 242);
+            this.label1.Location = new System.Drawing.Point(4, 279);
+            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(121, 13);
+            this.label1.Size = new System.Drawing.Size(158, 15);
             this.label1.TabIndex = 1;
             this.label1.Text = "Machining Plane Details";
             // 
@@ -70,10 +74,13 @@
             this.AddRemark,
             this.ObjectPtr});
             this.MP_details.Location = new System.Drawing.Point(3, 258);
+            this.MP_details.Location = new System.Drawing.Point(4, 298);
+            this.MP_details.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.MP_details.Name = "MP_details";
             this.MP_details.ReadOnly = true;
             this.MP_details.RowHeadersVisible = false;
             this.MP_details.Size = new System.Drawing.Size(304, 253);
+            this.MP_details.Size = new System.Drawing.Size(405, 292);
             this.MP_details.TabIndex = 2;
             this.MP_details.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.MP_details_CellContentClick);
             // 
@@ -85,6 +92,7 @@
             this.PlaneName.ReadOnly = true;
             this.PlaneName.ToolTipText = "The plane name";
             this.PlaneName.Width = 60;
+            this.PlaneName.Width = 68;
             // 
             // Distance
             // 
@@ -94,6 +102,7 @@
             this.Distance.ReadOnly = true;
             this.Distance.ToolTipText = "The distance from the virtual centroid";
             this.Distance.Width = 65;
+            this.Distance.Width = 79;
             // 
             // PlaneScore
             // 
@@ -103,6 +112,7 @@
             this.PlaneScore.ReadOnly = true;
             this.PlaneScore.ToolTipText = "The score based on the number of intersection with other planes";
             this.PlaneScore.Width = 60;
+            this.PlaneScore.Width = 70;
             // 
             // AddRemark
             // 
@@ -124,8 +134,11 @@
             | System.Windows.Forms.AnchorStyles.Left)));
             this.label2.AutoSize = true;
             this.label2.Location = new System.Drawing.Point(3, 514);
+            this.label2.Location = new System.Drawing.Point(4, 593);
+            this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(115, 13);
+            this.label2.Size = new System.Drawing.Size(150, 15);
             this.label2.TabIndex = 3;
             this.label2.Text = "Machining Plan Details";
             // 
@@ -133,8 +146,11 @@
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.button1.Location = new System.Drawing.Point(3, 617);
+            this.button1.Location = new System.Drawing.Point(4, 712);
+            this.button1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(96, 35);
+            this.button1.Size = new System.Drawing.Size(115, 40);
             this.button1.TabIndex = 5;
             this.button1.Text = "Generate";
             this.button1.UseVisualStyleBackColor = true;
@@ -146,8 +162,11 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.MachiningTree.Location = new System.Drawing.Point(3, 530);
+            this.MachiningTree.Location = new System.Drawing.Point(4, 612);
+            this.MachiningTree.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.MachiningTree.Name = "MachiningTree";
             this.MachiningTree.Size = new System.Drawing.Size(304, 81);
+            this.MachiningTree.Size = new System.Drawing.Size(404, 93);
             this.MachiningTree.TabIndex = 6;
             this.MachiningTree.AfterCheck += new System.Windows.Forms.TreeViewEventHandler(this.treeView1_AfterCheck);
             this.MachiningTree.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.MachiningTree_NodeMouseClick);
@@ -157,18 +176,22 @@
             this.log_messages.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.log_messages.Location = new System.Drawing.Point(3, 21);
+            this.log_messages.Location = new System.Drawing.Point(4, 24);
+            this.log_messages.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.log_messages.Multiline = true;
             this.log_messages.Name = "log_messages";
-            this.log_messages.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.log_messages.Size = new System.Drawing.Size(304, 218);
+            this.log_messages.Size = new System.Drawing.Size(404, 251);
             this.log_messages.TabIndex = 7;
             // 
             // label3
             // 
             this.label3.AutoSize = true;
             this.label3.Location = new System.Drawing.Point(3, 5);
+            this.label3.Location = new System.Drawing.Point(4, 6);
+            this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(66, 13);
+            this.label3.Size = new System.Drawing.Size(87, 15);
             this.label3.TabIndex = 8;
             this.label3.Text = "Process Log";
             // 
@@ -176,17 +199,33 @@
             // 
             this.clear_all.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.clear_all.Location = new System.Drawing.Point(211, 617);
+            this.clear_all.Location = new System.Drawing.Point(281, 712);
+            this.clear_all.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.clear_all.Name = "clear_all";
             this.clear_all.Size = new System.Drawing.Size(96, 35);
+            this.clear_all.Size = new System.Drawing.Size(115, 40);
             this.clear_all.TabIndex = 9;
             this.clear_all.Text = "Clear All";
             this.clear_all.UseVisualStyleBackColor = true;
             this.clear_all.Click += new System.EventHandler(this.clear_all_Click);
             // 
+            // button2
+            // 
+            this.button2.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.button2.Location = new System.Drawing.Point(139, 712);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(115, 40);
+            this.button2.TabIndex = 10;
+            this.button2.Text = "SplitandDelete\r\n";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
             // control_pp_details
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.button2);
             this.Controls.Add(this.clear_all);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.log_messages);
@@ -195,8 +234,10 @@
             this.Controls.Add(this.label2);
             this.Controls.Add(this.MP_details);
             this.Controls.Add(this.label1);
+            this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.Name = "control_pp_details";
             this.Size = new System.Drawing.Size(310, 655);
+            this.Size = new System.Drawing.Size(413, 756);
             this.Load += new System.EventHandler(this.UserControl1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.MP_details)).EndInit();
             this.ResumeLayout(false);
@@ -219,5 +260,6 @@
         private System.Windows.Forms.TextBox log_messages;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button clear_all;
+        private System.Windows.Forms.Button button2;
     }
 }
