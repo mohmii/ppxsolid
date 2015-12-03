@@ -27,8 +27,10 @@ namespace cs_ppx
         Title = "cs_ppx",
         LoadAtStartup = true
         )]
-    public class SwAddin : ISwAddin
-    {
+
+    //public partial class SwAddin : ISwAddin
+    public partial class SwAddin : ISwAddin
+        {
         #region Local Variables
         static ISldWorks iSwApp = null;
         ICommandManager iCmdMgr = null;
@@ -64,7 +66,9 @@ namespace cs_ppx
         public const int mainItemID12 = 11;
         public const int mainItemID13 = 12;
         public const int mainItemID14 = 13;
-        public const int mainItemID15 = 14;
+        public const int mainItemID15 = 14;//
+        public const int mainItemID16 = 15;
+        public const int mainItemID17 = 16;
         
         public const int flyoutGroupID = 91;
                 
@@ -318,7 +322,7 @@ namespace cs_ppx
             Assembly thisAssembly;
 
             //set the index for the button on the ribbon
-            int cmdIndex0, cmdIndex1, cmdIndex2, cmdIndex3, cmdIndex4, cmdIndex5, cmdIndex6, cmdIndex7, cmdIndex8, cmdIndex9, cmdIndex10, cmdIndex11, cmdIndex12, cmdIndex13, cmdIndex14;
+            int cmdIndex0, cmdIndex1, cmdIndex2, cmdIndex3, cmdIndex4, cmdIndex5, cmdIndex6, cmdIndex7, cmdIndex8, cmdIndex9, cmdIndex10, cmdIndex11, cmdIndex12, cmdIndex13, cmdIndex14,cmdIndex15,cmdIndex16;
             string Title = "ppx", ToolTip = "Flexible Process Planning";
 
 
@@ -336,8 +340,8 @@ namespace cs_ppx
             //get the ID information stored in the registry
             bool getDataResult = iCmdMgr.GetGroupDataFromRegistry(mainCmdGroupID, out registryIDs);
 
-            int[] knownIDs = new int[15] { mainItemID1, mainItemID2, mainItemID3, mainItemID4, mainItemID5, mainItemID6, mainItemID7, mainItemID8, mainItemID9, mainItemID10, 
-                mainItemID11, mainItemID12, mainItemID13, mainItemID14, mainItemID15 };
+            int[] knownIDs = new int[16] { mainItemID1, mainItemID2, mainItemID3, mainItemID4, mainItemID5, mainItemID6, mainItemID7, mainItemID8, mainItemID9, mainItemID10, 
+                mainItemID11, mainItemID12, mainItemID13, mainItemID14, mainItemID15 ,mainItemID16};
 
             if (getDataResult)
             {
@@ -374,6 +378,9 @@ namespace cs_ppx
             //cmdIndex14 = cmdGroup.AddCommandItem2("Test Bar", -1, "Testing the ribbon toolbar", "Test Bar", 2, "TestBar", "", mainItemID15, menuToolbarOption);
             
 
+            cmdIndex14 = cmdGroup.AddCommandItem2("Plane CalculatorZ", -1, "Check Topological Data", "Plane CalculatorZ", 2, "PlaneCalculatorZ", "", mainItemID15, menuToolbarOption);
+            cmdIndex15 = cmdGroup.AddCommandItem2("CheckFeature", -1, "CheckFeature", "CheckFeature", 2, "CheckFeature", "", mainItemID16, menuToolbarOption);
+            cmdIndex16 = cmdGroup.AddCommandItem2("Plane CalculatorXY", -1, "Check Topological Data", "Plane CalculatorXY", 2, "PlaneCalculatorXY", "", mainItemID17, menuToolbarOption);
             cmdGroup.HasToolbar = true;
             cmdGroup.HasMenu = true;
             cmdGroup.Activate();
@@ -479,17 +486,25 @@ namespace cs_ppx
                     bResult = cmdBox3.AddCommands(cmdIDs, TextType);
                     cmdTab.AddSeparator(cmdBox3, cmdGroup.ToolbarId);
 
-                    ////add another group
-                    //CommandTabBox cmdBox4 = cmdTab.AddCommandTabBox();
-                    //cmdIDs = new int[2];
-                    //TextType = new int[2];
+                    //add another group
+                    CommandTabBox cmdBox4 = cmdTab.AddCommandTabBox();
+                    cmdIDs = new int[4];
+                    TextType = new int[4];
 
                     ////Cost analysis
                     //cmdIDs[0] = cmdGroup.get_CommandID(cmdIndex13);
                     //TextType[0] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
 
-                    //cmdIDs[1] = cmdGroup.get_CommandID(cmdIndex14);
-                    //TextType[1] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+                    cmdIDs[1] = cmdGroup.get_CommandID(cmdIndex14);
+                    TextType[1] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+
+                    cmdIDs[2] = cmdGroup.get_CommandID(cmdIndex15);
+                    TextType[2] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+
+                    cmdIDs[3] = cmdGroup.get_CommandID(cmdIndex16);
+                    TextType[3] = (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow;
+
+                    bResult = cmdBox4.AddCommands(cmdIDs, TextType);
 
                     //bResult = cmdBox4.AddCommands(cmdIDs, TextType);
                     //cmdTab.AddSeparator(cmdBox4, cmdGroup.ToolbarId);
@@ -800,7 +815,7 @@ namespace cs_ppx
             int i = 1;
 
             String CompPathName = SwComp.GetPathName();
-            iSwApp.DocumentVisible(false, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be invisble
+            iSwApp.DocumentVisible(false, (int)swDocumentTypes_e.swDocPART); //make the loaded document to be invisible
             ModelDoc2 CompDocumentModel = (ModelDoc2)SwApp.OpenDoc6(CompPathName, (int)swDocumentTypes_e.swDocPART,
                 (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref Errors, ref Warnings); //load the document
 
@@ -3575,7 +3590,7 @@ namespace cs_ppx
             bool retSim;
 
             //set the instance for the list that will keep the reference planes
-            SelectedRefPlanes = new List<AddedReferencePlane>();
+            SelectedRefPlanes = new List<AddedReferencePlane>();　　　//表に出力される参照面
             planeList = new List<_planeProperties>();
 
             for (int i = 0; i < ListOfPlanes.Count; i++)
@@ -5476,7 +5491,7 @@ namespace cs_ppx
                     //check the generated MP
                     if (MPGenerator(Doc, assyModel, compName[0], PlaneFeatures, MachiningPlanList[MPIndex], MPIndex, PlanDirectory, out PathList) == true)
                     {   
-                        ModelDoc2 NewDoc = (ModelDoc2)SwApp.NewDocument("G:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\lang\\english\\Tutorial\\assem.asmdot", 0, 0, 0);
+                        ModelDoc2 NewDoc = (ModelDoc2)SwApp.NewDocument("C:\\Program Files\\SolidWorks Corp2015\\SOLIDWORKS\\lang\\english\\Tutorial\\assem.asmdot", 0, 0, 0);
                         
                         string[] StringNames = new string[PathList.Count + 1];
                         string[] CoordinateName = new string[PathList.Count + 1];
@@ -5560,7 +5575,11 @@ namespace cs_ppx
 
             foreach (MachiningProcess SelectedProcess in ProcessCollection)
             {
+                //
                 SelectedFeature = getSelectedPlane(SelectedProcess.MachiningReference, featureList);
+                string featurename = SelectedFeature.GetTypeName2();
+
+
                 index = getPlaneIndex(SelectedProcess.MachiningReference, PlaneListByScore);
             
                 assyModel.EditPart();
@@ -5839,7 +5858,7 @@ namespace cs_ppx
                 
             }
 
-            ModelDoc2 ThisDoc = (ModelDoc2)SwApp.NewDocument("G:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\lang\\english\\Tutorial\\part.prtdot", 0, 0, 0);            
+            ModelDoc2 ThisDoc = (ModelDoc2)SwApp.NewDocument("C:\\Program Files\\SolidWorks Corp2015\\SOLIDWORKS\\lang\\english\\Tutorial\\part.prtdot", 0, 0, 0);            
             bool SaveStatus = ThisDoc.Extension.SaveAs(ThisPath, (int)swSaveAsVersion_e.swSaveAsCurrentVersion, (int)swSaveAsOptions_e.swSaveAsOptions_Silent, null, 0, 0);
 
             ThisDoc = SwApp.ActivateDoc3(Path.GetFileNameWithoutExtension(ThisPath), false, 2, ref Errors);
@@ -7047,24 +7066,34 @@ namespace cs_ppx
         //check whether if the body convex or concave, return true if convex
         public static bool isBodyConvex(ModelDoc2 Doc, Body2 body2Check, AddedReferencePlane SelectedPlane)
         {
-            object[] objFaces = null;
-            
-            objFaces = (object[])body2Check.GetFaces();
-            List<Face2> filteredFaces = new List<Face2>();
+            //please add here to define whether the body is convex or not
 
-            if (filterFaces(Doc, objFaces, SelectedPlane) == true)
+            if (CheckTopologicalData(Doc, body2Check) == true)
             {
-                foreach (Face2 tmpFace in objFaces)
-                {
-                    if (isFaceConvex(tmpFace) == false)
-                    {
-                        return false;
-                    }
-                }
+                return true;
             }
-            else { return false; }
 
-            return true;
+            else
+                return false;
+
+            //object[] objFaces = null;
+            
+            //objFaces = (object[])body2Check.GetFaces();
+            //List<Face2> filteredFaces = new List<Face2>();
+
+            //if (filterFaces(Doc, objFaces, SelectedPlane) == true)
+            //{
+            //    foreach (Face2 tmpFace in objFaces)
+            //    {
+            //        if (isFaceConvex(tmpFace) == false)
+            //        {
+            //            return false;
+            //        }
+            //    }
+            //}
+            //else { return false; }
+
+            //return true;
         }
 
         //filter the face
@@ -7886,9 +7915,254 @@ namespace cs_ppx
             }
 
 
+
+
             if (swCosting == null) { iSwApp.SendMsgToUser("CostManager is NULL"); }
             else { iSwApp.SendMsgToUser("CostManager is not NULL"); }
         }
+
+        public static double Getsize(double[] NVector)
+        {
+            double size = Math.Sqrt(NVector[0] * NVector[0] + NVector[1] * NVector[1] + NVector[2] * NVector[2]);
+            return size;
+
+        }
+        
+        //平面-平面の稜線の確認
+        public static bool CheckTopologicalData(ModelDoc2 Doc, Body2 body2Check)
+        {
+            Face2[] AttachFace = new Face2[2];　
+            double[] NormalA = new double[3];
+            double[] NormalB = new double[3];
+            double[] EdgeVector = new double[3];
+            double[] StartPoint = new double[3];
+            double[] MidPoint = new double[3];
+            double[] EndPoint = new double[3];
+            Vertex SVertex;
+            Vertex SVertex2;
+            Vertex EVertex;
+            Vertex EVertex2;
+            Vertex Vertex;
+            int i, j;
+            double[,] Point = new double[4, 3];
+            double[] GPoint = new double[5];
+            bool checkA;
+            long EdgeCount;
+            Edge[] EdgeMatrixA = new Edge[100];
+            Edge[] EdgeMatrixB = new Edge[100];
+            double[] Closest = new double[5];
+            double[] RVector = new double[3];
+            double[] Vector = new double[3];
+            int[] check = new int[3];
+            int[] check1 = new int[3];
+            int[] check2 = new int[3];
+            bool Face = true;
+            double Angle;
+
+
+
+            //var res;
+
+            //ModelDoc2 swDoc = iSwApp.IActiveDoc2;
+
+            
+            //Body2 Body = swPartDoc.Body();
+
+            int EdgeNum = body2Check.GetEdgeCount();
+            Edge[] AllEdge = new Edge[EdgeNum];
+            int[] CheckResult = new int[EdgeNum];
+            body2Check.GetEdges().CopyTo(AllEdge, 0);
+            Edge tmpEdge = AllEdge[0];
+
+            for (int k = 0; k < EdgeNum; k++)
+            {
+                tmpEdge = AllEdge[k];
+                tmpEdge.GetTwoAdjacentFaces2().CopyTo(AttachFace,0);
+
+                EdgeCount = AttachFace[0].GetEdgeCount();
+                AttachFace[0].GetEdges().CopyTo(EdgeMatrixA,0);
+                NormalA = AttachFace[0].Normal;
+                double size = Getsize(NormalA);
+                for (int l = 0; l < 3; l++)
+                {
+                    NormalA[l] = NormalA[l] / size;
+
+                }
+
+                EdgeCount = AttachFace[1].GetEdgeCount();
+                AttachFace[1].GetEdges().CopyTo(EdgeMatrixB,0);
+                AttachFace[1].Normal.CopyTo(NormalB,0);
+                size = Getsize(NormalB);
+                for (int l = 0; l < 3; l++)
+                {
+                    NormalB[l] = NormalB[l] / size;
+
+                }
+
+                SVertex = tmpEdge.GetStartVertex();
+                EVertex = tmpEdge.GetEndVertex();
+                SVertex.GetPoint().CopyTo(StartPoint,0);
+                EVertex.GetPoint().CopyTo(EndPoint,0);
+                for (int l = 0; l < 3; l++)
+                {
+                    MidPoint[l] = (StartPoint[l] + EndPoint[l]) / 2;
+                }
+
+                j = 0;
+
+                i = 0;
+                do
+                {
+                    if (EdgeMatrixA[i] == tmpEdge)
+                    {
+                        i++;
+                        continue;
+                    }
+                    SVertex2 = EdgeMatrixA[i].GetStartVertex();
+                    EVertex2 = EdgeMatrixA[i].GetEndVertex();
+                    if (EVertex2 != EVertex && SVertex2 != EVertex && EVertex2 != SVertex && SVertex2 != SVertex)
+                    {
+                        i++;
+                        continue;
+                    }
+
+                    if (SVertex2 == SVertex || SVertex2 == EVertex)
+                    {
+                        Vertex = EVertex2;
+                    }
+                    else
+                    {
+                        Vertex = SVertex2;
+                    }
+                    //Point[j, 0] = Vertex.GetPoint();
+                    double[] tmpArray = new double[3];
+                    tmpArray = Vertex.GetPoint().Clone();
+                    Point[j, 0] = tmpArray[0];
+                    Point[j, 1] = tmpArray[1];
+                    Point[j, 2] = tmpArray[2];
+                    j++;
+                    i++;
+
+
+                } while (j < 2);
+
+
+                i = 0;
+                do
+                {
+                    if (EdgeMatrixB[i] == tmpEdge)
+                    {
+                        i++;
+                        continue;
+                    }
+                    SVertex2 = EdgeMatrixB[i].GetStartVertex();
+                    EVertex2 = EdgeMatrixB[i].GetEndVertex();
+                    if (EVertex2 != EVertex && SVertex2 != EVertex && EVertex2 != SVertex && SVertex2 != SVertex)
+                    {
+                        i++;
+                        continue;
+                    }
+
+                    if (SVertex2 == SVertex || SVertex2 == EVertex)
+                    {
+                        Vertex = EVertex2;
+                    }
+                    else
+                    {
+                        Vertex = SVertex2;
+                    }
+                    //Point[j, 0] = Vertex.GetPoint();
+                    double[] tmpArray = new double[3];
+                    tmpArray = Vertex.GetPoint().Clone();
+                    Point[j, 0] = tmpArray[0];
+                    Point[j, 1] = tmpArray[1];
+                    Point[j, 2] = tmpArray[2];
+                    j++;
+                    i++;
+
+
+                } while (j < 4);
+
+                do
+                {
+                    j = j % 4;
+
+                    GPoint[0] = (EndPoint[0] + StartPoint[0] + Point[j, 0]) / 3;
+                    GPoint[1] = (EndPoint[1] + StartPoint[1] + Point[j, 1]) / 3;
+                    GPoint[2] = (EndPoint[2] + StartPoint[2] + Point[j, 2]) / 3;
+
+                    if (j == 0 || j == 1) Closest = AttachFace[0].GetClosestPointOn(GPoint[0], GPoint[1], GPoint[2]);
+                    if (j == 2 || j == 3) Closest = AttachFace[1].GetClosestPointOn(GPoint[0], GPoint[1], GPoint[2]);
+                    check[0] = (int)(Closest[0] * 10000 - GPoint[0] * 10000);
+                    check[1] = (int)(Closest[1] * 10000 - GPoint[1] * 10000);
+                    check[2] = (int)(Closest[2] * 10000 - GPoint[2] * 10000);
+                    if (check[0] == 0 && check[1] == 0 && check[2] == 0)
+                    {
+                        checkA = false;
+                        if (j == 0 || j == 1)
+                        {
+                            Face = true;
+                        }
+                        else
+                        {
+                            Face = false;
+                        };
+                        RVector[0] = MidPoint[0] - GPoint[0];
+                        RVector[1] = MidPoint[1] - GPoint[1];
+                        RVector[2] = MidPoint[2] - GPoint[2];
+                        break;
+                    }
+                    else
+                    {
+                        checkA = true;
+                        Point[j,0] = GPoint[0];
+                        Point[j,1] = GPoint[1];
+                        Point[j,2] = GPoint[2];
+                    };
+                    j++;
+                } while (checkA);
+                size = Getsize(RVector);
+                for (int l = 0; l < 3; l++)
+                {
+                    RVector[l] = RVector[l] / size;
+
+                }
+                if (Face)
+                    Angle = RVector[0] * NormalB[0] + RVector[1] * NormalB[1] + RVector[2] * NormalB[2];
+                else
+                    Angle = RVector[0] * NormalA[0] + RVector[1] * NormalA[1] + RVector[2] * NormalA[2];
+
+                //結果を返す（山折り：1　谷折り：-1　その他：2）
+                if (Angle > 0.0)
+                {
+                    CheckResult[k] = 1;	//山折り
+                }
+                else if (Angle < 0.0)
+                {
+                    CheckResult[k] = -1;	//谷折り
+                }
+                else
+                {
+                    CheckResult[k] = 2;
+                }
+            }
+            for (int K = 0; K < EdgeNum; K++)
+            {
+                if (CheckResult[K] == -1)
+                {
+                    //iSwApp.SendMsgToUser2("この形状は凹形状です", 2, 4);
+                    break;
+                }
+                if (K == EdgeNum - 1 && CheckResult[K] == 1)
+                {
+                    //iSwApp.SendMsgToUser2("この形状は凸形状です", 2, 4);
+                    return true;
+                    
+                }
+            }
+            return false;
+        }
+
 
         public int OpenFaceCounter;
 
@@ -8065,6 +8339,33 @@ namespace cs_ppx
                 docHandler = null;
             }
             return true;
+        }
+        //選択したフィーチャの名前とタイプを調べる
+        public void CheckFeature()
+        {
+            ModelDoc2 swModDoc = iSwApp.ActiveDoc;
+            SelectionMgr swSelMgr = swModDoc.SelectionManager;
+            Feature swFeat = swSelMgr.GetSelectedObject6(1, -1);
+
+            if (swFeat == null)
+            {
+                iSwApp.SendMsgToUser2("Feature Selection Failed", (int)swMessageBoxBtn_e.swMbOk, (int)swMessageBoxBtn_e.swMbOk);
+            }
+            else
+            {
+                if (swFeat.GetTypeName2() == "ProfileFeature" || swFeat.GetTypeName2() == "3DProfileFeature")
+                {
+                    Sketch swSketch = (Sketch)swFeat.GetSpecificFeature2();
+                    iSwApp.SendMsgToUser2("Name: " + swFeat.Name + System.Environment.NewLine +
+                                          "Type: " + swFeat.GetTypeName2() + System.Environment.NewLine +
+                                          "SketchRegCount: " + swSketch.GetSketchRegionCount().ToString(), (int)swMessageBoxBtn_e.swMbOk, (int)swMessageBoxBtn_e.swMbOk);
+                }
+                else
+                {
+                    iSwApp.SendMsgToUser2("Name: " + swFeat.Name + System.Environment.NewLine +
+                                          "Type: " + swFeat.GetTypeName2(), (int)swMessageBoxBtn_e.swMbOk, (int)swMessageBoxBtn_e.swMbOk);
+                }
+            }
         }
         #endregion
 
@@ -8354,7 +8655,37 @@ namespace cs_ppx
 
         public PatternConfig Patterns { get; set; } //keep the pattern (line, circle, arc) configuration
 
+        //追加部分
         public string BodyOwner { get; set; } //keep the name of the owner
+        public AddedReferencePlane clone() 
+        {
+            AddedReferencePlane cloneplane = new AddedReferencePlane();
+            cloneplane.name = this.name;
+            cloneplane.ReferencePlane = this.ReferencePlane;
+            cloneplane.AttachedFace = this.AttachedFace;
+            cloneplane.CorrespondFeature = this.CorrespondFeature;
+            cloneplane.RankByDistance = this.RankByDistance;
+            cloneplane.DistanceFromCentroid = this.DistanceFromCentroid;
+            cloneplane.PlaneIntersection = this.PlaneIntersection;
+            cloneplane.Score = this.Score;
+            cloneplane.PlaneNormal = this.PlaneNormal;
+            cloneplane.NormalOrientation = this.NormalOrientation;
+            cloneplane.isOnBB = this.isOnBB;
+            cloneplane.isOuter = this.isOuter;
+            cloneplane.CPost = this.CPost;
+            cloneplane.MarkingOpt = this.MarkingOpt;
+            cloneplane.Remark = this.Remark;
+            cloneplane.Possibility = this.Possibility;
+            cloneplane.MaxMinValue = this.MaxMinValue;
+            cloneplane.IsPlanar = this.IsPlanar;
+            cloneplane.Patterns = this.Patterns;
+
+            return cloneplane;
+
+
+        }
+
+
 
         public RemovalBody AttachedBody { get; set; } //keep the body pointer
 
@@ -8556,5 +8887,7 @@ namespace cs_ppx
         public string perpendicularity { get;set; }
         public string location { get;set; }
     }
+
+
 
 }
