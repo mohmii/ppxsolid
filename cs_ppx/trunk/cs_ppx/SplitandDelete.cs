@@ -56,6 +56,8 @@ namespace cs_ppx
                 AssemblyDoc assyModel = (AssemblyDoc)Doc;
                 if (assyModel.GetComponentCount(false) != 0)
                 {
+                    MainAxisLeveling = new List<int>() { 0, 0, 0 };
+
                     List<_planeProperties> samplePlane = new List<_planeProperties>();
                     samplePlane = planeList;
                     int numPlane = samplePlane.Count;

@@ -378,7 +378,9 @@ namespace cs_ppx
             //cmdIndex14 = cmdGroup.AddCommandItem2("Test Bar", -1, "Testing the ribbon toolbar", "Test Bar", 2, "TestBar", "", mainItemID15, menuToolbarOption);
             
 
-            cmdIndex14 = cmdGroup.AddCommandItem2("Plane CalculatorZ", -1, "Check Topological Data", "Plane CalculatorZ", 2, "PlaneCalculatorZ", "", mainItemID15, menuToolbarOption);
+            //cmdIndex14 = cmdGroup.AddCommandItem2("Plane CalculatorZ", -1, "Check Topological Data", "Plane CalculatorZ", 2, "PlaneCalculatorZ", "", mainItemID15, menuToolbarOption);
+            cmdIndex14 = cmdGroup.AddCommandItem2("Plane CalculatorZ", -1, "Check Topological Data", "Plane CalculatorZ", 2, "CheckLeveling", "", mainItemID15, menuToolbarOption);
+
             cmdIndex15 = cmdGroup.AddCommandItem2("CheckFeature", -1, "CheckFeature", "CheckFeature", 2, "CheckFeature", "", mainItemID16, menuToolbarOption);
             cmdIndex16 = cmdGroup.AddCommandItem2("Plane CalculatorXY", -1, "Check Topological Data", "Plane CalculatorXY", 2, "PlaneCalculatorXY", "", mainItemID17, menuToolbarOption);
             cmdGroup.HasToolbar = true;
@@ -1961,7 +1963,7 @@ namespace cs_ppx
         }
 
         //OVERLOAD check similarity between two faces based on normal direction and their coincident
-        private bool CheckFaceSim(Face2 FaceA, Face2 FaceB)
+        private static bool CheckFaceSim(Face2 FaceA, Face2 FaceB)
         {
             
             MathUtility ThisMathUtility = (MathUtility)SwApp.GetMathUtility();
@@ -2083,7 +2085,7 @@ namespace cs_ppx
         }
 
         //OVERLOAD check the level between two faces with curveparam points
-        private bool CheckFaceLevel(MathPoint ThisPointA, object PlaneNormal, MathPoint ThisPointB, MathUtility ThisUtils)
+        private static bool CheckFaceLevel(MathPoint ThisPointA, object PlaneNormal, MathPoint ThisPointB, MathUtility ThisUtils)
         {
             //MathPoint firstPoint = GetPointOnFace(ThisFace, ThisUtils);
             MathPoint firstPoint = ThisPointA;
@@ -4088,6 +4090,110 @@ namespace cs_ppx
             
             return true;
         }
+        
+        //set the list of TRV
+        public static List<int> MainAxisLeveling;
+
+        //check the number of trv by using planes which the order of x, y, z axes
+        private bool CheckTRVbodies(ModelDoc2 ThisDoc, AssemblyDoc ThisAssyDoc, out int SelectedAxis)
+        {
+            //MainAxisLeveling = new List<int>() { 0, 0, 0 };
+
+            bool PlanesRetrieval = false;
+            List<AddedReferencePlane> SelectedPlanes = null;
+            int NumberOfBodies = -1;
+            Array BodyArray;
+            SelectedAxis = -1;
+
+            //open the component for editing
+            ThisAssyDoc.EditPart();
+
+            //do the comparison for x, y, z
+            for (int i=0; i<3; i++)
+            {
+                if (MainAxisLeveling[i] != 1)
+                {
+                    SelectedPlanes = new List<AddedReferencePlane>();
+
+                    //get the planes
+                    switch(i)
+                    {                    
+                        case 0:
+                            PlanesRetrieval = GetParallelPlanes(InitialRefPlanes, "x",ref SelectedPlanes);
+                            break;
+                        case 1:
+                            PlanesRetrieval = GetParallelPlanes(InitialRefPlanes, "y", ref SelectedPlanes);
+                            break;
+                        case 2:
+                            PlanesRetrieval = GetParallelPlanes(InitialRefPlanes, "z", ref SelectedPlanes);
+                            break;
+                    }
+
+                    if (PlanesRetrieval == true)
+                    {   
+                        //select all planes
+                        foreach (AddedReferencePlane ThisPlane in SelectedPlanes)
+                        {
+                            ThisPlane.CorrespondFeature.Select2(true, 0);
+                        }
+                        
+                        //split and collect the body
+                        BodyArray = (Array)ThisDoc.FeatureManager.PreSplitBody();
+
+                        //compare the cutting result with previous cut
+                        if (BodyArray.Length < NumberOfBodies)
+                        {
+                            NumberOfBodies = BodyArray.Length;
+                            SelectedAxis = i;
+                        }
+                        
+                    }
+                }
+            }
+
+            if (SelectedAxis != -1) 
+            {
+                MainAxisLeveling[SelectedAxis] = 1;
+                return true; 
+            }
+
+            return false;
+        }
+
+        //get planes based on the required axis
+        private static bool GetParallelPlanes(List<AddedReferencePlane> ListOfRefPlanes, string ThisAxis, ref List<AddedReferencePlane> ThisPlaneCollection)
+        {
+            int RefAxis = WhichAxis(ThisAxis);
+            AddedReferencePlane PreviousAddedPlane = new AddedReferencePlane();
+
+            //query the reference plane by the lowest order of plane (ascending)
+            var PlaneOrderByAscending = from Plane in ListOfRefPlanes
+                                        where (Plane.NormalOrientation.Contains(ThisAxis) && Plane.isOnBB == false)
+                                        orderby Plane.Location(RefAxis) ascending
+                                        select Plane;
+
+            //do the comparison of planes
+            if (PlaneOrderByAscending.Count() != 0)
+            {
+                foreach (AddedReferencePlane ThisPlane in PlaneOrderByAscending)
+                {
+                    if (PreviousAddedPlane == null || (isEqual(PreviousAddedPlane.Location(RefAxis), ThisPlane.Location(RefAxis)) == false))
+                    {
+                        ThisPlaneCollection.Add(ThisPlane);
+                        PreviousAddedPlane = ThisPlane;
+                    }
+                }
+            }
+
+            if (ThisPlaneCollection.Count() != 0)
+            {
+                return true;
+            }
+           
+            ThisPlaneCollection = null;
+            return false;
+
+        }
 
         //check whether two reference planes are overlapped (PlaneA overlaps PlaneB)
         public static bool IsOverlapped(AddedReferencePlane PlaneA, AddedReferencePlane PlaneB, int RefAxis)
@@ -4157,9 +4263,16 @@ namespace cs_ppx
         //find similar reference plane on each axis orientation
         private static void FindOrientation(ref List<AddedReferencePlane> ThisRefList, string ThisOrientation)
         {
+            int ThisAxis = WhichAxis(ThisOrientation);
+
+            //var PlaneQuery = from Plane in ThisRefList
+            //                 where Plane.NormalOrientation == ThisOrientation && Plane.isOnBB == false
+            //                 orderby Plane.DistanceFromCentroid descending
+            //                 select Plane.name;
+
             var PlaneQuery = from Plane in ThisRefList
-                             where Plane.NormalOrientation == ThisOrientation && Plane.isOnBB == false
-                             orderby Plane.DistanceFromCentroid descending
+                             where Plane.NormalOrientation.Contains(ThisOrientation) && Plane.isOnBB == false
+                             orderby Plane.Location(ThisAxis) descending
                              select Plane.name;
 
             if (PlaneQuery.Count() != 0)
@@ -4595,16 +4708,16 @@ namespace cs_ppx
                         assyModel.EditPart();
 
                         Double RemovedVolume = CalRemovedVolume(MachiningPlanList);
-                        Double RemovedPercentage = (RemovedVolume / MainVolume) * 100;
+                        Double RemovedPercentage = Math.Round(((RemovedVolume / MainVolume) * 100),2);
 
                         PPDetails_TaskPaneHost.RegisterToTree(MachiningPlanList);
                         ProcessLog_TaskPaneHost.LogProcess("Add machining plans to the tree");
                         ProcessLog_TaskPaneHost.LogProcess("Only " + RemovedPercentage.ToString() + 
-                            " (" + RemovedVolume.ToString() + "/" + MainVolume.ToString() + ") has been removed");
+                            " % (" + RemovedVolume.ToString() + "/" + MainVolume.ToString() + ") has been removed");
                         
                         PPDetails_TaskPaneHost.LogProcess("Add machining plans to the tree");
                         PPDetails_TaskPaneHost.LogProcess("Only " + RemovedPercentage.ToString() +
-                            " (" + RemovedVolume.ToString() + "/" + MainVolume.ToString() + ") has been removed");
+                            " % (" + RemovedVolume.ToString() + "/" + MainVolume.ToString() + ") has been removed");
                     }
 
                     
@@ -4646,14 +4759,13 @@ namespace cs_ppx
                 MainVolume = MainVolume + MassProperty[3];
             }
 
-            return MainVolume * 1000000000;
+            return Math.Round(MainVolume * 1000000000, 2);
         }
 
         //calculate the volume which has been removed
         public static double CalRemovedVolume(List<MachiningPlan> ThisMPList)
         {
             Double RemovedVolume = 0.0;
-            RemovalBody ThisRemovedBody = null;
 
             if (ThisMPList.Count() != 0)
             {
@@ -4663,11 +4775,10 @@ namespace cs_ppx
                     {
                         RemovedVolume = ThisBody.MachiningVolume;
                     }
-                    
                 }
             }
             
-            return RemovedVolume;
+            return Math.Round(RemovedVolume, 2);
         }
 
         //initiate the traverse with the first feature
@@ -5430,7 +5541,7 @@ namespace cs_ppx
 
         //show the generated MP
         public static void ShowTheMP(int MPIndex)
-        {
+        {   
             if (MachiningPlanList[MPIndex].ViewName != null) 
             {
                 iSwApp.ActivateDoc(MachiningPlanList[MPIndex].ViewName);
@@ -6459,6 +6570,31 @@ namespace cs_ppx
                             
                             //BodyToDelete.Add(BodyToCheck.Name);
 
+                            //get the faces of the BOdyToCheck
+                            Object[] FaceObj = (Object[])TmpBodyToCheck.GetFaces();
+
+                            //check the other reference planes which are located on the trv body
+                            for (int IndexToFilter = 0; IndexToFilter < PlaneListByScore.Count() ; IndexToFilter++ )
+                            {
+                                if (PlaneListByScore[IndexToFilter].Remark == 0 
+                                    && PlaneListByScore[IndexToFilter].name != PlaneListByScore[index].name)
+                                {
+                                    //check whether if any ref planes are located on the BodyToCheck
+                                    foreach (Face2 ThisFace in FaceObj)
+                                    {
+                                        Object ThisFaceTess = (Object)ThisFace.GetTessTriangles(true);
+                                        Double[] ThisFaceMaxMin = GetMaxMin(ThisFaceTess);
+
+                                        if (IsTessEqual((Double[])PlaneListByScore[IndexToFilter].MaxMinValue, ThisFaceMaxMin) == true)
+                                        {   
+                                            setMarkOnPlane(ref PlaneListByScore, IndexToFilter, "HASBEENREMOVED");
+                                        }
+                                    }
+                                    
+                                }
+                            }
+
+
                             TmpRemovalBody = new RemovalBody();
                             TmpRemovalBody.Name = BodyToCheck.Name;
                             TmpRemovalBody.Volume = VolumeSize[i];
@@ -6518,6 +6654,20 @@ namespace cs_ppx
 
         }
         
+        //check similarity between two array of doubles
+        public static bool IsTessEqual(Double[] TessA, Double[] TessB)
+        {
+            for (int i = 0; i < TessA.Count(); i++)
+            {
+                if (isEqual(TessA[i], TessB[i]) == false)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         //split and save bodies
         public static Feature SplitAndSaveBody(ModelDoc2 DocumentModel, Component2 SwComp, Feature SelectedFeature, Array BodyArray, ref string[] BodyNames)
         { 
@@ -6849,8 +6999,8 @@ namespace cs_ppx
                 {
                     if (ParentList == null)
                     {
-                        //if (IsOuter(PlaneListIn[index], PlaneListDist) == true)
-                        if(PlaneListIn[index].isOuter == true)
+                        ////if (IsOuter(PlaneListIn[index], PlaneListDist) == true)
+                        if (PlaneListIn[index].isOuter == true || PlaneListIn[index].CPost == true)
                         {   
                             break;
                         }
@@ -6939,7 +7089,7 @@ namespace cs_ppx
         }
 
         //mark the plane according the message code
-        public bool setMarkOnPlane(ref List<AddedReferencePlane> planeList, int index, string message)
+        public static bool setMarkOnPlane(ref List<AddedReferencePlane> planeList, int index, string message)
         {
             switch (message)
             {
@@ -6969,6 +7119,10 @@ namespace cs_ppx
                 //safe normal critearia is not achieved
                 case "UNSAFE":
                     planeList[index].Remark = 4;
+                    break;
+
+                case "HASBEENREMOVED":
+                    planeList[index].Remark = 5;
                     break;
             }
             
@@ -7055,7 +7209,14 @@ namespace cs_ppx
                 Location = true;
             }
 
+            //first case to accomodate the regular case, if two condition (convex and correct location) are ok
             if ((Convexity == true) && (Location== true))
+            {
+                return true;
+            }
+            
+            //second case to accomodate the safe plane but has wrong direction of normal
+            if ((Convexity == true) && (Location == false) && (SelectedPlane.CPost == true))
             {
                 return true;
             }
@@ -8162,7 +8323,6 @@ namespace cs_ppx
             }
             return false;
         }
-
 
         public int OpenFaceCounter;
 

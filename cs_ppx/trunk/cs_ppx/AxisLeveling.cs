@@ -15,11 +15,175 @@ using SolidWorks.Interop.sldcostingapi;
 using SolidWorksTools;
 using SolidWorksTools.File;
 using System.Collections.Generic;
+
 namespace cs_ppx
 {
     public partial class SwAddin : ISwAddin
     {
         //plane Calculator
+        //public void PlaneCalculatorZ()
+        //{
+        //    ModelDoc2 Doc = (ModelDoc2)SwApp.ActiveDoc;
+        //    MathUtility swMathUtils = (MathUtility)SwApp.GetMathUtility();
+        //    int docType = (int)Doc.GetType();
+        //    bool boolStatus = false;
+        //    bool RegStatus = false;
+
+        //    AssemblyDoc assyModel = null;
+        //    Component2[] compName = null;
+        //    List<AddedReferencePlane> refplaneX = new List<AddedReferencePlane>();
+        //    List<AddedReferencePlane> refplaneY = new List<AddedReferencePlane>();
+        //    List<AddedReferencePlane> refplaneZ = new List<AddedReferencePlane>();
+
+        //    if (Doc.GetType() == 2)
+        //    {
+        //        assyModel = (AssemblyDoc)Doc;
+        //        if (assyModel.GetComponentCount(false) != 0)
+        //        {
+        //            try
+        //            {
+        //                //get the components
+        //                ConfigurationManager configDocManager = (ConfigurationManager)Doc.ConfigurationManager;
+        //                Configuration configDoc = (Configuration)configDocManager.ActiveConfiguration;
+        //                Component2 compInAssembly = (Component2)configDoc.GetRootComponent3(true);
+
+        //                if (compName == null)
+        //                {
+        //                    //define the raw material and product
+        //                    compName = new Component2[2];
+        //                    GetCompName(compInAssembly, ref compName);
+        //                    PPDetails_TaskPaneHost.getCompName(ref compName);
+        //                }
+
+        //                //get the real centroid
+        //                Body2 mainBody = compName[0].GetBody();
+        //                MassProperty bodyProperties = Doc.Extension.CreateMassProperty();
+        //                bodyProperties.AddBodies(mainBody);
+        //                bodyProperties.UseSystemUnits = false;
+
+        //                //draw the real centroid
+        //                //Doc.SketchManager.Insert3DSketch(true);
+        //                centroid = (double[])bodyProperties.CenterOfMass;
+        //                SketchPoint skPoint1 = (SketchPoint)Doc.SketchManager.CreatePoint(centroid[0], centroid[1], centroid[2]);
+        //                Doc.SketchManager.Insert3DSketch(true);
+
+        //                //get the virtual centroid
+        //                //object boxVertices = compName[0].GetBox(false, false);
+        //                virtualCentroid = getMidPoint(MaxMinValue);
+
+        //                //draw the virtual centroid
+        //                //Doc.SketchManager.Insert3DSketch(true);
+        //                double[] tmpPoint = (double[])virtualCentroid;
+        //                SketchPoint skPoint2 = (SketchPoint)Doc.SketchManager.CreatePoint(tmpPoint[0], tmpPoint[1], tmpPoint[2]);
+        //                Doc.SketchManager.Insert3DSketch(true);
+
+        //                //get the part document of the raw material
+        //                ModelDoc2 compModDoc = (ModelDoc2)compName[0].GetModelDoc2();
+        //                PartDoc swPartDoc = (PartDoc)compModDoc;
+
+        //                //get the plane feature
+        //                boolStatus = getPlanes(swPartDoc, ref InitialRefPlanes);
+
+        //                if (boolStatus == true)
+        //                {
+        //                    //get the plane normal
+        //                    boolStatus = getPlaneNormal(swMathUtils, ref InitialRefPlanes);
+
+        //                    if (boolStatus == true)
+        //                    {
+        //                        //set the distance
+        //                        //boolStatus = setDistance(Doc, swMathUtils, ref InitialRefPlanes, tmpPoint);
+        //                        boolStatus = setDistance(Doc, swMathUtils, ref InitialRefPlanes);
+
+        //                        //find the centroid position refer to the normal direction
+        //                        //boolStatus = findCPost(ref InitialRefPlanes, tmpPoint);
+        //                        boolStatus = findCPost(ref InitialRefPlanes);
+
+        //                        //find the outer reference plane
+        //                        boolStatus = FindTheOuter(ref InitialRefPlanes);
+
+
+        //                        List<int> removeId = new List<int>();
+
+        //                        //store the plane feature, rank, and normal to planeList
+        //                        //registerPlane(planeValue, planeNames, planeNormal, distance, ref removeId, swMathUtils);
+
+
+        //                        RegStatus = registerPlane2(Doc,InitialRefPlanes, ref removeId, swMathUtils);
+        //                        refplaneX.Clear();
+        //                        refplaneY.Clear();
+        //                        refplaneZ.Clear();
+
+        //                        for (int i = 0; i < SelectedRefPlanes.Count ; i++)
+        //                        {
+        //                            if (SelectedRefPlanes[i].NormalOrientation == "x-plus" ||
+        //                                SelectedRefPlanes[i].NormalOrientation == "x-negative")
+        //                                refplaneX.Add(SelectedRefPlanes[i]);
+        //                            else if (SelectedRefPlanes[i].NormalOrientation == "y-plus" ||
+        //                                SelectedRefPlanes[i].NormalOrientation == "y-negative")
+        //                                refplaneY.Add(SelectedRefPlanes[i]);
+        //                            else if (SelectedRefPlanes[i].NormalOrientation == "z-plus" ||
+        //                                SelectedRefPlanes[i].NormalOrientation == "z-negative")
+        //                                refplaneZ.Add(SelectedRefPlanes[i]);
+
+        //                        }
+
+        //                        ProcessLog_TaskPaneHost.LogProcess("Calculate reference planes");
+        //                        PPDetails_TaskPaneHost.LogProcess("Calculate reference planes");
+
+        //                        if ((RegStatus == true) && (removeId.Count > 0))
+        //                        {
+        //                            suppressFeature(Doc, assyModel, compName[0], InitialRefPlanes, removeId);
+
+        //                        }
+
+        //                    }
+        //                }
+        //                SelectedRefPlanes = new List<AddedReferencePlane>(refplaneZ);
+
+        //                for (int i = 0; i < SelectedRefPlanes.Count; i++)
+        //                {
+        //                    //AddedReferencePlane tmpPlaneA = SelectedRefPlanes[i];
+        //                    for (int j = 0; j < SelectedRefPlanes.Count; j++)
+        //                    {
+        //                        if (SelectedRefPlanes[i].name == SelectedRefPlanes[j].name && i != j)
+        //                        {
+        //                            SelectedRefPlanes.RemoveAt(j);
+        //                            if (i > j) i--;
+        //                            j--;
+        //                        }
+        //                    }
+        //                }
+
+
+
+        //                if (SelectedRefPlanes.Count != 0)
+        //                {
+        //                    //analyze intersection
+        //                    boolStatus = planeIntersection(SelectedRefPlanes);
+
+        //                    if (boolStatus == true)
+        //                    {
+        //                        PPDetails_TaskPaneHost.RegisterToPlaneTable(SelectedRefPlanes);
+        //                        ProcessLog_TaskPaneHost.LogProcess("Add selected planes to the table");
+        //                        PPDetails_TaskPaneHost.LogProcess("Add selected planes to the table");
+
+        //                    }
+        //                }
+
+        //            }
+
+        //            finally
+        //            {
+
+
+        //            }
+
+        //        }
+        //    }
+
+        //}
+
         public void PlaneCalculatorZ()
         {
             ModelDoc2 Doc = (ModelDoc2)SwApp.ActiveDoc;
@@ -30,9 +194,6 @@ namespace cs_ppx
 
             AssemblyDoc assyModel = null;
             Component2[] compName = null;
-            List<AddedReferencePlane> refplaneX = new List<AddedReferencePlane>();
-            List<AddedReferencePlane> refplaneY = new List<AddedReferencePlane>();
-            List<AddedReferencePlane> refplaneZ = new List<AddedReferencePlane>();
 
             if (Doc.GetType() == 2)
             {
@@ -60,25 +221,25 @@ namespace cs_ppx
                         bodyProperties.AddBodies(mainBody);
                         bodyProperties.UseSystemUnits = false;
 
-                        //draw the real centroid
-                        //Doc.SketchManager.Insert3DSketch(true);
-                        centroid = (double[])bodyProperties.CenterOfMass;
-                        SketchPoint skPoint1 = (SketchPoint)Doc.SketchManager.CreatePoint(centroid[0], centroid[1], centroid[2]);
-                        Doc.SketchManager.Insert3DSketch(true);
+                        if (InitialTRVBodies.Count != 0)
+                        {
+                            Doc.SketchManager.Insert3DSketch(true);
 
-                        //get the virtual centroid
-                        //object boxVertices = compName[0].GetBox(false, false);
-                        virtualCentroid = getMidPoint(MaxMinValue);
+                            foreach (RemovalBody ThisBody in InitialTRVBodies)
+                            {
+                                centroid = ThisBody.VirtualPoint;
+                                SketchPoint skPoint1 = (SketchPoint)Doc.SketchManager.CreatePoint(centroid[0], centroid[1], centroid[2]);
+                            }
 
-                        //draw the virtual centroid
-                        //Doc.SketchManager.Insert3DSketch(true);
-                        double[] tmpPoint = (double[])virtualCentroid;
-                        SketchPoint skPoint2 = (SketchPoint)Doc.SketchManager.CreatePoint(tmpPoint[0], tmpPoint[1], tmpPoint[2]);
-                        Doc.SketchManager.Insert3DSketch(true);
+                            Doc.SketchManager.Insert3DSketch(true);
+                        }
 
                         //get the part document of the raw material
                         ModelDoc2 compModDoc = (ModelDoc2)compName[0].GetModelDoc2();
                         PartDoc swPartDoc = (PartDoc)compModDoc;
+
+                        SelectionMgr SwSelMgr = (SelectionMgr)compModDoc.SelectionManager;
+                        SelectData SwSelData = (SelectData)SwSelMgr.CreateSelectData();
 
                         //get the plane feature
                         boolStatus = getPlanes(swPartDoc, ref InitialRefPlanes);
@@ -91,41 +252,40 @@ namespace cs_ppx
                             if (boolStatus == true)
                             {
                                 //set the distance
-                                //boolStatus = setDistance(Doc, swMathUtils, ref InitialRefPlanes, tmpPoint);
                                 boolStatus = setDistance(Doc, swMathUtils, ref InitialRefPlanes);
 
                                 //find the centroid position refer to the normal direction
-                                //boolStatus = findCPost(ref InitialRefPlanes, tmpPoint);
                                 boolStatus = findCPost(ref InitialRefPlanes);
 
                                 //find the outer reference plane
                                 boolStatus = FindTheOuter(ref InitialRefPlanes);
 
+                                //analyze the inner plane
+                                boolStatus = AnalyzeDirection(ref InitialRefPlanes);
+
+                                //analyze the tolerance if exist
+                                if (ProductToleranceExist == true)
+                                {
+                                    boolStatus = AnalyzeDatum();
+
+                                    boolStatus = AnalyzeProfile(Doc, compModDoc, assyModel, compName[0], Doc.SelectionManager, ref SwSelData);
+
+                                    if (boolStatus == true)
+                                    {
+                                        //try to extend the surface
+
+
+                                    }
+
+
+                                }
 
                                 List<int> removeId = new List<int>();
 
                                 //store the plane feature, rank, and normal to planeList
                                 //registerPlane(planeValue, planeNames, planeNormal, distance, ref removeId, swMathUtils);
 
-
-                                RegStatus = registerPlane2(Doc,InitialRefPlanes, ref removeId, swMathUtils);
-                                refplaneX.Clear();
-                                refplaneY.Clear();
-                                refplaneZ.Clear();
-
-                                for (int i = 0; i < SelectedRefPlanes.Count ; i++)
-                                {
-                                    if (SelectedRefPlanes[i].NormalOrientation == "x-plus" ||
-                                        SelectedRefPlanes[i].NormalOrientation == "x-negative")
-                                        refplaneX.Add(SelectedRefPlanes[i]);
-                                    else if (SelectedRefPlanes[i].NormalOrientation == "y-plus" ||
-                                        SelectedRefPlanes[i].NormalOrientation == "y-negative")
-                                        refplaneY.Add(SelectedRefPlanes[i]);
-                                    else if (SelectedRefPlanes[i].NormalOrientation == "z-plus" ||
-                                        SelectedRefPlanes[i].NormalOrientation == "z-negative")
-                                        refplaneZ.Add(SelectedRefPlanes[i]);
-
-                                }
+                                RegStatus = registerPlane(InitialRefPlanes, ref removeId, swMathUtils);
 
                                 ProcessLog_TaskPaneHost.LogProcess("Calculate reference planes");
                                 PPDetails_TaskPaneHost.LogProcess("Calculate reference planes");
@@ -138,23 +298,6 @@ namespace cs_ppx
 
                             }
                         }
-                        SelectedRefPlanes = new List<AddedReferencePlane>(refplaneZ);
-
-                        for (int i = 0; i < SelectedRefPlanes.Count; i++)
-                        {
-                            //AddedReferencePlane tmpPlaneA = SelectedRefPlanes[i];
-                            for (int j = 0; j < SelectedRefPlanes.Count; j++)
-                            {
-                                if (SelectedRefPlanes[i].name == SelectedRefPlanes[j].name && i != j)
-                                {
-                                    SelectedRefPlanes.RemoveAt(j);
-                                    if (i > j) i--;
-                                    j--;
-                                }
-                            }
-                        }
-
-
 
                         if (SelectedRefPlanes.Count != 0)
                         {
@@ -180,7 +323,50 @@ namespace cs_ppx
 
                 }
             }
+        }
 
+        //set to check the leveling 
+        public void CheckLeveling()
+        { 
+             ModelDoc2 Doc = (ModelDoc2)SwApp.ActiveDoc;
+            MathUtility swMathUtils = (MathUtility)SwApp.GetMathUtility();
+            int docType = (int)Doc.GetType();
+            bool boolStatus = false;
+            bool RegStatus = false;
+            
+            AssemblyDoc assyModel = null;
+            Component2[] compName = null;
+
+            if (Doc.GetType() == 2)
+            {
+                assyModel = (AssemblyDoc)Doc;
+                if (assyModel.GetComponentCount(false) != 0)
+                {
+                    try
+                    {
+                        //get the components
+                        ConfigurationManager configDocManager = (ConfigurationManager)Doc.ConfigurationManager;
+                        Configuration configDoc = (Configuration)configDocManager.ActiveConfiguration;
+                        Component2 compInAssembly = (Component2)configDoc.GetRootComponent3(true);
+
+                        if (compName == null)
+                        {
+                            //define the raw material and product
+                            compName = new Component2[2];
+                            GetCompName(compInAssembly, ref compName);
+                            PPDetails_TaskPaneHost.getCompName(ref compName);
+                        }
+
+                        //get the real centroid
+                        Body2 mainBody = compName[0].GetBody();
+                    }
+
+                    finally 
+                    { 
+
+                    }
+                }
+            }
         }
 
         public void PlaneCalculatorXY()
