@@ -5457,7 +5457,7 @@ namespace cs_ppx
 
                         //save the document name
                         MachiningPlanList[MPIndex].ViewName = Path.GetFileNameWithoutExtension(NewDoc.GetPathName());
-                        ProcessLog_TaskPaneHost.LogProcess("Generating Machining Plan " + (MPIndex+1).ToString());
+                        ProcessLog_TaskPaneHost.LogProcess("Generating Machining Plan " + (MPIndex + 1).ToString());
                         PPDetails_TaskPaneHost.LogProcess("Generating Machining Plan " + (MPIndex + 1).ToString());
 
                         NewDoc = SwApp.ActivateDoc(Path.GetFileNameWithoutExtension(MPPath));
@@ -5790,7 +5790,7 @@ namespace cs_ppx
                 
             }
 
-            ModelDoc2 ThisDoc = (ModelDoc2)SwApp.NewDocument("C:\\Program Files\\SolidWorks Corp2015\\SOLIDWORKS\\lang\\english\\Tutorial\\part.prtdot", 0, 0, 0);            
+            ModelDoc2 ThisDoc = (ModelDoc2)SwApp.NewDocument("G:\\Program Files\\SolidWorks Corp\\SOLIDWORKS\\lang\\english\\Tutorial\\part.prtdot", 0, 0, 0);            
             bool SaveStatus = ThisDoc.Extension.SaveAs(ThisPath, (int)swSaveAsVersion_e.swSaveAsCurrentVersion, (int)swSaveAsOptions_e.swSaveAsOptions_Silent, null, 0, 0);
 
             ThisDoc = SwApp.ActivateDoc3(Path.GetFileNameWithoutExtension(ThisPath), false, 2, ref Errors);
@@ -6162,7 +6162,7 @@ namespace cs_ppx
                 ThisMachiningPlan.SetupNormal = "+Z";
                 ThisMachiningPlan.NumberOfTADchanges = CalChange(Normals);
                 ThisMachiningPlan.MachiningTime = MachiningTime + (ThisMachiningPlan.NumberOfTADchanges * tDC);
-                ThisMachiningPlan.MachiningVolume = MachiningVolume;
+                ThisMachiningPlan.MachiningVolume = Math.Round(MachiningVolume, 2);
                 MachiningPlanList.Add(ThisMachiningPlan);
 
                 return true;
@@ -8987,6 +8987,7 @@ namespace cs_ppx
         public int NumberOfSetups { get; set; } //keep the number of setups
 
         public string SetupNormal { get; set; } //keep the normal of setup
+
     }
 
     //class for keeping the circle pattern

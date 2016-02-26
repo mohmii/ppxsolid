@@ -61,6 +61,9 @@ namespace cs_ppx
 
                 TreeNode PlanDetails = new TreeNode(index.ToString());
 
+                HiddenCheckBoxTreeNode Vol = new HiddenCheckBoxTreeNode("M_Volume: " + Plan.MachiningVolume.ToString());
+                PlanDetails.Nodes.Add(Vol);
+
                 HiddenCheckBoxTreeNode Time = new HiddenCheckBoxTreeNode("Process Time: " + Plan.MachiningTime.ToString() + " s");
                 PlanDetails.Nodes.Add(Time);
                 
@@ -228,6 +231,8 @@ namespace cs_ppx
             if (SwAddin.planeList != null) { SwAddin.planeList.Clear(); }
             if (SwAddin.PlaneListByScore != null) { SwAddin.PlaneListByScore.Clear(); }
             if (SwAddin.compName != null) { SwAddin.compName = null; }
+                        
+            if (this.CheckedNodes.Count != 0) { this.CheckedNodes.Clear(); }
         }
 
         private void button2_Click(object sender, EventArgs e)
